@@ -1,0 +1,11 @@
+# Variables de entorno para configuración crítica
+# Copia este archivo a .env y completa los valores
+
+# API Key de IMDB (obtener en https://imdb-api.com/api)
+IMDB_API_KEY=your_imdb_api_key_here
+
+# Token del bot de Telegram (obtener de @BotFather)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# ID del canal de Telegram (formato: @channel_name o -1001234567890)
+TELEGRAM_CHANNEL_ID=your_telegram_channel_id_here

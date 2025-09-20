@@ -1,0 +1,53 @@
+{
+    "app": {
+        "name": "Detector de Películas Duplicadas",
+        "version": "1.0.0",
+        "debug": false
+    },
+    "paths": {
+        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas",
+        "last_output_path": "",
+        "default_scan_path": ""
+    },
+    "detection": {
+        "similarity_threshold": 0.8,
+        "duration_filter_enabled": false,
+        "duration_tolerance_minutes": 1,
+        "supported_extensions": [
+            ".mp4",
+            ".avi",
+            ".mkv",
+            ".mov",
+            ".wmv",
+            ".flv",
+            ".m4v",
+            ".mpg",
+            ".mpeg",
+            ".3gp",
+            ".webm"
+        ]
+    },
+    "imdb": {
+        "api_key": "",
+        "base_url": "https://imdb-api.com",
+        "language": "es"
+    },
+    "telegram": {
+        "bot_token": "",
+        "channel_id": "",
+        "max_file_size": 2000000000,
+        "upload_delay": 1
+    },
+    "ui": {
+        "theme": "light",
+        "page_size": 20,
+        "show_advanced_options": false,
+        "show_video_players": true,
+        "video_player_size": "small",
+        "show_embedded_players": true
+    },
+    "debug": {
+        "enabled": true,
+        "debug_folder": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug"
+    }
+}
