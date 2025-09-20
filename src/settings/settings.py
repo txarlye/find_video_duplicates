@@ -224,6 +224,14 @@ class Settings:
         """Establece si mostrar reproductores embebidos"""
         self.set("ui.show_embedded_players", value)
     
+    def get_video_start_time_seconds(self) -> int:
+        """Obtiene el tiempo de inicio en segundos para los reproductores embebidos"""
+        return self.get("ui.video_start_time_seconds", 900)  # 15 minutos por defecto
+    
+    def set_video_start_time_seconds(self, value: int):
+        """Establece el tiempo de inicio en segundos para los reproductores embebidos"""
+        self.set("ui.video_start_time_seconds", value)
+    
     def get_debug_enabled(self) -> bool:
         """Obtiene si el modo debug está activado"""
         return self.get("debug.enabled", True)

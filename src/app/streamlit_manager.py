@@ -142,11 +142,46 @@ class StreamlitAppManager:
             help="Tamaño de los reproductores de video"
         )
         
+        # Tiempo de inicio para reproductores embebidos
+        start_time_minutes = st.slider(
+            "⏱️ Minuto de inicio para comparación",
+            min_value=1,
+            max_value=60,
+            value=settings.get_video_start_time_seconds() // 60,
+            step=1,
+            help="Minuto desde el cual empezar a reproducir para comparar duplicados"
+        )
+        
         if st.button("💾 Guardar configuración reproductores", key="save_players_config"):
             settings.set_show_video_players(show_players)
             settings.set_show_embedded_players(show_embedded)
             settings.set_video_player_size(player_size)
+            settings.set_video_start_time_seconds(start_time_minutes * 60)
             st.success("✅ Configuración de reproductores guardada")
+        
+        st.markdown("---")
+        
+        # Configuración de Debug
+        st.subheader("🐛 Modo Debug")
+        
+        # Modo debug
+        debug_enabled = st.checkbox(
+            "🐛 Activar Modo Debug",
+            value=settings.get_debug_enabled(),
+            help="En modo debug, los archivos se mueven a una carpeta en lugar de borrarse"
+        )
+        
+        # Carpeta de debug
+        debug_folder = st.text_input(
+            "📁 Carpeta de Debug",
+            value=settings.get_debug_folder(),
+            help="Carpeta donde se moverán los archivos en modo debug"
+        )
+        
+        if st.button("💾 Guardar configuración debug", key="save_debug_config"):
+            settings.set_debug_enabled(debug_enabled)
+            settings.set_debug_folder(debug_folder)
+            st.success("✅ Configuración de debug guardada")
     
     def render_scan_section(self):
         """Renderiza la sección de escaneo"""
@@ -178,7 +213,10 @@ class StreamlitAppManager:
         
         # Procesar escaneo
         if scan_button and carpeta:
+            st.write("🔍 Botón presionado, iniciando escaneo...")
             self._process_scan(carpeta)
+        elif scan_button and not carpeta:
+            st.error("❌ Por favor, especifica una carpeta para escanear")
     
     def _process_scan(self, carpeta: str):
         """Procesa el escaneo de la carpeta"""
@@ -213,7 +251,10 @@ class StreamlitAppManager:
                 terminal_placeholder.code("\n".join(terminal_content[-15:]), language="text")
             
             detector.mostrar_archivo = mostrar_archivo
+            
+            st.write("🔍 Iniciando escaneo de archivos...")
             peliculas = detector.escanear_carpeta()
+            st.write(f"✅ Escaneo completado. Encontradas {len(peliculas)} películas")
             st.session_state.peliculas = peliculas
             
             progress_bar.progress(60)
@@ -463,13 +504,49 @@ class StreamlitAppManager:
             st.write(f"Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
             st.write(f"Duración: {row.get('Duración 1', 'N/A')}")
             
-            # Botón para abrir en reproductor
-            if st.button(f"🎬 Abrir en Reproductor", key=f"open1_{index}"):
-                ruta1 = row.get('Ruta 1', '')
-                if ruta1 and os.path.exists(ruta1):
+            # Reproductor embebido y botón
+            ruta1 = row.get('Ruta 1', '')
+            if ruta1 and os.path.exists(ruta1):
+                # Verificar si se deben mostrar reproductores embebidos
+                try:
+                    show_embedded = settings.get_show_embedded_players()
+                except AttributeError:
+                    show_embedded = False
+                
+                if show_embedded:
+                    try:
+                        # Obtener tiempo de inicio desde configuración
+                        start_time = settings.get_video_start_time_seconds()
+                        
+                        # Verificar tamaño del archivo (máximo 2GB para reproductor embebido)
+                        file_size = os.path.getsize(ruta1) / (1024**3)  # GB
+                        if file_size <= 2.0:
+                            try:
+                                # Leer archivo como bytes según documentación de Streamlit
+                                with open(ruta1, "rb") as video_file:
+                                    video_bytes = video_file.read()
+                                
+                                # Verificar si es un formato compatible
+                                file_ext = os.path.splitext(ruta1)[1].lower()
+                                if file_ext in ['.mp4', '.webm', '.ogg']:
+                                    st.video(video_bytes, start_time=start_time, width=300)
+                                    st.caption(f"⏱️ Inicia en el minuto {start_time//60}")
+                                else:
+                                    st.write(f"❌ Formato no compatible: {file_ext}")
+                                    st.write("📁 Formatos soportados: MP4, WebM, OGG")
+                            except Exception as video_error:
+                                st.write(f"❌ Error cargando video: {str(video_error)}")
+                                st.write("💡 El codec del video puede no ser compatible con el navegador")
+                        else:
+                            st.write("📁 Archivo muy grande para reproductor embebido")
+                    except Exception as e:
+                        st.write(f"❌ Error cargando video: {str(e)}")
+                
+                # Botón para abrir en reproductor (siempre visible)
+                if st.button(f"🎬 Abrir en Reproductor", key=f"open1_{index}"):
                     os.startfile(ruta1)
-                else:
-                    st.error("Archivo no encontrado")
+            else:
+                st.error("Archivo no encontrado")
         
         # Película 2
         with col2:
@@ -478,13 +555,49 @@ class StreamlitAppManager:
             st.write(f"Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
             st.write(f"Duración: {row.get('Duración 2', 'N/A')}")
             
-            # Botón para abrir en reproductor
-            if st.button(f"🎬 Abrir en Reproductor", key=f"open2_{index}"):
-                ruta2 = row.get('Ruta 2', '')
-                if ruta2 and os.path.exists(ruta2):
+            # Reproductor embebido y botón
+            ruta2 = row.get('Ruta 2', '')
+            if ruta2 and os.path.exists(ruta2):
+                # Verificar si se deben mostrar reproductores embebidos
+                try:
+                    show_embedded = settings.get_show_embedded_players()
+                except AttributeError:
+                    show_embedded = False
+                
+                if show_embedded:
+                    try:
+                        # Obtener tiempo de inicio desde configuración
+                        start_time = settings.get_video_start_time_seconds()
+                        
+                        # Verificar tamaño del archivo (máximo 2GB para reproductor embebido)
+                        file_size = os.path.getsize(ruta2) / (1024**3)  # GB
+                        if file_size <= 2.0:
+                            try:
+                                # Leer archivo como bytes según documentación de Streamlit
+                                with open(ruta2, "rb") as video_file:
+                                    video_bytes = video_file.read()
+                                
+                                # Verificar si es un formato compatible
+                                file_ext = os.path.splitext(ruta2)[1].lower()
+                                if file_ext in ['.mp4', '.webm', '.ogg']:
+                                    st.video(video_bytes, start_time=start_time, width=300)
+                                    st.caption(f"⏱️ Inicia en el minuto {start_time//60}")
+                                else:
+                                    st.write(f"❌ Formato no compatible: {file_ext}")
+                                    st.write("📁 Formatos soportados: MP4, WebM, OGG")
+                            except Exception as video_error:
+                                st.write(f"❌ Error cargando video: {str(video_error)}")
+                                st.write("💡 El codec del video puede no ser compatible con el navegador")
+                        else:
+                            st.write("📁 Archivo muy grande para reproductor embebido")
+                    except Exception as e:
+                        st.write(f"❌ Error cargando video: {str(e)}")
+                
+                # Botón para abrir en reproductor (siempre visible)
+                if st.button(f"🎬 Abrir en Reproductor", key=f"open2_{index}"):
                     os.startfile(ruta2)
-                else:
-                    st.error("Archivo no encontrado")
+            else:
+                st.error("Archivo no encontrado")
         
         st.markdown("---")
     
@@ -532,34 +645,116 @@ class StreamlitAppManager:
             )
             
             if st.button("🗑️ Eliminar Seleccionadas", disabled=not par_seleccionado, key=f"delete_{index}"):
-                st.write("Función de eliminación pendiente de implementar")
+                self._process_pair_deletion(index, row)
         
         st.markdown("---")
     
     def _process_pair_deletion(self, index: int, row: Dict[str, Any]):
         """Procesa la eliminación de un par"""
-        # Obtener archivos seleccionados del par
-        selected_files = []
-        if self.selection_manager.is_selected(index, 1):
-            selected_files.append(row['Ruta 1'])
-        if self.selection_manager.is_selected(index, 2):
-            selected_files.append(row['Ruta 2'])
-        
-        if selected_files:
-            result = self.file_processor.process_selected_movies(
-                [{"pair_index": index, "movie_number": 1}], 
-                [row], 'delete'
-            )
+        try:
+            # Agregar el index al row para que esté disponible
+            row['index'] = index
             
-            if result["success"]:
-                st.success(f"✅ {result['processed']} archivo(s) procesado(s)")
+            # Verificar si está en modo debug
+            debug_enabled = settings.get_debug_enabled()
+            debug_folder = settings.get_debug_folder()
+            
+            if debug_enabled:
+                # Modo debug: mover a carpeta de debug
+                self._move_to_debug_folder(row, debug_folder)
             else:
-                st.error(f"❌ Error: {result['message']}")
-            
-            # Limpiar selecciones del par
-            self.selection_manager.set_selection(index, 1, False)
-            self.selection_manager.set_selection(index, 2, False)
-            st.rerun()
+                # Modo normal: eliminar archivos
+                self._delete_selected_files(row)
+                
+        except Exception as e:
+            st.error(f"❌ Error procesando eliminación: {str(e)}")
+    
+    def _move_to_debug_folder(self, row: Dict[str, Any], debug_folder: str):
+        """Mueve archivos seleccionados a la carpeta de debug"""
+        import shutil
+        from pathlib import Path
+        
+        # Crear carpeta de debug si no existe
+        debug_path = Path(debug_folder)
+        debug_path.mkdir(parents=True, exist_ok=True)
+        
+        moved_files = []
+        
+        # Verificar qué archivos están seleccionados
+        index = row.get('index', 0)
+        pelicula1_selected = st.session_state.get(f"selected_{index}_1", False)
+        pelicula2_selected = st.session_state.get(f"selected_{index}_2", False)
+        
+        # Debug: mostrar estado de selección
+        st.write(f"🔍 Debug - Index: {index}")
+        st.write(f"🔍 Debug - Película 1 seleccionada: {pelicula1_selected}")
+        st.write(f"🔍 Debug - Película 2 seleccionada: {pelicula2_selected}")
+        
+        if pelicula1_selected:
+            ruta1 = row.get('Ruta 1', '')
+            if ruta1 and os.path.exists(ruta1):
+                archivo_origen = Path(ruta1)
+                archivo_destino = debug_path / archivo_origen.name
+                
+                # Si ya existe, agregar número
+                contador = 1
+                while archivo_destino.exists():
+                    nombre_base = archivo_origen.stem
+                    extension = archivo_origen.suffix
+                    archivo_destino = debug_path / f"{nombre_base}_{contador}{extension}"
+                    contador += 1
+                
+                shutil.move(str(archivo_origen), str(archivo_destino))
+                moved_files.append(archivo_destino.name)
+        
+        if pelicula2_selected:
+            ruta2 = row.get('Ruta 2', '')
+            if ruta2 and os.path.exists(ruta2):
+                archivo_origen = Path(ruta2)
+                archivo_destino = debug_path / archivo_origen.name
+                
+                # Si ya existe, agregar número
+                contador = 1
+                while archivo_destino.exists():
+                    nombre_base = archivo_origen.stem
+                    extension = archivo_origen.suffix
+                    archivo_destino = debug_path / f"{nombre_base}_{contador}{extension}"
+                    contador += 1
+                
+                shutil.move(str(archivo_origen), str(archivo_destino))
+                moved_files.append(archivo_destino.name)
+        
+        if moved_files:
+            st.success(f"✅ Archivos movidos a debug: {', '.join(moved_files)}")
+            st.info(f"📁 Ubicación: {debug_folder}")
+        else:
+            st.warning("⚠️ No se encontraron archivos para mover")
+    
+    def _delete_selected_files(self, row: Dict[str, Any]):
+        """Elimina archivos seleccionados (modo normal)"""
+        deleted_files = []
+        
+        # Verificar qué archivos están seleccionados
+        index = row.get('index', 0)
+        pelicula1_selected = st.session_state.get(f"selected_{index}_1", False)
+        pelicula2_selected = st.session_state.get(f"selected_{index}_2", False)
+        
+        if pelicula1_selected:
+            ruta1 = row.get('Ruta 1', '')
+            if ruta1 and os.path.exists(ruta1):
+                os.remove(ruta1)
+                deleted_files.append(Path(ruta1).name)
+        
+        if pelicula2_selected:
+            ruta2 = row.get('Ruta 2', '')
+            if ruta2 and os.path.exists(ruta2):
+                os.remove(ruta2)
+                deleted_files.append(Path(ruta2).name)
+        
+        if deleted_files:
+            st.success(f"✅ Archivos eliminados: {', '.join(deleted_files)}")
+        else:
+            st.warning("⚠️ No se encontraron archivos para eliminar")
     
     def run(self):
         """Ejecuta la aplicación completa"""

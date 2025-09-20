@@ -43,8 +43,9 @@
         "page_size": 20,
         "show_advanced_options": false,
         "show_video_players": true,
-        "video_player_size": "small",
-        "show_embedded_players": true
+        "video_player_size": "medium",
+        "show_embedded_players": false,
+        "video_start_time_seconds": 900
     },
     "debug": {
         "enabled": true,
