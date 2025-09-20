@@ -228,8 +228,8 @@ class MovieDetector:
         titulo = self.extraer_titulo_pelicula(nombre_archivo)
         año = self.extraer_año(nombre_archivo)
         calidad = self.extraer_calidad(nombre_archivo)
-        # Deshabilitar duración temporalmente para evitar bloqueos
-        duracion = 0.0  # self.obtener_duracion_video(archivo)
+        # Extraer duración del video
+        duracion = self.obtener_duracion_video(archivo)
         
         return {
             'archivo': str(archivo),

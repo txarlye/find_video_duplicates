@@ -171,6 +171,22 @@ class Settings:
     def get_telegram_channel_id(self) -> str:
         """Obtiene el ID del canal de Telegram"""
         return self.get_env("TELEGRAM_CHANNEL_ID") or self.get("telegram.channel_id", "")
+    
+    def get_telegram_max_file_size(self) -> int:
+        """Obtiene el tamaño máximo de archivo para Telegram"""
+        return self.get("telegram.max_file_size", 2000000000)  # 2GB por defecto
+    
+    def get_telegram_upload_delay(self) -> int:
+        """Obtiene el delay entre subidas de Telegram"""
+        return self.get("telegram.upload_delay", 1)
+    
+    def set_telegram_bot_token(self, value: str):
+        """Establece el token del bot de Telegram"""
+        self.set("telegram.bot_token", value)
+    
+    def set_telegram_channel_id(self, value: str):
+        """Establece el ID del canal de Telegram"""
+        self.set("telegram.channel_id", value)
 
     def is_debug_mode(self) -> bool:
         """Verifica si está en modo debug"""
@@ -255,6 +271,43 @@ class Settings:
     def set_last_scan_path(self, value: str):
         """Establece la última ruta de escaneo"""
         self.set("paths.last_scan_path", value)
+    
+    # Métodos de IMDB
+    def get_imdb_api_key(self) -> str:
+        """Obtiene la API key de IMDB"""
+        return os.getenv("IMDB_API_KEY", self.get("imdb.api_key", ""))
+    
+    def get_imdb_base_url(self) -> str:
+        """Obtiene la URL base de IMDB"""
+        return self.get("imdb.base_url", "https://imdb-api.com")
+    
+    def get_imdb_language(self) -> str:
+        """Obtiene el idioma para IMDB"""
+        return self.get("imdb.language", "es")
+    
+    def get_imdb_enabled(self) -> bool:
+        """Obtiene si IMDB está habilitado"""
+        return self.get("imdb.enabled", False)
+    
+    def set_imdb_enabled(self, value: bool):
+        """Establece si IMDB está habilitado"""
+        self.set("imdb.enabled", value)
+    
+    def get_imdb_include_poster(self) -> bool:
+        """Obtiene si incluir póster de IMDB"""
+        return self.get("imdb.include_poster", True)
+    
+    def set_imdb_include_poster(self, value: bool):
+        """Establece si incluir póster de IMDB"""
+        self.set("imdb.include_poster", value)
+    
+    def get_imdb_include_synopsis(self) -> bool:
+        """Obtiene si incluir sinopsis de IMDB"""
+        return self.get("imdb.include_synopsis", True)
+    
+    def set_imdb_include_synopsis(self, value: bool):
+        """Establece si incluir sinopsis de IMDB"""
+        self.set("imdb.include_synopsis", value)
 
 
 # Instancia global del singleton

@@ -1,0 +1,22 @@
+
+🎬 ARCHIVO DE PRUEBA PARA TELEGRAM
+
+Este es un archivo de prueba para verificar que la funcionalidad 
+de subida a Telegram funciona correctamente.
+
+📁 Información del archivo:
+- Tamaño: Muy pequeño (menos de 1 KB)
+- Formato: Texto plano
+- Propósito: Prueba de conectividad
+
+✅ Si este archivo se sube correctamente, significa que:
+1. La conexión con Telegram funciona
+2. El bot tiene permisos correctos
+3. El canal está configurado bien
+
+🔧 Si falla, el problema puede ser:
+1. Configuración del bot
+2. Permisos del canal
+3. Problema de red
+
+¡Prueba exitosa! 🎉

@@ -5,13 +5,13 @@
         "debug": false
     },
     "paths": {
-        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas",
+        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug",
         "last_output_path": "",
         "default_scan_path": ""
     },
     "detection": {
         "similarity_threshold": 0.8,
-        "duration_filter_enabled": false,
+        "duration_filter_enabled": true,
         "duration_tolerance_minutes": 1,
         "supported_extensions": [
             ".mp4",
@@ -29,8 +29,11 @@
     },
     "imdb": {
         "api_key": "",
-        "base_url": "https://imdb-api.com",
-        "language": "es"
+        "base_url": "https://imdbapi.dev",
+        "language": "es",
+        "enabled": true,
+        "include_poster": true,
+        "include_synopsis": true
     },
     "telegram": {
         "bot_token": "",

@@ -20,6 +20,7 @@ from src.utils.movie_detector import MovieDetector
 from src.utils.video import VideoPlayer, VideoFormatter, VideoComparison
 from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionManager
 from src.utils.file_operations import FileBatchProcessor
+from src.utils.telegram_uploader import TelegramUploader
 
 
 class StreamlitAppManager:
@@ -33,6 +34,7 @@ class StreamlitAppManager:
         self.movie_display = MovieInfoDisplay()
         self.selection_manager = SelectionManager()
         self.file_processor = FileBatchProcessor()
+        self.telegram_uploader = TelegramUploader()
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -65,13 +67,16 @@ class StreamlitAppManager:
             st.header("⚙️ Configuración")
             
             # Pestañas en el sidebar
-            tab1, tab2 = st.tabs(["🔍 Detección", "⚙️ Configuración"])
+            tab1, tab2, tab3 = st.tabs(["🔍 Detección", "⚙️ Configuración", "📤 Telegram"])
             
             with tab1:
                 self._render_detection_tab()
             
             with tab2:
                 self._render_configuration_tab()
+            
+            with tab3:
+                self._render_telegram_config_tab()
     
     def _render_detection_tab(self):
         """Renderiza la pestaña de detección"""
@@ -158,6 +163,188 @@ class StreamlitAppManager:
             settings.set_video_player_size(player_size)
             settings.set_video_start_time_seconds(start_time_minutes * 60)
             st.success("✅ Configuración de reproductores guardada")
+    
+    def _render_telegram_config_tab(self):
+        """Renderiza la pestaña de configuración de Telegram"""
+        st.subheader("📤 Configuración de Telegram")
+        
+        # Configuración editable
+        st.subheader("🔧 Configuración de Credenciales")
+        
+        # Bot Token
+        current_bot_token = settings.get_telegram_bot_token()
+        bot_token = st.text_input(
+            "🤖 Bot Token:",
+            value=current_bot_token if current_bot_token != "your_telegram_bot_token_here" else "",
+            type="password",
+            help="Token del bot de Telegram obtenido de @BotFather"
+        )
+        
+        # Channel ID
+        current_channel_id = settings.get_telegram_channel_id()
+        channel_id = st.text_input(
+            "📢 Channel ID:",
+            value=current_channel_id if current_channel_id != "your_telegram_channel_id_here" else "",
+            help="ID del canal o grupo de Telegram (ej: -1001234567890)"
+        )
+        
+        # Botón para guardar credenciales
+        if st.button("💾 Guardar Credenciales", key="save_credentials"):
+            if bot_token and channel_id:
+                settings.set_telegram_bot_token(bot_token)
+                settings.set_telegram_channel_id(channel_id)
+                st.success("✅ Credenciales guardadas correctamente")
+                st.rerun()
+            else:
+                st.error("❌ Por favor, completa ambos campos")
+        
+        # Mostrar estado actual
+        st.markdown("---")
+        st.subheader("📊 Estado Actual")
+        
+        if bot_token and bot_token != "your_telegram_bot_token_here":
+            st.success(f"✅ Bot Token: {bot_token[:10]}...{bot_token[-10:]}")
+        else:
+            st.error("❌ Bot Token no configurado")
+        
+        if channel_id and channel_id != "your_telegram_channel_id_here":
+            st.success(f"✅ Channel ID: {channel_id}")
+        else:
+            st.error("❌ Channel ID no configurado")
+        
+        st.markdown("---")
+        
+        # Configuración de subida
+        st.subheader("⚙️ Configuración de Subida")
+        
+        # Tamaño máximo de archivo
+        max_size_gb = st.slider(
+            "📏 Tamaño máximo de archivo (GB)",
+            min_value=0.1,
+            max_value=2.0,
+            value=settings.get_telegram_max_file_size() / (1024**3),
+            step=0.1,
+            help="Archivos más grandes serán rechazados"
+        )
+        
+        # Delay entre subidas
+        upload_delay = st.slider(
+            "⏱️ Delay entre subidas (segundos)",
+            min_value=1,
+            max_value=10,
+            value=settings.get_telegram_upload_delay(),
+            step=1,
+            help="Tiempo de espera entre subidas para evitar límites de Telegram"
+        )
+        
+        if st.button("💾 Guardar configuración Telegram", key="save_telegram_config"):
+            settings.set_telegram_max_file_size(int(max_size_gb * (1024**3)))
+            settings.set_telegram_upload_delay(upload_delay)
+            st.success("✅ Configuración de Telegram guardada")
+        
+        st.markdown("---")
+        
+        # Configuración de IMDB
+        st.subheader("🎬 Configuración de IMDB")
+        
+        # Habilitar IMDB
+        imdb_enabled = st.checkbox(
+            "🔍 Habilitar información de IMDB",
+            value=settings.get_imdb_enabled(),
+            help="Obtener información automática de películas desde IMDB"
+        )
+        
+        # Mostrar configuración de IMDB solo si está habilitado
+        if imdb_enabled:
+            # Incluir póster
+            include_poster = st.checkbox(
+                "🖼️ Incluir póster de IMDB",
+                value=settings.get_imdb_include_poster(),
+                help="Descargar y enviar el póster de la película"
+            )
+            
+            # Incluir sinopsis
+            include_synopsis = st.checkbox(
+                "📖 Incluir sinopsis de IMDB",
+                value=settings.get_imdb_include_synopsis(),
+                help="Incluir la sinopsis de la película en el mensaje"
+            )
+            
+            # Información sobre IMDB
+            st.info("ℹ️ IMDB utiliza la API gratuita de imdbapi.dev - No requiere configuración adicional")
+        else:
+            include_poster = settings.get_imdb_include_poster()
+            include_synopsis = settings.get_imdb_include_synopsis()
+        
+        if st.button("💾 Guardar configuración IMDB", key="save_imdb_config"):
+            settings.set_imdb_enabled(imdb_enabled)
+            settings.set_imdb_include_poster(include_poster)
+            settings.set_imdb_include_synopsis(include_synopsis)
+            st.success("✅ Configuración de IMDB guardada")
+        
+        st.markdown("---")
+        
+        # Test de conexión
+        st.subheader("🧪 Test de Conexión")
+        
+        if st.button("🔍 Probar Conexión", key="test_telegram_connection"):
+            self._test_telegram_connection()
+    
+    def _test_telegram_connection(self):
+        """Prueba la conexión con Telegram"""
+        st.info("🔍 Probando conexión con Telegram...")
+        
+        try:
+            # Test bot
+            bot_info = self.telegram_uploader.obtener_info_bot()
+            if bot_info and bot_info.get('ok'):
+                bot_data = bot_info.get('result', {})
+                st.success(f"✅ Bot: @{bot_data.get('username', 'N/A')}")
+            else:
+                st.error("❌ Error conectando con el bot")
+                return
+            
+            # Test canal
+            canal_info = self.telegram_uploader.obtener_info_canal()
+            if canal_info and canal_info.get('ok'):
+                canal_data = canal_info.get('result', {})
+                st.success(f"✅ Canal: {canal_data.get('title', 'N/A')}")
+            else:
+                st.error("❌ Error conectando con el canal")
+                return
+            
+            # Test mensaje
+            if st.button("📤 Enviar Mensaje de Prueba", key="test_message"):
+                if self.telegram_uploader.subir_archivo(
+                    "",  # Archivo vacío para test
+                    "🧪 Mensaje de prueba",
+                    "Test de conexión desde la aplicación"
+                ):
+                    st.success("✅ Mensaje de prueba enviado correctamente")
+                else:
+                    st.error("❌ Error enviando mensaje de prueba")
+            
+        except Exception as e:
+            st.error(f"❌ Error en test de conexión: {str(e)}")
+    
+    def _show_progress_bar(self, current: int, total: int, filename: str):
+        """Muestra una barra de progreso personalizada"""
+        progress_percent = (current / total) * 100
+        
+        st.markdown(f"""
+        <div style="margin: 10px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="font-weight: bold;">📁 {filename}</span>
+                <span style="color: #666;">{current}/{total}</span>
+            </div>
+            <div style="background: #E0E0E0; height: 20px; border-radius: 10px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #4CAF50, #45a049); height: 100%; width: {progress_percent}%; transition: width 0.3s ease;"></div>
+            </div>
+            <div style="text-align: center; margin-top: 5px; color: #666;">
+                {progress_percent:.1f}% completado
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown("---")
         
@@ -760,5 +947,465 @@ class StreamlitAppManager:
         """Ejecuta la aplicación completa"""
         self.render_header()
         self.render_sidebar()
-        self.render_scan_section()
-        self.render_results()
+        
+        # Crear pestañas principales
+        tab1, tab2 = st.tabs(["🔍 Detectar Duplicados", "📤 Subir a Telegram"])
+        
+        with tab1:
+            self.render_scan_section()
+            self.render_results()
+        
+        with tab2:
+            self.render_telegram_upload()
+    
+    def render_telegram_upload(self):
+        """Renderiza la sección de subida a Telegram"""
+        st.header("📤 Subir Películas a Telegram")
+        
+        # Verificar configuración de Telegram
+        if not self.telegram_uploader.verificar_configuracion():
+            st.error("❌ Configuración de Telegram incompleta. Revisa el archivo .env")
+            return
+        
+        # Mostrar información del bot y canal
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🤖 Información del Bot")
+            bot_info = self.telegram_uploader.obtener_info_bot()
+            if bot_info and bot_info.get('ok'):
+                bot_data = bot_info.get('result', {})
+                st.success(f"✅ Bot: @{bot_data.get('username', 'N/A')}")
+                st.write(f"📝 Nombre: {bot_data.get('first_name', 'N/A')}")
+            else:
+                st.error("❌ No se pudo conectar con el bot")
+        
+        with col2:
+            st.subheader("📢 Información del Canal")
+            canal_info = self.telegram_uploader.obtener_info_canal()
+            if canal_info and canal_info.get('ok'):
+                canal_data = canal_info.get('result', {})
+                st.success(f"✅ Canal: {canal_data.get('title', 'N/A')}")
+                st.write(f"👥 Tipo: {canal_data.get('type', 'N/A')}")
+            else:
+                st.error("❌ No se pudo conectar con el canal")
+        
+        st.markdown("---")
+        
+        # Sección de selección de carpeta
+        st.subheader("📁 Seleccionar Carpeta")
+        carpeta_telegram = st.text_input(
+            "Ruta de la carpeta a subir:",
+            value=settings.get_last_scan_path(),
+            help="Carpeta que contiene las películas a subir"
+        )
+        
+        if st.button("🔍 Escanear Carpeta para Telegram", key="scan_telegram"):
+            if carpeta_telegram and os.path.exists(carpeta_telegram):
+                self._scan_folder_for_telegram(carpeta_telegram)
+            else:
+                st.error("❌ La carpeta no existe")
+        
+        # Mostrar archivos encontrados
+        if 'telegram_files' in st.session_state and st.session_state.telegram_files:
+            self._render_telegram_files()
+    
+    def _scan_folder_for_telegram(self, carpeta: str):
+        """Escanea una carpeta para subir a Telegram"""
+        st.info("🔍 Escaneando carpeta...")
+        
+        try:
+            detector = MovieDetector()
+            peliculas = detector.escanear_carpeta(carpeta)
+            
+            # Filtrar solo archivos de video
+            archivos_video = []
+            for pelicula in peliculas:
+                archivos_video.append({
+                    'archivo': pelicula['archivo'],
+                    'nombre': pelicula['nombre'],
+                    'titulo': pelicula['titulo'],
+                    'año': pelicula['año'],
+                    'calidad': pelicula['calidad'],
+                    'tamaño': pelicula['tamaño'],
+                    'duracion': pelicula['duracion']
+                })
+            
+            st.session_state.telegram_files = archivos_video
+            st.success(f"✅ Encontrados {len(archivos_video)} archivos de video")
+            
+        except Exception as e:
+            st.error(f"❌ Error escaneando carpeta: {str(e)}")
+    
+    def _render_telegram_files(self):
+        """Renderiza la lista de archivos para subir a Telegram"""
+        st.subheader("🎬 Archivos Encontrados")
+        
+        archivos = st.session_state.telegram_files
+        
+        # Inicializar selección si no existe
+        if 'telegram_selected' not in st.session_state:
+            st.session_state.telegram_selected = [False] * len(archivos)
+        
+        # Mostrar archivos con checkboxes
+        st.write(f"**Total de archivos:** {len(archivos)}")
+        
+        # Crear columnas para mostrar archivos
+        for i, archivo in enumerate(archivos):
+            with st.container():
+                col1, col2, col3, col4 = st.columns([1, 3, 2, 1])
+                
+                with col1:
+                    # Checkbox para seleccionar
+                    selected = st.checkbox(
+                        "Seleccionar", 
+                        key=f"select_{i}",
+                        value=st.session_state.telegram_selected[i] if i < len(st.session_state.telegram_selected) else False
+                    )
+                    if i < len(st.session_state.telegram_selected):
+                        st.session_state.telegram_selected[i] = selected
+                
+                with col2:
+                    # Información del archivo
+                    st.write(f"**{archivo['nombre']}**")
+                    st.write(f"Título: {archivo['titulo']}")
+                    if archivo['año'] > 0:
+                        st.write(f"Año: {archivo['año']}")
+                    st.write(f"Calidad: {archivo['calidad']}")
+                
+                with col3:
+                    # Detalles técnicos
+                    tamaño_mb = archivo['tamaño'] / (1024*1024)
+                    st.write(f"Tamaño: {tamaño_mb:.1f} MB")
+                    if archivo['duracion'] > 0:
+                        duracion_min = archivo['duracion'] / 60
+                        st.write(f"Duración: {duracion_min:.1f} min")
+                    else:
+                        st.write("Duración: N/A")
+                
+                with col4:
+                    # Botón de subida individual
+                    if st.button(f"📤 Subir", key=f"upload_{i}"):
+                        self._upload_single_file(archivo, i)
+                
+                st.markdown("---")
+        
+        # Botones de acción masiva
+        st.subheader("📤 Acciones Masivas")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            if st.button("📤 Subir Seleccionados", key="upload_selected"):
+                self._upload_selected_files()
+        
+        with col2:
+            if st.button("📤 Subir Todos", key="upload_all"):
+                self._upload_all_files()
+        
+        with col3:
+            if st.button("✅ Seleccionar Todos", key="select_all"):
+                st.session_state.telegram_selected = [True] * len(archivos)
+                st.rerun()
+        
+        with col4:
+            if st.button("🗑️ Limpiar Lista", key="clear_telegram"):
+                st.session_state.telegram_files = []
+                st.session_state.telegram_selected = []
+                st.rerun()
+    
+    def _upload_single_file(self, archivo: Dict, index: int):
+        """Sube un archivo individual con barra de progreso"""
+        # Crear contenedor para el progreso
+        progress_container = st.container()
+        
+        with progress_container:
+            st.info(f"📤 Subiendo: {archivo['nombre']}")
+            
+            # Barra de progreso
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # Simular progreso de subida
+            status_text.text("🔄 Preparando archivo...")
+            progress_bar.progress(10)
+            time.sleep(0.5)
+            
+            status_text.text("📤 Enviando a Telegram...")
+            progress_bar.progress(30)
+            time.sleep(0.5)
+            
+            try:
+                # Subir archivo
+                status_text.text("📤 Subiendo archivo...")
+                progress_bar.progress(60)
+                
+                if self.telegram_uploader.subir_archivo(
+                    archivo['archivo'], 
+                    archivo['titulo'],
+                    f"Año: {archivo['año']}, Calidad: {archivo['calidad']}",
+                    usar_imdb=True
+                ):
+                    status_text.text("✅ Procesando respuesta...")
+                    progress_bar.progress(90)
+                    time.sleep(0.5)
+                    
+                    progress_bar.progress(100)
+                    status_text.text("✅ Subido correctamente")
+                    st.success(f"✅ {archivo['nombre']} subido correctamente")
+                else:
+                    progress_bar.progress(100)
+                    status_text.text("❌ Error en la subida")
+                    st.error(f"❌ Error subiendo {archivo['nombre']}")
+            except Exception as e:
+                progress_bar.progress(100)
+                status_text.text("❌ Error")
+                st.error(f"❌ Error: {str(e)}")
+            
+            # Limpiar después de 3 segundos
+            time.sleep(3)
+            progress_container.empty()
+    
+    def _upload_selected_files(self):
+        """Sube los archivos seleccionados con barra de progreso detallada"""
+        if 'telegram_selected' not in st.session_state:
+            st.error("❌ No hay archivos seleccionados")
+            return
+        
+        archivos = st.session_state.telegram_files
+        seleccionados = st.session_state.telegram_selected
+        
+        # Filtrar archivos seleccionados
+        archivos_seleccionados = [archivo for i, archivo in enumerate(archivos) 
+                                if i < len(seleccionados) and seleccionados[i]]
+        
+        if not archivos_seleccionados:
+            st.error("❌ No hay archivos seleccionados")
+            return
+        
+        # Crear contenedor para el progreso
+        progress_container = st.container()
+        
+        with progress_container:
+            st.info(f"📤 Subiendo {len(archivos_seleccionados)} archivos seleccionados...")
+            
+            # Barra de progreso global con estilo personalizado
+            st.markdown("""
+            <style>
+            .progress-container {
+                background: linear-gradient(90deg, #4CAF50 0%, #4CAF50 0%, #E0E0E0 0%);
+                height: 20px;
+                border-radius: 10px;
+                margin: 10px 0;
+                transition: all 0.3s ease;
+            }
+            .progress-text {
+                text-align: center;
+                font-weight: bold;
+                color: #333;
+                margin-top: 5px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            global_progress = st.progress(0)
+            global_status = st.empty()
+            
+            # Contador de archivos
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                success_counter = st.empty()
+            with col2:
+                error_counter = st.empty()
+            with col3:
+                current_file = st.empty()
+            
+            resultados = {
+                'exitosos': 0,
+                'fallidos': 0,
+                'errores': []
+            }
+            
+            for i, archivo in enumerate(archivos_seleccionados):
+                # Actualizar información del archivo actual
+                current_file.text(f"📁 {archivo['nombre']}")
+                global_status.text(f"Procesando archivo {i+1} de {len(archivos_seleccionados)}")
+                
+                # Barra de progreso individual
+                individual_progress = st.progress(0)
+                individual_status = st.empty()
+                
+                try:
+                    # Simular progreso de subida
+                    individual_status.text("🔄 Preparando...")
+                    individual_progress.progress(20)
+                    time.sleep(0.3)
+                    
+                    individual_status.text("📤 Subiendo...")
+                    individual_progress.progress(50)
+                    
+                    if self.telegram_uploader.subir_archivo(
+                        archivo['archivo'], 
+                        archivo['titulo'],
+                        f"Año: {archivo['año']}, Calidad: {archivo['calidad']}",
+                        usar_imdb=True
+                    ):
+                        individual_status.text("✅ Completado")
+                        individual_progress.progress(100)
+                        resultados['exitosos'] += 1
+                        success_counter.text(f"✅ Exitosos: {resultados['exitosos']}")
+                    else:
+                        individual_status.text("❌ Error")
+                        individual_progress.progress(100)
+                        resultados['fallidos'] += 1
+                        resultados['errores'].append(archivo['nombre'])
+                        error_counter.text(f"❌ Fallidos: {resultados['fallidos']}")
+                except Exception as e:
+                    individual_status.text("❌ Error")
+                    individual_progress.progress(100)
+                    resultados['fallidos'] += 1
+                    resultados['errores'].append(f"{archivo['nombre']}: {str(e)}")
+                    error_counter.text(f"❌ Fallidos: {resultados['fallidos']}")
+                
+                # Actualizar progreso global
+                global_progress.progress((i + 1) / len(archivos_seleccionados))
+                
+                # Delay entre subidas
+                time.sleep(settings.get_telegram_upload_delay())
+            
+            # Mostrar resultados finales
+            global_status.text("✅ Subida completada")
+            
+            # Resultados detallados
+            st.markdown("---")
+            st.subheader("📊 Resultados de la Subida")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.success(f"✅ Exitosos: {resultados['exitosos']}")
+            
+            with col2:
+                if resultados['fallidos'] > 0:
+                    st.error(f"❌ Fallidos: {resultados['fallidos']}")
+                else:
+                    st.success("🎉 Todos los archivos subidos correctamente")
+            
+            if resultados['errores']:
+                st.subheader("❌ Errores Detallados")
+                for error in resultados['errores']:
+                    st.write(f"• {error}")
+            
+            # Limpiar contenedor después de 5 segundos
+            time.sleep(5)
+            progress_container.empty()
+    
+    def _upload_all_files(self):
+        """Sube todos los archivos con barra de progreso detallada"""
+        if 'telegram_files' not in st.session_state or not st.session_state.telegram_files:
+            st.error("❌ No hay archivos para subir")
+            return
+        
+        archivos = st.session_state.telegram_files
+        
+        # Crear contenedor para el progreso
+        progress_container = st.container()
+        
+        with progress_container:
+            st.info(f"📤 Subiendo {len(archivos)} archivos...")
+            
+            # Barra de progreso global
+            global_progress = st.progress(0)
+            global_status = st.empty()
+            
+            # Contador de archivos
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                success_counter = st.empty()
+            with col2:
+                error_counter = st.empty()
+            with col3:
+                current_file = st.empty()
+            
+            resultados = {
+                'exitosos': 0,
+                'fallidos': 0,
+                'errores': []
+            }
+            
+            for i, archivo in enumerate(archivos):
+                # Actualizar información del archivo actual
+                current_file.text(f"📁 {archivo['nombre']}")
+                global_status.text(f"Procesando archivo {i+1} de {len(archivos)}")
+                
+                # Barra de progreso individual
+                individual_progress = st.progress(0)
+                individual_status = st.empty()
+                
+                try:
+                    # Simular progreso de subida
+                    individual_status.text("🔄 Preparando...")
+                    individual_progress.progress(20)
+                    time.sleep(0.3)
+                    
+                    individual_status.text("📤 Subiendo...")
+                    individual_progress.progress(50)
+                    
+                    if self.telegram_uploader.subir_archivo(
+                        archivo['archivo'], 
+                        archivo['titulo'],
+                        f"Año: {archivo['año']}, Calidad: {archivo['calidad']}",
+                        usar_imdb=True
+                    ):
+                        individual_status.text("✅ Completado")
+                        individual_progress.progress(100)
+                        resultados['exitosos'] += 1
+                        success_counter.text(f"✅ Exitosos: {resultados['exitosos']}")
+                        st.success(f"✅ {archivo['nombre']} subido correctamente")
+                    else:
+                        individual_status.text("❌ Error")
+                        individual_progress.progress(100)
+                        resultados['fallidos'] += 1
+                        resultados['errores'].append(archivo['nombre'])
+                        error_counter.text(f"❌ Fallidos: {resultados['fallidos']}")
+                        st.error(f"❌ Error subiendo {archivo['nombre']}")
+                except Exception as e:
+                    individual_status.text("❌ Error")
+                    individual_progress.progress(100)
+                    resultados['fallidos'] += 1
+                    resultados['errores'].append(f"{archivo['nombre']}: {str(e)}")
+                    error_counter.text(f"❌ Fallidos: {resultados['fallidos']}")
+                    st.error(f"❌ Error: {str(e)}")
+                
+                # Actualizar progreso global
+                global_progress.progress((i + 1) / len(archivos))
+                
+                # Delay entre subidas
+                time.sleep(settings.get_telegram_upload_delay())
+            
+            # Mostrar resultados finales
+            global_status.text("✅ Subida completada")
+            
+            # Resultados detallados
+            st.markdown("---")
+            st.subheader("📊 Resultados de la Subida")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.success(f"✅ Exitosos: {resultados['exitosos']}")
+            
+            with col2:
+                if resultados['fallidos'] > 0:
+                    st.error(f"❌ Fallidos: {resultados['fallidos']}")
+                else:
+                    st.success("🎉 Todos los archivos subidos correctamente")
+            
+            if resultados['errores']:
+                st.subheader("❌ Errores Detallados")
+                for error in resultados['errores']:
+                    st.write(f"• {error}")
+            
+            # Limpiar contenedor después de 5 segundos
+            time.sleep(5)
+            progress_container.empty()
