@@ -5,13 +5,13 @@
         "debug": false
     },
     "paths": {
-        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas",
+        "last_scan_path": "",
         "last_output_path": "",
         "default_scan_path": ""
     },
     "detection": {
         "similarity_threshold": 0.8,
-        "duration_filter_enabled": false,
+        "duration_filter_enabled": true,
         "duration_tolerance_minutes": 1,
         "supported_extensions": [
             ".mp4",
@@ -29,8 +29,11 @@
     },
     "imdb": {
         "api_key": "",
-        "base_url": "https://imdb-api.com",
-        "language": "es"
+        "base_url": "https://imdbapi.dev",
+        "language": "es",
+        "enabled": true,
+        "include_poster": true,
+        "include_synopsis": true
     },
     "telegram": {
         "bot_token": "",
@@ -38,17 +41,33 @@
         "max_file_size": 2000000000,
         "upload_delay": 1
     },
+    "plex": {
+        "enabled": true,
+        "use_plex_detection": false,
+        "use_plex_metadata": true,
+        "auto_connect": true,
+        "prefer_plex_titles": true,
+        "prefer_plex_years": true,
+        "prefer_plex_duration": true,
+        "server_url": "http://DiskStation:32400",
+        "server_name": "Plex Media Server",
+        "database_path": "\\\\DiskStation\\docker\\plex2\\db\\Library\\Application Support\\Plex Media Server\\Plug-in Support\\Databases\\com.plexapp.plugins.library.db",
+        "token": "",
+        "timeout": 30
+    },
     "ui": {
         "theme": "light",
         "page_size": 20,
         "show_advanced_options": false,
         "show_video_players": true,
-        "video_player_size": "medium",
-        "show_embedded_players": false,
-        "video_start_time_seconds": 900
+        "video_player_size": "small",
+        "show_embedded_players": true,
+        "video_start_time_seconds": 900,
+        "show_frame_preview": true,
+        "frame_preview_time_seconds": 900
     },
     "debug": {
         "enabled": true,
-        "debug_folder": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug"
+        "debug_folder": "./debug"
     }
 }

@@ -1,59 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Script simple para ejecutar la aplicación
+Aplicación Streamlit principal - Detector de Películas Duplicadas
 """
 
-import subprocess
+import streamlit as st
 import sys
-import webbrowser
-import time
-import os
-import threading
+from pathlib import Path
 
-def main():
-    """Ejecuta la aplicación Streamlit"""
-    print("🎬 Iniciando Detector de Películas Duplicadas...")
-    print("🌐 Abriendo navegador automáticamente...")
-    print("=" * 50)
-    
-    # Verificar si ya hay una instancia ejecutándose
-    try:
-        import requests
-        response = requests.get("http://localhost:8501", timeout=2)
-        if response.status_code == 200:
-            print("⚠️ Streamlit ya está ejecutándose en el puerto 8501")
-            print("🌐 Abriendo navegador...")
-            webbrowser.open("http://localhost:8501")
-            return
-    except:
-        pass  # No hay instancia ejecutándose, continuar normalmente
-    
-    # Abrir navegador después de un delay (solo una vez)
-    def open_browser():
-        time.sleep(10)  # Más tiempo para que Streamlit esté completamente listo
-        try:
-            webbrowser.open("http://localhost:8501")
-            print("🌐 Navegador abierto en http://localhost:8501")
-        except Exception as e:
-            print(f"⚠️ Error abriendo navegador: {e}")
-    
-    browser_thread = threading.Thread(target=open_browser, daemon=True)
-    browser_thread.start()
-    
-    try:
-        # Ejecutar Streamlit directamente
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", 
-            "app_simple.py",
-            "--server.port", "8501",
-            "--server.headless", "false",
-            "--browser.gatherUsageStats", "false"
-        ])
-    except KeyboardInterrupt:
-        print("\n👋 Aplicación cerrada por el usuario")
-    except Exception as e:
-        print(f"❌ Error: {e}")
+# Configurar el path
+current_dir = Path(__file__).parent.absolute()
+sys.path.insert(0, str(current_dir))
 
-if __name__ == "__main__":
-    main()
+# Importar el gestor principal
+try:
+    from src.app.UI.Streamlit.streamlit_manager import run_streamlit_app
+except ImportError as e:
+    st.error(f"❌ Error de importación: {e}")
+    st.error("💡 Asegúrate de ejecutar la aplicación desde el directorio raíz del proyecto")
+    st.stop()
+
+# Configurar página
+st.set_page_config(
+    page_title="🎬 Utilidades Plex",
+    page_icon="🎬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Ejecutar la aplicación
+run_streamlit_app()

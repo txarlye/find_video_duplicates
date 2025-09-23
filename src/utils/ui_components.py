@@ -139,7 +139,7 @@ class MovieInfoDisplay:
             ruta2 = Path(row['Ruta 2']).parent
             
             if ruta1 == ruta2:
-                st.write("🟢 Misma carpeta")
+                st.write("🟢 Carpeta duplicada")
             else:
                 st.write("🔴 Carpetas diferentes")
                 st.write(f"📁 1: {ruta1}")

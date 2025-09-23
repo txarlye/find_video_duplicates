@@ -33,8 +33,28 @@ class Settings:
         """Carga la configuración desde archivos"""
         # Cargar variables de entorno
         env_path = Path(__file__).parent / ".env"
+        print(f"DEBUG: Buscando archivo .env en: {env_path}")
+        print(f"DEBUG: Archivo existe: {env_path.exists()}")
+        
         if env_path.exists():
-            load_dotenv(env_path)
+            # Intentar cargar con diferentes opciones
+            try:
+                load_dotenv(env_path, override=True)
+            except Exception as e:
+                print(f"DEBUG: Error cargando .env: {e}")
+        else:
+            # Intentar cargar desde la raíz del proyecto
+            root_env = Path(__file__).parent.parent.parent / ".env"
+            if root_env.exists():
+                load_dotenv(root_env, override=True)
+        
+        # Cargar configuración de PLEX desde archivo alternativo
+        plex_config_path = Path(__file__).parent / "plex_config.txt"
+        if plex_config_path.exists():
+            try:
+                load_dotenv(plex_config_path, override=True)
+            except Exception as e:
+                print(f"DEBUG: Error cargando plex_config.txt: {e}")
         
         # Cargar configuración JSON
         config_path = Path(__file__).parent / "config.json"
@@ -171,6 +191,22 @@ class Settings:
     def get_telegram_channel_id(self) -> str:
         """Obtiene el ID del canal de Telegram"""
         return self.get_env("TELEGRAM_CHANNEL_ID") or self.get("telegram.channel_id", "")
+    
+    def get_telegram_max_file_size(self) -> int:
+        """Obtiene el tamaño máximo de archivo para Telegram"""
+        return self.get("telegram.max_file_size", 2000000000)  # 2GB por defecto
+    
+    def get_telegram_upload_delay(self) -> int:
+        """Obtiene el delay entre subidas de Telegram"""
+        return self.get("telegram.upload_delay", 1)
+    
+    def set_telegram_bot_token(self, value: str):
+        """Establece el token del bot de Telegram"""
+        self.set("telegram.bot_token", value)
+    
+    def set_telegram_channel_id(self, value: str):
+        """Establece el ID del canal de Telegram"""
+        self.set("telegram.channel_id", value)
 
     def is_debug_mode(self) -> bool:
         """Verifica si está en modo debug"""
@@ -255,6 +291,152 @@ class Settings:
     def set_last_scan_path(self, value: str):
         """Establece la última ruta de escaneo"""
         self.set("paths.last_scan_path", value)
+    
+    # Métodos de IMDB
+    def get_imdb_api_key(self) -> str:
+        """Obtiene la API key de IMDB"""
+        return os.getenv("IMDB_API_KEY", self.get("imdb.api_key", ""))
+    
+    def get_imdb_base_url(self) -> str:
+        """Obtiene la URL base de IMDB"""
+        return self.get("imdb.base_url", "https://imdb-api.com")
+    
+    def get_imdb_language(self) -> str:
+        """Obtiene el idioma para IMDB"""
+        return self.get("imdb.language", "es")
+    
+    def get_imdb_enabled(self) -> bool:
+        """Obtiene si IMDB está habilitado"""
+        return self.get("imdb.enabled", False)
+    
+    def set_imdb_enabled(self, value: bool):
+        """Establece si IMDB está habilitado"""
+        self.set("imdb.enabled", value)
+    
+    def get_imdb_include_poster(self) -> bool:
+        """Obtiene si incluir póster de IMDB"""
+        return self.get("imdb.include_poster", True)
+    
+    def set_imdb_include_poster(self, value: bool):
+        """Establece si incluir póster de IMDB"""
+        self.set("imdb.include_poster", value)
+    
+    def get_imdb_include_synopsis(self) -> bool:
+        """Obtiene si incluir sinopsis de IMDB"""
+        return self.get("imdb.include_synopsis", True)
+    
+    def set_imdb_include_synopsis(self, value: bool):
+        """Establece si incluir sinopsis de IMDB"""
+        self.set("imdb.include_synopsis", value)
+    
+    # Métodos de PLEX
+    def get_plex_enabled(self) -> bool:
+        """Obtiene si PLEX está habilitado"""
+        return self.get("plex.enabled", False)
+    
+    def set_plex_enabled(self, value: bool):
+        """Establece si PLEX está habilitado"""
+        self.set("plex.enabled", value)
+    
+    def get_plex_use_detection(self) -> bool:
+        """Obtiene si usar detección de PLEX"""
+        return self.get("plex.use_plex_detection", False)
+    
+    def set_plex_use_detection(self, value: bool):
+        """Establece si usar detección de PLEX"""
+        self.set("plex.use_plex_detection", value)
+    
+    def get_plex_use_metadata(self) -> bool:
+        """Obtiene si usar metadatos de PLEX"""
+        return self.get("plex.use_plex_metadata", True)
+    
+    def set_plex_use_metadata(self, value: bool):
+        """Establece si usar metadatos de PLEX"""
+        self.set("plex.use_plex_metadata", value)
+    
+    def get_plex_auto_connect(self) -> bool:
+        """Obtiene si conectar automáticamente a PLEX"""
+        return self.get("plex.auto_connect", True)
+    
+    def set_plex_auto_connect(self, value: bool):
+        """Establece si conectar automáticamente a PLEX"""
+        self.set("plex.auto_connect", value)
+    
+    def get_plex_prefer_titles(self) -> bool:
+        """Obtiene si preferir títulos de PLEX"""
+        return self.get("plex.prefer_plex_titles", True)
+    
+    def set_plex_prefer_titles(self, value: bool):
+        """Establece si preferir títulos de PLEX"""
+        self.set("plex.prefer_plex_titles", value)
+    
+    def get_plex_prefer_years(self) -> bool:
+        """Obtiene si preferir años de PLEX"""
+        return self.get("plex.prefer_plex_years", True)
+    
+    def set_plex_prefer_years(self, value: bool):
+        """Establece si preferir años de PLEX"""
+        self.set("plex.prefer_plex_years", value)
+    
+    def get_plex_prefer_duration(self) -> bool:
+        """Obtiene si preferir duración de PLEX"""
+        return self.get("plex.prefer_plex_duration", True)
+    
+    def set_plex_prefer_duration(self, value: bool):
+        """Establece si preferir duración de PLEX"""
+        self.set("plex.prefer_plex_duration", value)
+    
+    def get_plex_user(self) -> str:
+        """Obtiene el usuario de PLEX"""
+        return os.getenv("PLEX_USER", "")
+    
+    def get_plex_pass(self) -> str:
+        """Obtiene la contraseña de PLEX"""
+        return os.getenv("PLEX_PASS", "")
+    
+    def get_plex_token(self) -> str:
+        """Obtiene el token de PLEX"""
+        return os.getenv("PLEX_TOKEN", "")
+    
+    def get_plex_server_ip(self) -> str:
+        """Obtiene la IP del servidor PLEX"""
+        return os.getenv("IP_NAS", "localhost")
+    
+    def get_plex_database_path(self) -> str:
+        """Obtiene la ruta de la base de datos de PLEX"""
+        return self.get("plex.database_path", "")
+    
+    def get_plex_server_url(self) -> str:
+        """Obtiene la URL del servidor PLEX"""
+        return self.get("plex.server_url", "http://localhost:32400")
+    
+    def set_plex_server_url(self, value: str):
+        """Establece la URL del servidor PLEX"""
+        self.set("plex.server_url", value)
+    
+    def get_plex_server_name(self) -> str:
+        """Obtiene el nombre del servidor PLEX"""
+        return self.get("plex.server_name", "Plex Media Server")
+    
+    def set_plex_server_name(self, value: str):
+        """Establece el nombre del servidor PLEX"""
+        self.set("plex.server_name", value)
+    
+    def get_plex_timeout(self) -> int:
+        """Obtiene el timeout de conexión a PLEX"""
+        return self.get("plex.timeout", 30)
+    
+    def set_plex_timeout(self, value: int):
+        """Establece el timeout de conexión a PLEX"""
+        self.set("plex.timeout", value)
+    
+    def get_plex_config_token(self) -> str:
+        """Obtiene el token de PLEX desde configuración"""
+        return self.get("plex.token", "")
+    
+    def set_plex_config_token(self, value: str):
+        """Establece el token de PLEX en configuración"""
+        self.set("plex.token", value)
 
 
 # Instancia global del singleton

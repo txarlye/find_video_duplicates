@@ -1,0 +1,131 @@
+# ========================================
+# GITIGNORE PARA DETECTOR DE PELÍCULAS DUPLICADAS
+# ========================================
+
+# Archivos de test y debug
+test_files/
+test/
+test_*.py
+debug_*.py
+*_test.py
+*_debug.py
+
+# Logs y archivos temporales
+*.log
+*.tmp
+*.temp
+app.log
+debug.log
+
+# Archivos de configuración sensibles
+.env
+.env.local
+.env.production
+config_local.json
+settings_local.json
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archivos de configuración de Plex (contienen rutas y tokens)
+plex_config.txt
+plex_config_local.txt
+*.plex_config
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de video (opcional - descomenta si no quieres subir videos)
+# *.mp4
+# *.avi
+# *.mkv
+# *.mov
+# *.wmv
+# *.flv
+# *.m4v
+# *.mpg
+# *.mpeg
+# *.3gp
+# *.webm
+
+# Archivos de backup
+*.bak
+*.backup
+*_backup.*
+
+# Archivos de configuración específicos del usuario
+user_config.json
+local_settings.json
+
+# Archivos de Telegram (pueden contener tokens)
+telegram_config.txt
+telegram_tokens.txt
+
+# Archivos de IMDB (pueden contener API keys)
+imdb_config.txt
+imdb_keys.txt
+
+# Archivos de debug específicos
+debug_output/
+test_output/
+scan_results/
+
+# Archivos de configuración de Streamlit
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Archivos de Docker (si se usan)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Archivos de documentación temporal
+TODO.md
+NOTES.md
+CHANGELOG_temp.md

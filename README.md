@@ -9,6 +9,8 @@ Una aplicación inteligente desarrollada en Python con Streamlit para detectar p
 - **Análisis de similitud** de nombres de películas usando algoritmos avanzados
 - **Filtro por duración** para descartar falsos positivos (configurable)
 - **Soporte múltiples formatos**: MP4, AVI, MKV, MOV, WMV, FLV, M4V, MPG, MPEG, 3GP, WebM
+- **Integración con PLEX** para detección avanzada y metadatos
+- **Duración inteligente** que prioriza datos de PLEX cuando está disponible
 
 ### 🎯 **Filtros Avanzados**
 - **Umbral de similitud** configurable (0.1 - 1.0)
@@ -28,6 +30,13 @@ Una aplicación inteligente desarrollada en Python con Streamlit para detectar p
 - **Variables de entorno** para datos sensibles
 - **Patrón Singleton** para acceso global a configuración
 - **Interfaz de configuración** integrada en la aplicación
+
+### 🎬 **Integración con PLEX**
+- **Escáner de PLEX** para detectar películas no reconocidas
+- **Sugerencias automáticas** de renombrado para mejor reconocimiento
+- **Renombrado masivo** con patrones personalizables
+- **Duración inteligente** que combina datos de PLEX y análisis de archivos
+- **Metadatos enriquecidos** desde la base de datos de PLEX
 
 ## 🚀 Instalación Rápida
 
@@ -69,16 +78,30 @@ scrapper-pelis/
 │
 ├── src/                            # Código fuente
 │   ├── app/                        # Aplicación Streamlit
-│   │   └── streamlit_app.py
+│   │   └── UI/Streamlit/
+│   │       ├── streamlit_manager.py    # Gestor principal
+│   │       └── components/             # Componentes modulares
+│   │           ├── sidebar.py         # Gestor del sidebar
+│   │           ├── scanner.py         # Gestor de escaneo
+│   │           ├── results.py         # Gestor de resultados
+│   │           └── config.py          # Gestor de configuración
 │   ├── services/                   # Servicios externos
 │   │   ├── imdb_service.py         # Integración IMDB
-│   │   └── telegram_service.py     # Integración Telegram
+│   │   ├── telegram_service.py     # Integración Telegram
+│   │   └── plex/                   # Integración PLEX
+│   │       ├── plex_service.py     # Servicio principal PLEX
+│   │       ├── plex_database_direct.py  # Acceso directo a BBDD
+│   │       └── plex_smart_renamer.py    # Renombrado inteligente
 │   ├── settings/                   # Configuración
 │   │   ├── settings.py            # Patrón Singleton
 │   │   ├── config.json            # Configuración JSON
 │   │   └── env_template.txt       # Plantilla .env
 │   └── utils/                      # Utilidades
-│       └── movie_detector.py       # Lógica de detección
+│       ├── movie_detector.py       # Lógica de detección
+│       └── video/                  # Utilidades de video
+│           ├── video.py           # Clases de video
+│           ├── duration.py        # Gestión de duración
+│           └── plex_scanner.py    # Escáner de PLEX
 │
 └── peliculas_duplicadas.py         # Script original (legacy)
 ```
@@ -114,7 +137,40 @@ OPEN_AI_API=tu_api_key_aqui
 IMDB_API_KEY=tu_imdb_key_aqui
 TELEGRAM_BOT_TOKEN=tu_bot_token_aqui
 TELEGRAM_CHANNEL_ID=tu_channel_id_aqui
+
+# PLEX (opcional)
+PLEX_USER=tu_usuario_plex
+PLEX_PASS=tu_contraseña_plex
+PLEX_TOKEN=tu_token_plex
+IP_NAS=ip_de_tu_servidor_plex
 ```
+
+### **Configuración de PLEX**
+
+La aplicación se integra con PLEX Media Server para mejorar la detección de duplicados y proporcionar metadatos enriquecidos.
+
+#### **Configuración en `config.json`:**
+
+```json
+{
+    "plex": {
+        "enabled": true,
+        "server_url": "http://localhost:32400",
+        "server_name": "Plex Media Server",
+        "database_path": "ruta/a/tu/base/de/datos/plex.db",
+        "token": "tu_token_plex",
+        "timeout": 30,
+        "prefer_plex_duration": true,
+        "prefer_plex_titles": false,
+        "prefer_plex_years": false
+    }
+}
+```
+
+#### **Obtener Token de PLEX:**
+1. Ve a tu servidor PLEX en el navegador
+2. Ve a **Configuración** → **Red** → **Token de autenticación**
+3. Copia el token y añádelo a tu configuración
 
 ## 🎮 Uso de la Aplicación
 
@@ -136,6 +192,28 @@ TELEGRAM_CHANNEL_ID=tu_channel_id_aqui
 - **Seleccionar películas** con checkboxes (mutuamente excluyentes)
 - **Mover archivos seleccionados** a una carpeta específica
 - **Eliminar seleccionadas** (modo debug: mueve a carpeta debug)
+
+### **4. Escáner de PLEX**
+1. **Ve a la pestaña "🔍 PLEX Scanner"** en el sidebar
+2. **Configura el directorio** a escanear
+3. **Selecciona opciones**:
+   - Incluir subdirectorios
+   - Mostrar películas encontradas
+   - Generar sugerencias de renombrado
+4. **Haz clic en "🔍 Escanear Directorio"**
+5. **Revisa los resultados**:
+   - Películas no reconocidas por PLEX
+   - Sugerencias automáticas de renombrado
+   - Aplicar renombrado individual o masivo
+
+### **5. Renombrado Inteligente**
+- **Renombrado individual**: Selecciona una sugerencia y aplica
+- **Renombrado masivo**: Selecciona múltiples archivos y aplica un patrón
+- **Patrones disponibles**:
+  - Título + Año
+  - Título limpio
+  - Título con puntos
+  - Personalizado (con variables {titulo} y {año})
 
 ## 🔧 Configuración Avanzada
 
@@ -203,6 +281,63 @@ python -m pytest tests/
 - **API Keys** en archivo `.env` (no en git)
 - **Rutas de red** configuradas por usuario
 - **Tokens de Telegram** protegidos
+
+## 🎬 Funcionalidades de PLEX
+
+### **Escáner de PLEX**
+
+El escáner de PLEX es una herramienta poderosa que te ayuda a identificar películas que no están siendo reconocidas por tu servidor PLEX Media Server.
+
+#### **¿Por qué usar el Escáner de PLEX?**
+
+- **Identifica películas no reconocidas**: Encuentra archivos que PLEX no ha podido identificar
+- **Sugerencias automáticas**: Genera nombres sugeridos para mejorar el reconocimiento
+- **Renombrado masivo**: Aplica patrones de renombrado a múltiples archivos
+- **Mejora la organización**: Optimiza tu biblioteca de PLEX
+
+#### **Características del Escáner:**
+
+1. **Detección Inteligente**:
+   - Escanea directorios recursivamente
+   - Consulta la base de datos de PLEX
+   - Identifica películas no reconocidas
+
+2. **Sugerencias Automáticas**:
+   - Extrae títulos limpios de nombres de archivo
+   - Genera múltiples opciones de renombrado
+   - Considera años y versiones
+
+3. **Renombrado Flexible**:
+   - Renombrado individual con sugerencias
+   - Renombrado masivo con patrones
+   - Validación de nombres de archivo
+
+#### **Patrones de Renombrado:**
+
+| Patrón | Descripción | Ejemplo |
+|--------|-------------|---------|
+| **Título + Año** | `Título (Año).ext` | `El Padrino (1972).mp4` |
+| **Título limpio** | `Título.ext` | `El Padrino.mp4` |
+| **Título con puntos** | `Título.Con.Puntos.ext` | `El.Padrino.mp4` |
+| **Personalizado** | Usa variables `{titulo}` y `{año}` | `{titulo} ({año}).ext` |
+
+### **Duración Inteligente**
+
+La funcionalidad de duración inteligente combina datos de PLEX con análisis directo de archivos para obtener la duración más precisa posible.
+
+#### **Flujo de Duración Inteligente:**
+
+1. **Verificar configuración**: ¿Está habilitado "Preferir duración de PLEX"?
+2. **Consultar PLEX**: Buscar duración en la base de datos de PLEX
+3. **Fallback a archivo**: Si no se encuentra en PLEX, analizar el archivo directamente
+4. **Formatear resultado**: Convertir a formato legible (1h 30m 45s)
+
+#### **Ventajas:**
+
+- **Precisión mejorada**: Datos de PLEX son más precisos que análisis de archivo
+- **Rendimiento**: Consulta rápida a base de datos vs análisis lento de archivo
+- **Consistencia**: Misma duración para archivos de la misma película
+- **Fallback robusto**: Siempre obtiene duración, aunque sea del archivo
 
 ## 🐛 Solución de Problemas
 
