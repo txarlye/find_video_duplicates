@@ -51,6 +51,9 @@ pydantic>=2.0.0
 # Para extracción de metadatos de video
 mutagen>=1.47.0
 
+# Para integración con PLEX Media Server
+python-plexapi>=4.15.0
+
 # ========================================
 # DEPENDENCIAS DE DESARROLLO (OPCIONALES)
 # ========================================

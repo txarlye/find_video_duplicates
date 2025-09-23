@@ -33,8 +33,28 @@ class Settings:
         """Carga la configuración desde archivos"""
         # Cargar variables de entorno
         env_path = Path(__file__).parent / ".env"
+        print(f"DEBUG: Buscando archivo .env en: {env_path}")
+        print(f"DEBUG: Archivo existe: {env_path.exists()}")
+        
         if env_path.exists():
-            load_dotenv(env_path)
+            # Intentar cargar con diferentes opciones
+            try:
+                load_dotenv(env_path, override=True)
+            except Exception as e:
+                print(f"DEBUG: Error cargando .env: {e}")
+        else:
+            # Intentar cargar desde la raíz del proyecto
+            root_env = Path(__file__).parent.parent.parent / ".env"
+            if root_env.exists():
+                load_dotenv(root_env, override=True)
+        
+        # Cargar configuración de PLEX desde archivo alternativo
+        plex_config_path = Path(__file__).parent / "plex_config.txt"
+        if plex_config_path.exists():
+            try:
+                load_dotenv(plex_config_path, override=True)
+            except Exception as e:
+                print(f"DEBUG: Error cargando plex_config.txt: {e}")
         
         # Cargar configuración JSON
         config_path = Path(__file__).parent / "config.json"
@@ -308,6 +328,83 @@ class Settings:
     def set_imdb_include_synopsis(self, value: bool):
         """Establece si incluir sinopsis de IMDB"""
         self.set("imdb.include_synopsis", value)
+    
+    # Métodos de PLEX
+    def get_plex_enabled(self) -> bool:
+        """Obtiene si PLEX está habilitado"""
+        return self.get("plex.enabled", False)
+    
+    def set_plex_enabled(self, value: bool):
+        """Establece si PLEX está habilitado"""
+        self.set("plex.enabled", value)
+    
+    def get_plex_use_detection(self) -> bool:
+        """Obtiene si usar detección de PLEX"""
+        return self.get("plex.use_plex_detection", False)
+    
+    def set_plex_use_detection(self, value: bool):
+        """Establece si usar detección de PLEX"""
+        self.set("plex.use_plex_detection", value)
+    
+    def get_plex_use_metadata(self) -> bool:
+        """Obtiene si usar metadatos de PLEX"""
+        return self.get("plex.use_plex_metadata", True)
+    
+    def set_plex_use_metadata(self, value: bool):
+        """Establece si usar metadatos de PLEX"""
+        self.set("plex.use_plex_metadata", value)
+    
+    def get_plex_auto_connect(self) -> bool:
+        """Obtiene si conectar automáticamente a PLEX"""
+        return self.get("plex.auto_connect", True)
+    
+    def set_plex_auto_connect(self, value: bool):
+        """Establece si conectar automáticamente a PLEX"""
+        self.set("plex.auto_connect", value)
+    
+    def get_plex_prefer_titles(self) -> bool:
+        """Obtiene si preferir títulos de PLEX"""
+        return self.get("plex.prefer_plex_titles", True)
+    
+    def set_plex_prefer_titles(self, value: bool):
+        """Establece si preferir títulos de PLEX"""
+        self.set("plex.prefer_plex_titles", value)
+    
+    def get_plex_prefer_years(self) -> bool:
+        """Obtiene si preferir años de PLEX"""
+        return self.get("plex.prefer_plex_years", True)
+    
+    def set_plex_prefer_years(self, value: bool):
+        """Establece si preferir años de PLEX"""
+        self.set("plex.prefer_plex_years", value)
+    
+    def get_plex_prefer_duration(self) -> bool:
+        """Obtiene si preferir duración de PLEX"""
+        return self.get("plex.prefer_plex_duration", True)
+    
+    def set_plex_prefer_duration(self, value: bool):
+        """Establece si preferir duración de PLEX"""
+        self.set("plex.prefer_plex_duration", value)
+    
+    def get_plex_user(self) -> str:
+        """Obtiene el usuario de PLEX"""
+        return os.getenv("PLEX_USER", "")
+    
+    def get_plex_pass(self) -> str:
+        """Obtiene la contraseña de PLEX"""
+        return os.getenv("PLEX_PASS", "")
+    
+    def get_plex_token(self) -> str:
+        """Obtiene el token de PLEX"""
+        return os.getenv("PLEX_TOKEN", "")
+    
+    def get_plex_server_ip(self) -> str:
+        """Obtiene la IP del servidor PLEX"""
+        return os.getenv("IP_NAS", "localhost")
+    
+    def get_plex_database_path(self) -> str:
+        """Obtiene la ruta de la base de datos de PLEX"""
+        return self.config.get("plex", {}).get("database_path", "")
 
 
 # Instancia global del singleton

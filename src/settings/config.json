@@ -5,7 +5,7 @@
         "debug": false
     },
     "paths": {
-        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug",
+        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-PELIS DE LOS 80",
         "last_output_path": "",
         "default_scan_path": ""
     },
@@ -41,14 +41,26 @@
         "max_file_size": 2000000000,
         "upload_delay": 1
     },
+    "plex": {
+        "enabled": true,
+        "use_plex_detection": false,
+        "use_plex_metadata": false,
+        "auto_connect": true,
+        "prefer_plex_titles": false,
+        "prefer_plex_years": false,
+        "prefer_plex_duration": true,
+        "database_path": "\\\\DiskStation\\docker\\plex\\Library\\Application Support\\Plex Media Server\\Plug-in Support\\Databases\\com.plexapp.plugins.library.db"
+    },
     "ui": {
         "theme": "light",
         "page_size": 20,
         "show_advanced_options": false,
         "show_video_players": true,
-        "video_player_size": "medium",
-        "show_embedded_players": false,
-        "video_start_time_seconds": 900
+        "video_player_size": "small",
+        "show_embedded_players": true,
+        "video_start_time_seconds": 900,
+        "show_frame_preview": true,
+        "frame_preview_time_seconds": 900
     },
     "debug": {
         "enabled": true,

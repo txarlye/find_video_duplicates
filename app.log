@@ -1,0 +1,627 @@
+2025-09-23 18:20:31,855 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:20:31,856 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:20:32,133 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:20:32,134 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:20:32,138 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:20:32,139 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:20:32,334 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:20:32,335 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:20:32,356 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:20:32,357 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:20:32,564 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:20:32,565 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:20:39,604 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:20:39,605 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:20:40,246 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:20:40,246 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:20:40,721 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:20:40,723 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:20:40,753 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:20:40,754 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:20:41,339 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:20:41,341 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:20:41,344 - src.utils.movie_detector - INFO - 🔍 Escaneando carpeta: \\DiskStation\data\media\movies\00-Cine asiatico
+2025-09-23 18:20:54,960 - src.utils.movie_detector - INFO - 📊 Progreso: 100 archivos procesados...
+2025-09-23 18:20:54,964 - src.utils.movie_detector - INFO - ✅ Escaneo completado: 100 películas encontradas de 100 archivos
+2025-09-23 18:20:54,969 - src.utils.movie_detector - INFO - 🔍 Paso 1: Detección rápida de duplicados por similitud (umbral: 0.8)
+2025-09-23 18:20:54,970 - src.utils.movie_detector - INFO - 📊 Analizando 100 películas...
+2025-09-23 18:20:54,971 - src.utils.movie_detector - INFO - 📊 Progreso: 0/100 películas procesadas...
+2025-09-23 18:20:55,069 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: el ultimo heroe en china dvdrip by CPT34M [www emulebit com] (3 copias)
+2025-09-23 18:20:55,127 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Kung Fu Mahjong (2 copias)
+2025-09-23 18:20:55,153 - src.utils.movie_detector - INFO - 📊 Progreso: 20/100 películas procesadas...
+2025-09-23 18:20:55,161 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Swordsman 2 dvdrip by CPT34M [www emulebit com] (3 copias)
+2025-09-23 18:20:55,210 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Jet Li (2 copias)
+2025-09-23 18:20:55,218 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Curry and Pepper (2 copias)
+2025-09-23 18:20:55,226 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: When Fortune Smiles (2 copias)
+2025-09-23 18:20:55,232 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Fight Back To School DVDRip DivX (3 copias)
+2025-09-23 18:20:55,237 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Stephen Chow Fist Of Fury I (3 copias)
+2025-09-23 18:20:55,246 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: Tricky Brains DVDRip DivX (2 copias)
+2025-09-23 18:20:55,256 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: stephen chow (5 copias)
+2025-09-23 18:20:55,264 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: From Beijing With Love (2 copias)
+2025-09-23 18:20:55,334 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: 1992 1Police Story 3 (2 copias)
+2025-09-23 18:20:55,336 - src.utils.movie_detector - INFO - 📊 Progreso: 80/100 películas procesadas...
+2025-09-23 18:20:55,344 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: La Armadura de Dios (2 copias)
+2025-09-23 18:20:55,347 - src.utils.movie_detector - INFO - 🎯 Duplicados encontrados: [Ciclo Jet Li] erase una vez en china VHSRip by CPT34M [www emulebit com (2 copias)
+2025-09-23 18:20:55,353 - src.utils.movie_detector - INFO - ✅ Paso 1 completado: 14 grupos de duplicados candidatos
+2025-09-23 18:20:55,373 - src.utils.movie_detector - INFO - 🔍 Paso 2: Verificando 14 grupos con PLEX...
+2025-09-23 18:20:55,373 - src.utils.movie_detector - INFO - 📊 PLEX disponible: True
+2025-09-23 18:22:23,583 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:22:23,585 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:22:23,793 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:22:23,794 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:22:23,798 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:22:23,798 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:22:24,001 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:22:24,004 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:22:24,018 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:22:24,019 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:22:24,245 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:22:24,247 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:41,748 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:23:41,749 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:23:42,155 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:23:42,156 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:42,171 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:23:42,171 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:23:42,448 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:23:42,449 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:45,096 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:23:45,097 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:23:45,295 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:23:45,296 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:45,755 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:23:45,756 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:23:45,962 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:23:45,963 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:45,966 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:23:45,967 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:23:46,165 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:23:46,166 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:46,182 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:23:46,182 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:23:46,598 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:23:46,599 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:23:46,601 - src.utils.movie_detector - INFO - 🔍 Escaneando carpeta: \\DiskStation\data\media\movies\00-Cine asiatico
+2025-09-23 18:24:02,029 - src.utils.movie_detector - INFO - 📊 Progreso: 100 archivos procesados...
+2025-09-23 18:24:02,032 - src.utils.movie_detector - INFO - ✅ Escaneo completado: 100 películas encontradas de 100 archivos
+2025-09-23 18:24:02,036 - src.utils.movie_detector - INFO - 🚀 Iniciando búsqueda rápida con metadatos de PLEX...
+2025-09-23 18:24:02,037 - src.utils.movie_detector - INFO - 🔍 Paso 1: Búsqueda rápida por similitud...
+2025-09-23 18:24:02,038 - src.utils.movie_detector - INFO - Buscando duplicados con umbral de similitud: 0.8
+2025-09-23 18:24:02,137 - src.utils.movie_detector - INFO - Encontrados 12 grupos de duplicados
+2025-09-23 18:24:02,157 - src.utils.movie_detector - INFO - ✅ Encontrados 12 grupos de duplicados
+2025-09-23 18:24:02,172 - src.utils.movie_detector - INFO - 🎬 Paso 2: Añadiendo metadatos de PLEX...
+2025-09-23 18:24:03,205 - src.services.plex.plex_fast_search - INFO - ✅ Conectado a BBDD PLEX: \\DiskStation\docker\plex\Library\Application Support\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db
+2025-09-23 18:24:07,808 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'el.ultimo.heroe.en.china.dvdrip.by.CPT34M.[www.emulebit.com].AVI'
+2025-09-23 18:24:07,810 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: el.ultimo.heroe.en.china.dvdrip.by.CPT34M.[www.emulebit.com].AVI
+2025-09-23 18:24:07,912 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '[Ciclo Jet Li] erase una vez en china 2dvdRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com].AVI'
+2025-09-23 18:24:07,913 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: [Ciclo Jet Li] erase una vez en china 2dvdRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com].AVI
+2025-09-23 18:24:07,937 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '[Ciclo Jet Li] erase una vez en china 3.dvdRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com.AVI'
+2025-09-23 18:24:07,938 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: [Ciclo Jet Li] erase una vez en china 3.dvdRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com.AVI
+2025-09-23 18:24:07,982 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Swordsman.2.dvdrip.by.CPT34M.[www.emulebit.com].avi'
+2025-09-23 18:24:07,986 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Swordsman.2.dvdrip.by.CPT34M.[www.emulebit.com].avi
+2025-09-23 18:24:08,011 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Swordsman.3.dvdrip.by.CPT34M.[www.emulebit.com].avi'
+2025-09-23 18:24:08,011 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Swordsman.3.dvdrip.by.CPT34M.[www.emulebit.com].avi
+2025-09-23 18:24:08,033 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '[Ciclo Jet Li] Swordsman.dvdRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com].AVI.avi'
+2025-09-23 18:24:08,034 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: [Ciclo Jet Li] Swordsman.dvdRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com].AVI.avi
+2025-09-23 18:24:08,057 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Jet.Li.-.Dragon.fight.(Dragon.kickboxer) SUB ESP.avi'
+2025-09-23 18:24:08,058 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Jet.Li.-.Dragon.fight.(Dragon.kickboxer) SUB ESP.avi
+2025-09-23 18:24:08,085 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Jet.Li.-.Dragon.fight.(Dragon.kickboxer).avi'
+2025-09-23 18:24:08,086 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Jet.Li.-.Dragon.fight.(Dragon.kickboxer).avi
+2025-09-23 18:24:08,110 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Fight.Back.To.School.DVDRip.DivX-BoLa SUB ESP no se oye.avi'
+2025-09-23 18:24:08,111 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Fight.Back.To.School.DVDRip.DivX-BoLa SUB ESP no se oye.avi
+2025-09-23 18:24:08,149 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Fight.Back.To.School.DVDRip.DivX-BoLa.avi'
+2025-09-23 18:24:08,165 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Fight.Back.To.School.DVDRip.DivX-BoLa.avi
+2025-09-23 18:24:08,189 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Tricky.Brains.DVDRip.DivX-BoLa SUB ESP.avi'
+2025-09-23 18:24:08,189 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Tricky.Brains.DVDRip.DivX-BoLa SUB ESP.avi
+2025-09-23 18:24:08,213 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Tricky.Brains.DVDRip.DivX-BoLa.avi'
+2025-09-23 18:24:08,213 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Tricky.Brains.DVDRip.DivX-BoLa.avi
+2025-09-23 18:24:08,237 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'stephen chow - royal tramp 1 [chinese][ntf][divx5].avi'
+2025-09-23 18:24:08,238 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: stephen chow - royal tramp 1 [chinese][ntf][divx5].avi
+2025-09-23 18:24:08,260 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Stephen.Chow.-.Royal.Tramp.2.[chinese][NTF][Divx5].avi'
+2025-09-23 18:24:08,261 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Stephen.Chow.-.Royal.Tramp.2.[chinese][NTF][Divx5].avi
+2025-09-23 18:24:08,282 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'stephen.chow.-.god.of.cookery.postx.avi'
+2025-09-23 18:24:08,282 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: stephen.chow.-.god.of.cookery.postx.avi
+2025-09-23 18:24:08,303 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Stephen Chow - Lawyer Lawyer.dvdrip.dworn.avi'
+2025-09-23 18:24:08,304 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Stephen Chow - Lawyer Lawyer.dvdrip.dworn.avi
+2025-09-23 18:24:08,339 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Stephen.Chow-Faithfully.yours-.by.Kojikun.avi'
+2025-09-23 18:24:08,340 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Stephen.Chow-Faithfully.yours-.by.Kojikun.avi
+2025-09-23 18:24:08,361 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '[Ciclo Jet Li] erase una vez en china VHSRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com].AVI'
+2025-09-23 18:24:08,362 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: [Ciclo Jet Li] erase una vez en china VHSRip by CPT34M [www.emulebit.com-&-www.elitetorrent.com].AVI
+2025-09-23 18:24:08,383 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '[Ciclo Jet Li] Las artes marciales de Shaolin VHSRip by CPT34M [www.emulebit.com-&-www.elitetorre.avi'
+2025-09-23 18:24:08,383 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: [Ciclo Jet Li] Las artes marciales de Shaolin VHSRip by CPT34M [www.emulebit.com-&-www.elitetorre.avi
+2025-09-23 18:24:08,408 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Kung Fu Mahjong 2005 Dvdrip Xvid-SUB ESP.avi'
+2025-09-23 18:24:08,408 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Kung Fu Mahjong 2005 Dvdrip Xvid-SUB ESP.avi
+2025-09-23 18:24:08,433 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Kung Fu Mahjong 2005 Dvdrip Xvid-Tlf.avi'
+2025-09-23 18:24:08,433 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Kung Fu Mahjong 2005 Dvdrip Xvid-Tlf.avi
+2025-09-23 18:24:08,456 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Stephen Chow - Fist Of Fury I 1991 SUB ESP.avi'
+2025-09-23 18:24:08,456 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Stephen Chow - Fist Of Fury I 1991 SUB ESP.avi
+2025-09-23 18:24:08,478 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Stephen Chow - Fist Of Fury I 1991.avi'
+2025-09-23 18:24:08,479 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Stephen Chow - Fist Of Fury I 1991.avi
+2025-09-23 18:24:08,510 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Stephen Chow - Fist Of Fury II 1991.avi'
+2025-09-23 18:24:08,511 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Stephen Chow - Fist Of Fury II 1991.avi
+2025-09-23 18:24:08,534 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Curry.and.Pepper.1990.DVDRip.XviD-ACF SUB ESP.avi'
+2025-09-23 18:24:08,535 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Curry.and.Pepper.1990.DVDRip.XviD-ACF SUB ESP.avi
+2025-09-23 18:24:08,558 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Curry.and.Pepper.1990.DVDRip.XviD-ACF.avi'
+2025-09-23 18:24:08,558 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Curry.and.Pepper.1990.DVDRip.XviD-ACF.avi
+2025-09-23 18:24:08,580 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'When.Fortune.Smiles.1990.DVDRip.SUB ESPI.avi'
+2025-09-23 18:24:08,581 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: When.Fortune.Smiles.1990.DVDRip.SUB ESPI.avi
+2025-09-23 18:24:08,602 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'When.Fortune.Smiles.1990.DVDRip.XviD-ACF.avi'
+2025-09-23 18:24:08,603 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: When.Fortune.Smiles.1990.DVDRip.XviD-ACF.avi
+2025-09-23 18:24:08,627 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '1992 1Police.Story.3.1992.DVDRip.XviD.iNT-NewMov-cd1.avi'
+2025-09-23 18:24:08,627 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: 1992 1Police.Story.3.1992.DVDRip.XviD.iNT-NewMov-cd1.avi
+2025-09-23 18:24:08,648 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para '1992 2Police.Story.3.1992.DVDRip.XviD.iNT-NewMov-cd2.avi'
+2025-09-23 18:24:08,649 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: 1992 2Police.Story.3.1992.DVDRip.XviD.iNT-NewMov-cd2.avi
+2025-09-23 18:24:09,845 - src.services.plex.plex_fast_search - INFO - ✅ Conexión a BBDD cerrada
+2025-09-23 18:24:09,847 - src.utils.movie_detector - INFO - ✅ Metadatos de PLEX añadidos exitosamente
+2025-09-23 18:24:09,932 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:09,933 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:10,135 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:10,136 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:10,139 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:10,140 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:10,360 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:10,360 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:10,379 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:10,420 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:10,662 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:10,663 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:27,929 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:27,929 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:28,135 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:28,136 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:28,140 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:28,141 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:28,354 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:28,355 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:28,431 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:28,432 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:28,629 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:28,630 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:46,126 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:46,127 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:46,360 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:46,362 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:46,367 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:46,367 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:46,609 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:46,610 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:46,625 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:46,625 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:46,828 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:46,829 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:53,846 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:53,846 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:54,282 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:54,283 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:54,306 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:54,307 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:54,527 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:54,541 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:54,612 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:54,613 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:54,829 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:54,830 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:54,836 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:54,837 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:55,037 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:55,038 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:24:55,089 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:24:55,090 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:24:55,297 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:24:55,298 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:04,824 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:04,825 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:05,036 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:05,038 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:05,042 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:05,043 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:05,236 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:05,237 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:05,264 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:05,265 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:05,509 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:05,511 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:09,014 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:09,015 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:09,798 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:09,799 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:10,000 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:10,001 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:10,094 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:10,095 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:10,308 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:10,310 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:10,313 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:10,315 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:10,517 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:10,518 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:10,537 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:10,537 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:10,723 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:10,724 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:20,904 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:20,905 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:21,102 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:21,103 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:21,107 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:21,108 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:21,308 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:21,310 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:21,325 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:21,325 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:21,535 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:21,536 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:26,511 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:26,512 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:26,958 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:26,959 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:26,973 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:26,974 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:28,313 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:28,314 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:39,342 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:39,343 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:39,796 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:39,798 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:39,824 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:39,825 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:40,023 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:40,025 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:40,146 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:40,147 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:40,358 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:40,360 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:40,364 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:40,364 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:50,127 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:50,128 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:50,329 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:50,330 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:50,335 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:50,335 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:50,535 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:50,536 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:25:50,558 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:25:50,559 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:25:50,759 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:25:50,761 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:26:22,027 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:26:22,029 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:26:22,198 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:26:22,200 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:26:22,229 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:26:22,230 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:26:22,402 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:26:22,403 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:26:22,685 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:26:22,705 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:26:22,903 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:26:22,904 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:26:22,908 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:26:22,909 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:26:23,347 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:26:23,349 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:27:29,214 - src.utils.movie_detector - INFO - 📊 Progreso: 100 archivos procesados...
+2025-09-23 18:28:33,730 - src.utils.movie_detector - INFO - 📊 Progreso: 200 archivos procesados...
+2025-09-23 18:29:40,213 - src.utils.movie_detector - INFO - 📊 Progreso: 300 archivos procesados...
+2025-09-23 18:30:45,130 - src.utils.movie_detector - INFO - 📊 Progreso: 400 archivos procesados...
+2025-09-23 18:30:53,903 - src.utils.movie_detector - INFO - ✅ Escaneo completado: 410 películas encontradas de 410 archivos
+2025-09-23 18:30:53,907 - src.utils.movie_detector - INFO - 🚀 Iniciando búsqueda rápida con metadatos de PLEX...
+2025-09-23 18:30:53,908 - src.utils.movie_detector - INFO - 🔍 Paso 1: Búsqueda rápida por similitud...
+2025-09-23 18:30:53,908 - src.utils.movie_detector - INFO - Buscando duplicados con umbral de similitud: 0.8
+2025-09-23 18:30:54,473 - src.utils.movie_detector - INFO - Encontrados 35 grupos de duplicados
+2025-09-23 18:30:54,475 - src.utils.movie_detector - INFO - ✅ Encontrados 35 grupos de duplicados
+2025-09-23 18:30:54,476 - src.utils.movie_detector - INFO - 🎬 Paso 2: Añadiendo metadatos de PLEX...
+2025-09-23 18:30:55,445 - src.services.plex.plex_fast_search - INFO - ✅ Conectado a BBDD PLEX: \\DiskStation\docker\plex\Library\Application Support\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db
+2025-09-23 18:31:56,565 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Lady Halcon (1985) parte2.avi'
+2025-09-23 18:31:56,566 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Lady Halcón
+2025-09-23 18:31:56,595 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Lady.Halcon.(1985).(Spanish.English.Spanishsub.Englishsub).BDrip.1080p.HEVC.10b-AAC.by.djk.mkv'
+2025-09-23 18:31:56,596 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Lady.Halcon.(1985).(Spanish.English.Spanishsub.Englishsub).BDrip.1080p.HEVC.10b-AAC.by.djk.mkv
+2025-09-23 18:31:56,619 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Porky's.III (1985).avi'
+2025-09-23 18:31:56,620 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Porky's contraataca
+2025-09-23 18:31:56,642 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Porkys III (1985).avi'
+2025-09-23 18:31:56,645 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Porky's contraataca
+2025-09-23 18:31:56,675 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Escuela de genios (1985).mp4'
+2025-09-23 18:31:56,691 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Escuela de genios (1985).mp4
+2025-09-23 18:31:56,712 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Escuela de Genios (1985).avi'
+2025-09-23 18:31:56,713 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Escuela de genios
+2025-09-23 18:31:56,735 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'El secreto de la pirámide (1985).mp4'
+2025-09-23 18:31:56,736 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: El secreto de la pirámide (1985).mp4
+2025-09-23 18:31:56,758 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'el secreto de la piramide(1985).avi'
+2025-09-23 18:31:56,759 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El secreto de la pirámide
+2025-09-23 18:31:56,782 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Reanimator {Montaje Director} (1985).mkv'
+2025-09-23 18:31:56,783 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Reanimator {Montaje Director} (1985).mkv
+2025-09-23 18:31:56,810 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Reanimator Montaje Director (1985).mkv'
+2025-09-23 18:31:56,811 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Reanimator Montaje Director
+2025-09-23 18:31:56,841 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Blade.Runner.El.Montaje.Final.CD1.DVD.XviD.AC3.[www.DivxTotaL.com].avi'
+2025-09-23 18:31:56,857 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Blade Runner El Montaje Final
+2025-09-23 18:31:56,881 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Blade.Runner.El.Montaje.Final.CD2.DVD.XviD.AC3.[www.DivxTotaL.com].avi'
+2025-09-23 18:31:56,881 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Blade Runner El Montaje Final
+2025-09-23 18:31:56,903 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Grease[HDRip][pasateatorrent.com].avi'
+2025-09-23 18:31:56,904 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Grease
+2025-09-23 18:31:57,052 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Grease_2[HDRip][pasateatorrent.com].avi'
+2025-09-23 18:31:57,053 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Grease 2
+2025-09-23 18:31:57,208 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'La costa de los mosquitos.mp4'
+2025-09-23 18:31:57,214 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La costa de los mosquitos
+2025-09-23 18:31:57,235 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'La_costa_de_los_mosquitos_1986.mkv'
+2025-09-23 18:31:57,235 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: La_costa_de_los_mosquitos_1986.mkv
+2025-09-23 18:31:57,257 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'La revancha de los novatos 2 @cinepalomitas.mp4'
+2025-09-23 18:31:57,257 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La revolución de los novatos
+2025-09-23 18:31:57,278 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'La revancha de los novatos 3 @cinepalomitas.mp4'
+2025-09-23 18:31:57,278 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La revancha de los novatos III
+2025-09-23 18:31:57,299 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'La revancha de los novatos @cinepalomitas.mp4'
+2025-09-23 18:31:57,300 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La revancha de los novatos
+2025-09-23 18:31:57,321 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'los albondigas en remojo (1984).mkv'
+2025-09-23 18:31:57,322 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Los albóndigas en remojo
+2025-09-23 18:31:57,343 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Los albondigas en remojo (1984).avi'
+2025-09-23 18:31:57,344 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Los albóndigas en remojo
+2025-09-23 18:31:57,476 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Despedida de soltero (1984).avi'
+2025-09-23 18:31:57,477 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Despedida de soltero
+2025-09-23 18:31:57,498 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Despedida de soltero (1984).mkv'
+2025-09-23 18:31:57,499 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Despedida de soltero
+2025-09-23 18:31:57,521 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Juego.secreto (1984).avi'
+2025-09-23 18:31:57,522 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Juego secreto
+2025-09-23 18:31:57,559 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Juego.secreto.(1984).(Spanish.English.Subs).BDRip.1080p.x264-AC3.by.xusman.(nocturniap2p).mkv'
+2025-09-23 18:31:57,565 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Juego.secreto.(1984).(Spanish.English.Subs).BDRip.1080p.x264-AC3.by.xusman.(nocturniap2p).mkv
+2025-09-23 18:31:57,700 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'La Princesa Prometida (1987).avi'
+2025-09-23 18:31:57,701 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La princesa prometida
+2025-09-23 18:31:57,742 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'La princesa prometida (1987).Dual(Spa-Eng).720p.AC3.mkv'
+2025-09-23 18:31:57,754 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: La princesa prometida (1987).Dual(Spa-Eng).720p.AC3.mkv
+2025-09-23 18:31:57,776 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Spaceballs - La Loca Historia de las Galaxias (1987).avi'
+2025-09-23 18:31:57,777 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La loca historia de las galaxias
+2025-09-23 18:31:57,797 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Spaceballs La loca historia de las galaxias (1987).avi'
+2025-09-23 18:31:57,798 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Spaceballs La loca historia de las galaxias (1987).avi
+2025-09-23 18:31:57,820 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Spaceballs.-La loca historia de las galaxias (1987).avi'
+2025-09-23 18:31:57,820 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: La loca historia de las galaxias
+2025-09-23 18:31:57,851 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Una pandilla alucinante (1987).mkv'
+2025-09-23 18:31:57,852 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Una pandilla alucinante (1987).mkv
+2025-09-23 18:31:57,873 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Una Pandilla Alucinante (1987).mpg'
+2025-09-23 18:31:57,874 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Una pandilla alucinante
+2025-09-23 18:31:57,896 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'El campeon del videojuego (1989).mkv'
+2025-09-23 18:31:57,896 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El campeón del videojuego
+2025-09-23 18:31:57,925 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'El campeon del videojuego (1989).avi'
+2025-09-23 18:31:57,947 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El campeón del videojuego
+2025-09-23 18:31:58,072 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Este muerto esta muy vivo (1989).avi'
+2025-09-23 18:31:58,073 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Este muerto está muy vivo
+2025-09-23 18:31:58,093 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'este-muerto-esta-muy-vivo 1989.mp4'
+2025-09-23 18:31:58,095 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: este-muerto-esta-muy-vivo 1989.mp4
+2025-09-23 18:31:58,126 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'CYBORG   1989.mp4'
+2025-09-23 18:31:58,127 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: CYBORG   1989.mp4
+2025-09-23 18:31:58,149 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Cyborg (1989).avi'
+2025-09-23 18:31:58,149 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Cyborg (1989).avi
+2025-09-23 18:31:58,171 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Fama (1980).avi'
+2025-09-23 18:31:58,172 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Fama
+2025-09-23 18:31:58,193 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Fama.(1980).(Spanish.English.Subs).BDRip.1080p.x264-AC3.by.mokesky.(hispashare.org).mkv'
+2025-09-23 18:31:58,194 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Fama.(1980).(Spanish.English.Subs).BDRip.1080p.x264-AC3.by.mokesky.(hispashare.org).mkv
+2025-09-23 18:31:58,215 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'fama (1980).mp4'
+2025-09-23 18:31:58,215 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: fama (1980).mp4
+2025-09-23 18:31:58,333 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Flash Gordon (1980).avi'
+2025-09-23 18:31:58,334 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Flash Gordon
+2025-09-23 18:31:58,357 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Flash Gordon (1980) (HDRip) (EliteTorrent.net).avi'
+2025-09-23 18:31:58,358 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Flash Gordon
+2025-09-23 18:31:58,379 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Campamento.de.verano.(1980) Dual Subt..mkv'
+2025-09-23 18:31:58,379 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Campamento.de.verano.(1980) Dual Subt..mkv
+2025-09-23 18:31:58,400 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Campamento.de.verano.(1980).(Spanish.English.Subs).WEBRip.1080p.x265-AC3.by.Jonkar.(hispashare.com).mkv'
+2025-09-23 18:31:58,400 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Campamento.de.verano.(1980).(Spanish.English.Subs).WEBRip.1080p.x265-AC3.by.Jonkar.(hispashare.com).mkv
+2025-09-23 18:31:58,422 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Aquel Excitante Curso (1982).avi'
+2025-09-23 18:31:58,423 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Aquel excitante curso
+2025-09-23 18:31:58,444 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'aquel excitante curso 1982.mp4'
+2025-09-23 18:31:58,444 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: aquel excitante curso 1982.mp4
+2025-09-23 18:31:58,465 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Movida En La Universidad (1982).avi'
+2025-09-23 18:31:58,492 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Movida en la universidad
+2025-09-23 18:31:58,520 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Movida en la universidad Zapped! (1982).mkv'
+2025-09-23 18:31:58,521 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Movida en la universidad Zapped! (1982).mkv
+2025-09-23 18:31:58,542 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Porkys I (1982).avi'
+2025-09-23 18:31:58,543 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Porky's
+2025-09-23 18:31:58,564 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Porkys (1982).avi'
+2025-09-23 18:31:58,564 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Porky's
+2025-09-23 18:31:58,586 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'To er mundo e... ¡güeno! (1982).mp4'
+2025-09-23 18:31:58,587 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: To er mundo e... ¡güeno! (1982).mp4
+2025-09-23 18:31:58,612 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'To er mundo e... ¡mejo! (1982).mp4'
+2025-09-23 18:31:58,613 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: To er mundo e... ¡mejo! (1982).mp4
+2025-09-23 18:31:58,634 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Todo er mundo e güeno (1982).avi'
+2025-09-23 18:31:58,635 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: To er mundo e... ¡güeno!
+2025-09-23 18:31:58,782 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Cuenta Conmigo (1986).AVI'
+2025-09-23 18:31:58,784 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Cuenta conmigo
+2025-09-23 18:31:58,805 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 2 películas para 'Cuenta Conmigo (1986)..mkv'
+2025-09-23 18:31:58,805 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Cuenta conmigo
+2025-09-23 18:31:58,825 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Cuenta Conmigo (1986) (SPA).mkv'
+2025-09-23 18:31:58,826 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Cuenta Conmigo (1986) (SPA).mkv
+2025-09-23 18:31:58,860 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'El chico de oro(1986).avi'
+2025-09-23 18:31:58,886 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El chico de oro
+2025-09-23 18:31:58,915 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'El Chico De Oro (1986).avi'
+2025-09-23 18:31:58,916 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El chico de oro
+2025-09-23 18:31:58,943 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'S.O.S. Equipo azul (1986).mkv'
+2025-09-23 18:31:58,944 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: S.O.S.: Equipo Azul
+2025-09-23 18:31:58,965 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'SOS Equipo azul (1986).avi'
+2025-09-23 18:31:58,965 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: S.O.S.: Equipo Azul
+2025-09-23 18:31:58,986 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Terrorifica luna de miel 1986.mp4'
+2025-09-23 18:31:58,987 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Terrorífica luna de miel
+2025-09-23 18:31:59,008 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Terrorifica luna de miel (1986).mp4'
+2025-09-23 18:31:59,008 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Terrorifica luna de miel (1986).mp4
+2025-09-23 18:31:59,030 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'El nombre de la rosa (1986).avi'
+2025-09-23 18:31:59,030 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El nombre de la rosa
+2025-09-23 18:31:59,069 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'El nombre de la rosa (1986, Jean-Jacques Annaud)[Intriga, crimen][Bdrip.m-720p.Dual.AC3.subs Forzados].lagartish.mkv'
+2025-09-23 18:31:59,071 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: El nombre de la rosa
+2025-09-23 18:31:59,092 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Un hombre en apuros (1986).avi'
+2025-09-23 18:31:59,093 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Un hombre en apuros (1986).avi
+2025-09-23 18:31:59,255 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Un.hombre.en.apuros.1986.(Spanish).DVD-VHS.XviD-mp3.by.ismadj.&.Davideomusic73.(terrorfantastico.&.hispacine).avi'
+2025-09-23 18:31:59,256 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Un hombre en apuros
+2025-09-23 18:31:59,286 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Terrorifica Luna de Miel (Haunted Honeymoon 1986).avi'
+2025-09-23 18:31:59,286 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Terrorifica Luna de Miel (Haunted Honeymoon 1986).avi
+2025-09-23 18:31:59,307 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Terrorifica.Luna.de.Miel.(Haunted.Honeymoon.1986).DVDRip.XviD.AC3.Dual.[DivXClasico.com].avi'
+2025-09-23 18:31:59,308 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Terrorifica Luna De Miel
+2025-09-23 18:31:59,330 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Los locos del Cannonball (1981).AVI'
+2025-09-23 18:31:59,331 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Los locos del Cannonball
+2025-09-23 18:31:59,352 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Los locos del Cannonball (1981).Dual Subt..mkv'
+2025-09-23 18:31:59,352 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Los locos del Cannonball (1981).Dual Subt..mkv
+2025-09-23 18:31:59,384 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Las.locas.peripecias.de.un.señor.mamá.(1983).(Spanish.German.English.Subs).WEBRip.1080p.x264-AAC.by.xula.(nocturniap2p).mkv'
+2025-09-23 18:31:59,385 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Las.locas.peripecias.de.un.señor.mamá.(1983).(Spanish.German.English.Subs).WEBRip.1080p.x264-AAC.by.xula.(nocturniap2p).mkv
+2025-09-23 18:31:59,433 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Las locas peripecias de un señor mamá (1983).mp4'
+2025-09-23 18:31:59,434 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Las locas peripecias de un señor mamá (1983).mp4
+2025-09-23 18:31:59,456 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 0 películas para 'Rebeldes (1983).mp4'
+2025-09-23 18:31:59,456 - src.services.plex.plex_fast_search - WARNING - ⚠️ No se encontraron metadatos PLEX para: Rebeldes (1983).mp4
+2025-09-23 18:31:59,624 - src.services.plex.plex_fast_search - INFO - 🔍 Encontradas 1 películas para 'Rebeldes (1983) ª[Hd 720] Castellano.mp4'
+2025-09-23 18:31:59,625 - src.services.plex.plex_fast_search - INFO - ✅ Metadatos PLEX añadidos para: Rebeldes
+2025-09-23 18:32:01,065 - src.services.plex.plex_fast_search - INFO - ✅ Conexión a BBDD cerrada
+2025-09-23 18:32:01,066 - src.utils.movie_detector - INFO - ✅ Metadatos de PLEX añadidos exitosamente
+2025-09-23 18:32:01,210 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:32:01,211 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:32:01,863 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:32:01,865 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:32:16,026 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:32:16,027 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:32:16,238 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:32:16,240 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:32:16,244 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:32:16,245 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:32:16,497 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:32:16,501 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:32:16,515 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:32:16,516 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:32:16,713 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:32:16,715 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:21,246 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:21,248 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:21,466 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:21,467 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:21,471 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:21,471 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:21,685 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:21,687 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:21,704 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:21,705 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:21,905 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:21,907 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:24,252 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:24,253 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:24,271 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:24,272 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:24,480 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:24,480 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:28,990 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:28,990 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:29,214 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:29,215 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:29,222 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:29,222 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:29,419 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:29,420 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:29,432 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:29,433 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:29,636 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:29,637 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:30,202 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:30,203 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:30,219 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:30,220 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:30,416 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:30,417 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:38,135 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:38,135 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:38,355 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:38,356 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:38,363 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:38,365 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:38,585 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:38,587 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:38,616 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:38,618 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:33:38,815 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:33:38,816 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:33:59,756 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:33:59,757 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:34:01,109 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:34:01,110 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:34:01,113 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:34:01,114 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:34:01,312 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:34:01,313 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:34:01,336 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:34:01,337 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:34:01,541 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:34:01,542 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:40:39,219 - src.utils.movie_detector - INFO - ✅ Duplicados verificados con PLEX: www.oranline.com
+2025-09-23 18:40:43,839 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:40:43,840 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:40:44,328 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:40:44,329 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:40:44,344 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:40:44,345 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:40:44,598 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:40:44,599 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:09,642 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:09,643 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:09,844 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:09,846 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:09,850 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:09,852 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:10,064 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:10,065 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:10,084 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:10,086 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:10,306 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:10,308 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:17,816 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:17,817 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:18,210 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:18,211 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:18,226 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:18,227 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:18,423 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:18,424 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:20,422 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:20,423 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:20,640 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:20,640 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:20,644 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:20,644 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:20,854 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:20,855 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:20,893 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:20,894 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:21,088 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:21,089 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:25,224 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:25,225 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:25,634 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:25,636 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:25,665 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:25,666 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:25,888 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:25,890 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:25,892 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:25,897 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:26,113 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:26,114 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:26,120 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:26,122 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:26,342 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:26,343 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:26,376 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:26,376 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:26,572 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:26,574 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:29,286 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:29,287 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:29,486 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:29,487 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:29,804 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:29,805 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:30,003 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:30,004 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:30,011 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:30,011 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:30,242 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:30,243 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:30,262 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:30,262 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:30,461 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:30,462 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:30,475 - src.services.plex.plex_service - INFO - 🔑 Intentando conectar con token de PLEX
+2025-09-23 18:42:30,476 - src.services.plex.plex_service - INFO - 🔍 Probando servidor local: http://192.168.1.136:32400
+2025-09-23 18:42:30,675 - src.services.plex.plex_metadata - INFO - ✅ Encontradas 16 bibliotecas PLEX
+2025-09-23 18:42:30,675 - src.services.plex.plex_service - INFO - ✅ Conectado a PLEX local: http://192.168.1.136:32400
+2025-09-23 18:42:30,677 - src.utils.movie_detector - INFO - 🔍 Escaneando carpeta: \\DiskStation\data\media\movies\00-PELIS DE LOS 80
+2025-09-23 18:43:36,827 - src.utils.movie_detector - INFO - 📊 Progreso: 100 archivos procesados...
+2025-09-23 18:44:40,591 - src.utils.movie_detector - INFO - 📊 Progreso: 200 archivos procesados...

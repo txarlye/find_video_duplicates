@@ -14,7 +14,7 @@ sys.path.insert(0, str(current_dir))
 
 # Importar el gestor principal
 try:
-    from src.app.streamlit_manager import StreamlitAppManager
+    from src.app.UI.Streamlit.streamlit_manager import run_streamlit_app
 except ImportError as e:
     st.error(f"❌ Error de importación: {e}")
     st.error("💡 Asegúrate de ejecutar la aplicación desde el directorio raíz del proyecto")
@@ -28,6 +28,5 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Crear y ejecutar la aplicación
-app_manager = StreamlitAppManager()
-app_manager.run()
+# Ejecutar la aplicación
+run_streamlit_app()

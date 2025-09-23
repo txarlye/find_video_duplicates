@@ -47,7 +47,7 @@ def main():
             sys.executable, "-m", "streamlit", "run", 
             "app_simple.py",
             "--server.port", "8501",
-            "--server.headless", "false",
+            "--server.headless", "true",  # Cambiado a true para evitar doble apertura
             "--browser.gatherUsageStats", "false"
         ])
     except KeyboardInterrupt:

@@ -1,0 +1,9 @@
+# Configuración de PLEX para el Detector de Películas Duplicadas
+
+# Credenciales de PLEX Media Server
+PLEX_USER=txarlye
+PLEX_PASS=L4drill0hu3k0d0bl3@!
+PLEX_TOKEN=BLrcrEgns_7xvAinMrH-
+
+# IP del servidor PLEX (Synology NAS)
+PLEX_SERVER_IP=192.168.1.136
