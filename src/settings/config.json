@@ -5,7 +5,7 @@
         "debug": false
     },
     "paths": {
-        "last_scan_path": "",
+        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-PELIS DE LOS 80",
         "last_output_path": "",
         "default_scan_path": ""
     },
@@ -52,6 +52,8 @@
         "server_url": "http://DiskStation:32400",
         "server_name": "Plex Media Server",
         "database_path": "\\\\DiskStation\\docker\\plex2\\db\\Library\\Application Support\\Plex Media Server\\Plug-in Support\\Databases\\com.plexapp.plugins.library.db",
+        "library_name": "Películas",
+        "library_id": null,
         "token": "",
         "timeout": 30
     },
@@ -68,6 +70,6 @@
     },
     "debug": {
         "enabled": true,
-        "debug_folder": "./debug"
+        "debug_folder": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug"
     }
 }

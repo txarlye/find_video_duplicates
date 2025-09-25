@@ -23,9 +23,13 @@ from src.settings.settings import settings
 # Importación opcional de PLEX
 try:
     from src.services.plex import PlexService
+    from src.services.plex.plex_fast_metadata import PlexFastMetadata
     PLEX_AVAILABLE = True
 except ImportError:
     PLEX_AVAILABLE = False
+
+# Importar analizador de video
+from src.utils.video.video_quality_analyzer import VideoQualityAnalyzer
 
 
 class MovieDetector:
@@ -44,10 +48,16 @@ class MovieDetector:
         self.duplicados = []
         self.use_plex = use_plex and PLEX_AVAILABLE
         
-        # Inicializar servicio PLEX si está disponible
+        # Inicializar servicios PLEX si están disponibles
         self.plex_service = None
+        self.plex_metadata_service = None
         if self.use_plex and PLEX_AVAILABLE:
             self.plex_service = PlexService()
+            # Inicializar servicio de metadatos rápidos
+            db_path = settings.get_plex_database_path()
+            library_name = settings.get_plex_library_name()
+            if db_path:
+                self.plex_metadata_service = PlexFastMetadata(db_path, library_name)
             if not self.plex_service.is_configured():
                 self.logger.warning("PLEX configurado pero credenciales no encontradas")
                 self.use_plex = False
@@ -55,12 +65,19 @@ class MovieDetector:
                 self.logger.warning("No se pudo conectar con PLEX")
                 self.use_plex = False
         
+        # Configurar logging PRIMERO
+        self.logger = logging.getLogger(__name__)
+        
         # Obtener configuración desde settings
         self.extensiones_video = set(settings.get_supported_extensions())
         self.umbral_similitud = settings.get_similarity_threshold()
         
-        # Configurar logging
-        self.logger = logging.getLogger(__name__)
+        # Inicializar analizador de video como fallback
+        self.video_analyzer = VideoQualityAnalyzer()
+        if self.video_analyzer.is_available():
+            self.logger.info("✅ Analizador de video FFprobe disponible")
+        else:
+            self.logger.warning("⚠️ FFprobe no disponible - análisis de video limitado")
         
         # Patrones para extraer información de archivos
         self.patrones_titulo = [
@@ -136,6 +153,35 @@ class MovieDetector:
             'libraries': status['libraries'],
             'message': 'PLEX conectado' if status['is_connected'] else 'PLEX no conectado'
         }
+    
+    def get_plex_metadata_for_file(self, filename: str) -> Dict[str, Any]:
+        """
+        Obtiene metadatos de Plex para un archivo específico
+        Solo se ejecuta si está habilitado el filtro de duración
+        """
+        if not self.plex_metadata_service:
+            return {}
+        
+        try:
+            # Obtener información de Plex por nombre de archivo
+            movies = self.plex_metadata_service.get_movie_info_by_filename(filename)
+            
+            if movies:
+                # Tomar la primera coincidencia
+                movie = movies[0]
+                return {
+                    'title': movie.title,
+                    'year': movie.year,
+                    'duration': movie.duration,
+                    'duration_formatted': movie.duration_formatted,
+                    'found': True
+                }
+            else:
+                return {'found': False}
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo metadatos de Plex para {filename}: {e}")
+            return {'found': False, 'error': str(e)}
     
     def es_archivo_video(self, archivo: Path) -> bool:
         """Verifica si un archivo es de video"""
@@ -318,6 +364,39 @@ class MovieDetector:
             'has_plex_metadata': False
         }
         
+        # Intentar obtener información de calidad usando análisis de video
+        if self.video_analyzer.is_available():
+            try:
+                quality_info = self.video_analyzer.analyze_video(archivo)
+                if quality_info:
+                    # Enriquecer con información de calidad
+                    pelicula_info.update({
+                        'resolution': quality_info.resolution,
+                        'bitrate': quality_info.bitrate,
+                        'video_codec': quality_info.video_codec,
+                        'audio_codec': quality_info.audio_codec,
+                        'quality_category': quality_info.quality_category,
+                        'fps': quality_info.fps,
+                        'has_audio': quality_info.has_audio,
+                        'has_video': quality_info.has_video,
+                        'video_analysis_available': True
+                    })
+                    
+                    # Usar duración del análisis de video si es más precisa
+                    if quality_info.duration and quality_info.duration > 0:
+                        pelicula_info['duracion'] = quality_info.duration
+                        pelicula_info['duracion_formatted'] = quality_info.duration_formatted
+                    
+                    # Usar categoría de calidad del análisis si es mejor
+                    if quality_info.quality_category != "Desconocida":
+                        pelicula_info['calidad'] = quality_info.quality_category
+                        
+            except Exception as e:
+                self.logger.debug(f"Error en análisis de video para {archivo}: {e}")
+                pelicula_info['video_analysis_available'] = False
+        else:
+            pelicula_info['video_analysis_available'] = False
+        
         # TEMPORAL: No consultar PLEX durante escaneo inicial para velocidad
         # Los metadatos de PLEX se obtendrán solo para duplicados encontrados
         # TODO: Implementar consulta PLEX solo para duplicados
@@ -456,7 +535,60 @@ class MovieDetector:
         
         self.duplicados = duplicados
         self.logger.info(f"Encontrados {len(duplicados)} grupos de duplicados")
+        
+        # Si está habilitado el filtro de duración y hay Plex disponible, 
+        # consultar metadatos solo para los duplicados encontrados
+        if (settings.get_duration_filter_enabled() and 
+            self.plex_metadata_service and 
+            duplicados):
+            
+            self.logger.info("🔍 Consultando metadatos de Plex para duplicados encontrados...")
+            duplicados_con_plex = self._enriquecer_duplicados_con_plex(duplicados)
+            return duplicados_con_plex
+        
         return duplicados
+    
+    def _enriquecer_duplicados_con_plex(self, duplicados: List[List[Dict]]) -> List[List[Dict]]:
+        """
+        Enriquece los duplicados encontrados con metadatos de Plex
+        Solo consulta Plex para los archivos que ya son duplicados
+        """
+        duplicados_enriquecidos = []
+        
+        for grupo in duplicados:
+            grupo_enriquecido = []
+            
+            for pelicula in grupo:
+                # Obtener nombre del archivo
+                archivo_path = Path(pelicula['archivo'])
+                nombre_archivo = archivo_path.name
+                
+                # Consultar Plex solo para este archivo
+                metadatos_plex = self.get_plex_metadata_for_file(nombre_archivo)
+                
+                # Crear copia de la película con metadatos de Plex
+                pelicula_enriquecida = pelicula.copy()
+                
+                if metadatos_plex.get('found', False):
+                    # Agregar metadatos de Plex
+                    pelicula_enriquecida['plex_title'] = metadatos_plex.get('title')
+                    pelicula_enriquecida['plex_year'] = metadatos_plex.get('year')
+                    pelicula_enriquecida['plex_duration'] = metadatos_plex.get('duration')
+                    pelicula_enriquecida['plex_duration_formatted'] = metadatos_plex.get('duration_formatted')
+                    pelicula_enriquecida['plex_metadata_available'] = True
+                    
+                    # Si tenemos duración de Plex, usarla para el filtro
+                    if metadatos_plex.get('duration'):
+                        pelicula_enriquecida['duracion_plex'] = metadatos_plex['duration']
+                else:
+                    pelicula_enriquecida['plex_metadata_available'] = False
+                
+                grupo_enriquecido.append(pelicula_enriquecida)
+            
+            duplicados_enriquecidos.append(grupo_enriquecido)
+        
+        self.logger.info(f"✅ Enriquecidos {len(duplicados_enriquecidos)} grupos con metadatos de Plex")
+        return duplicados_enriquecidos
     
     def encontrar_duplicados_con_plex(self, library_id: str = None, library_name: str = None) -> List[List[Dict]]:
         """
@@ -684,6 +816,18 @@ class MovieDetector:
         Returns:
             True si son compatibles
         """
+        # CRÍTICO: Verificar que los nombres de archivo NO sean exactamente iguales
+        nombre1 = pelicula1.get('nombre', '').strip()
+        nombre2 = pelicula2.get('nombre', '').strip()
+        
+        # Comparación normalizada (sin espacios extra y en minúsculas)
+        nombre1_norm = nombre1.lower().strip()
+        nombre2_norm = nombre2.lower().strip()
+        
+        if nombre1_norm == nombre2_norm:
+            self.logger.debug(f"🚫 Archivos con nombres idénticos ignorados: {nombre1} == {nombre2}")
+            return False
+        
         # Verificar similitud de títulos
         if similitud < umbral:
             return False
@@ -1096,14 +1240,18 @@ class MovieDetector:
                         duplicados_mejorados = []
                         
                         for i, grupo in enumerate(duplicados_rapidos):
-                            # Notificar progreso
+                            # Notificar progreso (con manejo seguro de contexto)
                             if callback_progreso:
-                                callback_progreso({
-                                    'tipo': 'procesando_plex',
-                                    'indice': i,
-                                    'total': len(duplicados_rapidos),
-                                    'mensaje': f"Procesando grupo {i+1}/{len(duplicados_rapidos)} con PLEX..."
-                                })
+                                try:
+                                    callback_progreso({
+                                        'tipo': 'procesando_plex',
+                                        'indice': i,
+                                        'total': len(duplicados_rapidos),
+                                        'mensaje': f"Procesando grupo {i+1}/{len(duplicados_rapidos)} con PLEX..."
+                                    })
+                                except Exception as e:
+                                    # Si hay error en el callback, solo logear sin interrumpir el proceso
+                                    self.logger.warning(f"Error en callback de progreso: {e}")
                             
                             # Añadir metadatos de PLEX
                             grupo_mejorado = enhancer.enhance_duplicate_group(grupo)

@@ -161,6 +161,23 @@ def _show_detailed_info(pelicula: Dict) -> None:
         else:
             st.write("**Duración:** No disponible")
         st.write(f"**Ruta:** `{pelicula.get('archivo', 'N/A')}`")
+        
+        # Mostrar información de análisis de video si está disponible
+        if pelicula.get('video_analysis_available'):
+            st.markdown("---")
+            st.markdown("**🔍 Análisis de Video:**")
+            if pelicula.get('resolution'):
+                st.write(f"**Resolución:** {pelicula.get('resolution')}")
+            if pelicula.get('quality_category'):
+                st.write(f"**Calidad:** {pelicula.get('quality_category')}")
+            if pelicula.get('bitrate'):
+                st.write(f"**Bitrate:** {pelicula.get('bitrate')} kbps")
+            if pelicula.get('fps'):
+                st.write(f"**FPS:** {pelicula.get('fps')}")
+            if pelicula.get('video_codec'):
+                st.write(f"**Video:** {pelicula.get('video_codec')}")
+            if pelicula.get('audio_codec'):
+                st.write(f"**Audio:** {pelicula.get('audio_codec')}")
     
     # Información de PLEX si está disponible
     if pelicula.get('has_plex_metadata'):

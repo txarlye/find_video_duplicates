@@ -14,6 +14,6 @@ if errorlevel 1 (
 
 REM Ejecutar la aplicación
 echo ✅ Ejecutando aplicación...
-python iniciar_app.py
+python main.py
 
 pause

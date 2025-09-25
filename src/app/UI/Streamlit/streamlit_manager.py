@@ -69,17 +69,17 @@ def setup_page_config():
         initial_sidebar_state="expanded"
     )
     
-    # Añadir estilos CSS personalizados para modo oscuro
+    # Añadir estilos CSS personalizados - Sidebar oscuro, área principal clara
     st.markdown("""
     <style>
     /* ======================================== */
-    /* TEMA OSCURO COMPLETO PARA STREAMLIT */
+    /* TEMA HÍBRIDO: SIDEBAR OSCURO + ÁREA PRINCIPAL CLARA */
     /* ======================================== */
     
-    /* Fondo principal oscuro */
+    /* Fondo principal claro */
     .stApp {
-        background-color: #0e1117 !important;
-        color: #fafafa !important;
+        background-color: #ffffff !important;
+        color: #262730 !important;
     }
     
     /* Sidebar más estrecho y oscuro */
@@ -123,121 +123,121 @@ def setup_page_config():
     }
     
     /* ======================================== */
-    /* CONTENIDO PRINCIPAL - MODO OSCURO */
+    /* CONTENIDO PRINCIPAL - MODO CLARO */
     /* ======================================== */
     
     /* Título principal */
     .main .block-container h1 {
-        color: #00d4aa !important;
+        color: #1f2937 !important;
         font-size: 2.5rem;
         margin-bottom: 1rem;
     }
     
     /* Subtítulos */
     .main .block-container h2 {
-        color: #00d4aa !important;
+        color: #374151 !important;
     }
     
     .main .block-container h3 {
-        color: #00d4aa !important;
+        color: #4b5563 !important;
     }
     
     /* Texto general */
     .main .block-container {
-        color: #fafafa !important;
-        background-color: #0e1117 !important;
+        color: #1f2937 !important;
+        background-color: #ffffff !important;
         padding-top: 2rem;
         padding-bottom: 2rem;
     }
     
     /* ======================================== */
-    /* BOXES Y CONTAINERS - MÁS CLARITOS */
+    /* BOXES Y CONTAINERS - MODO CLARO */
     /* ======================================== */
     
-    /* Boxes principales más claritos */
+    /* Boxes principales claros */
     .stContainer {
-        background-color: #262730 !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
         padding: 1rem !important;
         margin: 0.5rem 0 !important;
     }
     
-    /* Expanders más claritos */
+    /* Expanders claros */
     .streamlit-expander {
-        background-color: #262730 !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
     }
     
     .streamlit-expander .streamlit-expanderHeader {
-        background-color: #2d2d3a !important;
-        color: #fafafa !important;
+        background-color: #f1f5f9 !important;
+        color: #1f2937 !important;
     }
     
-    /* Métricas más claritas */
+    /* Métricas claras */
     .metric-container {
-        background-color: #262730 !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
         padding: 1rem !important;
     }
     
     /* ======================================== */
-    /* TABLAS Y DATAFRAMES */
+    /* TABLAS Y DATAFRAMES - MODO CLARO */
     /* ======================================== */
     
-    /* Tablas con fondo más claro */
+    /* Tablas con fondo claro */
     .stDataFrame {
-        background-color: #262730 !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
     }
     
     /* Headers de tabla */
     .stDataFrame thead th {
-        background-color: #2d2d3a !important;
-        color: #fafafa !important;
+        background-color: #f1f5f9 !important;
+        color: #1f2937 !important;
     }
     
     /* Filas de tabla alternadas */
     .stDataFrame tbody tr:nth-child(even) {
-        background-color: #1e1e2a !important;
+        background-color: #f8fafc !important;
     }
     
     .stDataFrame tbody tr:nth-child(odd) {
-        background-color: #262730 !important;
+        background-color: #ffffff !important;
     }
     
     /* ======================================== */
-    /* BOTONES Y CONTROLES */
+    /* BOTONES Y CONTROLES - MODO CLARO */
     /* ======================================== */
     
-    /* Botones principales más claritos */
+    /* Botones principales claros */
     .stButton > button {
-        background-color: #2d2d3a !important;
-        color: #fafafa !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+        border: 1px solid #2563eb !important;
         border-radius: 6px !important;
     }
     
     .stButton > button:hover {
-        background-color: #3a3a4a !important;
-        border-color: #00d4aa !important;
+        background-color: #2563eb !important;
+        border-color: #1d4ed8 !important;
     }
     
-    /* Selectbox más clarito */
+    /* Selectbox claro */
     .stSelectbox > div > div {
-        background-color: #2d2d3a !important;
-        color: #fafafa !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+        border: 1px solid #d1d5db !important;
     }
     
-    /* Text input más clarito */
+    /* Text input claro */
     .stTextInput > div > div > input {
-        background-color: #2d2d3a !important;
-        color: #fafafa !important;
-        border: 1px solid #3a3a4a !important;
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+        border: 1px solid #d1d5db !important;
     }
     
     /* ======================================== */
@@ -255,39 +255,39 @@ def setup_page_config():
     }
     
     /* ======================================== */
-    /* ALERTAS Y MENSAJES */
+    /* ALERTAS Y MENSAJES - MODO CLARO */
     /* ======================================== */
     
     /* Success messages */
     .stSuccess {
-        background-color: #1a3a1a !important;
-        border: 1px solid #00d4aa !important;
-        color: #00d4aa !important;
+        background-color: #f0fdf4 !important;
+        border: 1px solid #22c55e !important;
+        color: #15803d !important;
     }
     
     /* Error messages */
     .stError {
-        background-color: #3a1a1a !important;
-        border: 1px solid #ff6b6b !important;
-        color: #ff6b6b !important;
+        background-color: #fef2f2 !important;
+        border: 1px solid #ef4444 !important;
+        color: #dc2626 !important;
     }
     
     /* Warning messages */
     .stWarning {
-        background-color: #3a3a1a !important;
-        border: 1px solid #ffd93d !important;
-        color: #ffd93d !important;
+        background-color: #fffbeb !important;
+        border: 1px solid #f59e0b !important;
+        color: #d97706 !important;
     }
     
     /* Info messages */
     .stInfo {
-        background-color: #1a2a3a !important;
-        border: 1px solid #4a9eff !important;
-        color: #4a9eff !important;
+        background-color: #eff6ff !important;
+        border: 1px solid #3b82f6 !important;
+        color: #1d4ed8 !important;
     }
     
     /* ======================================== */
-    /* SCROLLBARS */
+    /* SCROLLBARS - MODO CLARO */
     /* ======================================== */
     
     /* Scrollbar personalizada */
@@ -296,16 +296,16 @@ def setup_page_config():
     }
     
     ::-webkit-scrollbar-track {
-        background: #1a1a1a;
+        background: #f1f5f9;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #3a3a4a;
+        background: #cbd5e1;
         border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: #4a4a5a;
+        background: #94a3b8;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -1287,9 +1287,20 @@ def process_hybrid_scan(carpeta: str):
         # Crear placeholder para mostrar progreso
         progress_placeholder = st.empty()
         
-        # Callback para mostrar progreso en Streamlit
+        # Callback para mostrar progreso en Streamlit (con manejo seguro de contexto)
         def mostrar_progreso_streamlit(mensaje):
-            progress_placeholder.text(mensaje)
+            try:
+                # Verificar si estamos en el contexto correcto de Streamlit
+                if hasattr(st, '_is_running_with_streamlit') and st._is_running_with_streamlit:
+                    progress_placeholder.text(mensaje)
+                else:
+                    # Si no estamos en contexto de Streamlit, solo logear
+                    import logging
+                    logging.getLogger(__name__).info(f"Progreso: {mensaje}")
+            except Exception as e:
+                # Si hay error, solo logear sin causar warnings
+                import logging
+                logging.getLogger(__name__).info(f"Progreso: {mensaje} (callback error: {e})")
         
         # Asignar callback al detector
         detector.mostrar_progreso_streamlit = mostrar_progreso_streamlit
@@ -1809,6 +1820,23 @@ def _show_detailed_info(pelicula: Dict):
             else:
                 st.write("**Duración:** No disponible")
             st.write(f"**Ruta:** `{pelicula.get('archivo', 'N/A')}`")
+            
+            # Mostrar información de análisis de video si está disponible
+            if pelicula.get('video_analysis_available'):
+                st.markdown("---")
+                st.markdown("**🔍 Análisis de Video:**")
+                if pelicula.get('resolution'):
+                    st.write(f"**Resolución:** {pelicula.get('resolution')}")
+                if pelicula.get('quality_category'):
+                    st.write(f"**Calidad:** {pelicula.get('quality_category')}")
+                if pelicula.get('bitrate'):
+                    st.write(f"**Bitrate:** {pelicula.get('bitrate')} kbps")
+                if pelicula.get('fps'):
+                    st.write(f"**FPS:** {pelicula.get('fps')}")
+                if pelicula.get('video_codec'):
+                    st.write(f"**Video:** {pelicula.get('video_codec')}")
+                if pelicula.get('audio_codec'):
+                    st.write(f"**Audio:** {pelicula.get('audio_codec')}")
         
         # Información de PLEX si está disponible
         if pelicula.get('has_plex_metadata'):

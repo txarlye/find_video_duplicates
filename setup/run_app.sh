@@ -24,4 +24,4 @@ fi
 
 # Ejecutar la aplicación
 echo "✅ Ejecutando aplicación..."
-python3 run_app.py
+python3 main.py

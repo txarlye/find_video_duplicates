@@ -437,6 +437,22 @@ class Settings:
     def set_plex_config_token(self, value: str):
         """Establece el token de PLEX en configuración"""
         self.set("plex.token", value)
+    
+    def get_plex_library_name(self) -> str:
+        """Obtiene el nombre de la biblioteca de PLEX"""
+        return self.get("plex.library_name", "Películas")
+    
+    def set_plex_library_name(self, value: str):
+        """Establece el nombre de la biblioteca de PLEX"""
+        self.set("plex.library_name", value)
+    
+    def get_plex_library_id(self) -> Optional[int]:
+        """Obtiene el ID de la biblioteca de PLEX"""
+        return self.get("plex.library_id", None)
+    
+    def set_plex_library_id(self, value: int):
+        """Establece el ID de la biblioteca de PLEX"""
+        self.set("plex.library_id", value)
 
 
 # Instancia global del singleton
