@@ -16,8 +16,44 @@ class PlexTitleExtractor:
         self.logger = logging.getLogger(__name__)
     
     def _get_connection(self):
-        """Obtiene conexión a la base de datos"""
-        return sqlite3.connect(self.database_path)
+        """Obtiene conexión a la base de datos con manejo robusto de errores"""
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Intentar conexión de solo lectura primero
+                conn = sqlite3.connect(f"file:{self.database_path}?mode=ro", uri=True)
+                
+                # Verificar que la conexión funciona
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+                cursor.close()
+                
+                return conn
+                
+            except sqlite3.OperationalError as e:
+                if "disk I/O error" in str(e) and attempt < max_retries - 1:
+                    import time
+                    time.sleep(0.5)  # Esperar antes de reintentar
+                    continue
+                else:
+                    # Fallback a conexión normal
+                    try:
+                        conn = sqlite3.connect(self.database_path)
+                        return conn
+                    except Exception:
+                        if attempt == max_retries - 1:
+                            raise
+                        time.sleep(0.5)
+                        continue
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                import time
+                time.sleep(0.5)
+                continue
+        
+        raise Exception("No se pudo establecer conexión con la base de datos después de múltiples intentos")
     
     def get_real_title_by_filename(self, filename: str) -> Optional[Dict]:
         """
@@ -64,6 +100,14 @@ class PlexTitleExtractor:
             
             return None
             
+        except sqlite3.OperationalError as e:
+            if "disk I/O error" in str(e):
+                self.logger.warning(f"Error de I/O en base de datos de Plex: {e}")
+                # No mostrar error en la interfaz, solo en logs
+                return None
+            else:
+                self.logger.error(f"Error de base de datos: {e}")
+                return None
         except Exception as e:
             self.logger.error(f"Error obteniendo título real de Plex: {e}")
             return None

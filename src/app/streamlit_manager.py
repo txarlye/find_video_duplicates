@@ -9,8 +9,18 @@ import sys
 import time
 import os
 import hashlib
+import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+
+# Configurar logging para mostrar en terminal
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
 # Configurar el path
 current_dir = Path(__file__).parent.parent.parent.absolute()
@@ -19,12 +29,14 @@ sys.path.insert(0, str(current_dir))
 from src.settings.settings import settings
 from src.utils.movie_detector import MovieDetector
 from src.utils.video import VideoPlayer, VideoFormatter, VideoComparison
-from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionManager
+from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionManager, DuplicatePairsManager
 from src.utils.file_operations import FileBatchProcessor
 from src.services.plex_service import PlexService
 from src.services.video_info_service import VideoInfoService
+from src.services.plex_refresh_service import PlexRefreshService
 from src.services.Plex.plex_title_extractor import PlexTitleExtractor
 from src.services.Plex.plex_editions_manager import PlexEditionsManager
+from src.services.scan_data_manager import ScanDataManager
 
 
 class StreamlitAppManager:
@@ -40,8 +52,11 @@ class StreamlitAppManager:
         self.file_processor = FileBatchProcessor()
         self.plex_service = PlexService()
         self.video_info_service = VideoInfoService()
+        self.plex_refresh_service = PlexRefreshService()
         self.plex_title_extractor = PlexTitleExtractor(settings.get_plex_database_path())
         self.plex_editions_manager = PlexEditionsManager(settings.get_plex_database_path())
+        self.pairs_manager = DuplicatePairsManager()
+        self.scan_data_manager = ScanDataManager()
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -309,6 +324,44 @@ class StreamlitAppManager:
                 else:
                     st.error("❌ Error de conexión")
         
+        # Sección de refresh de Plex
+        st.subheader("🔄 Refrescar Bibliotecas")
+        
+        col_refresh1, col_refresh2 = st.columns(2)
+        
+        with col_refresh1:
+            if st.button("🔄 Refrescar Películas", key="refresh_movies"):
+                with st.spinner("Refrescando biblioteca de películas..."):
+                    if self.plex_refresh_service.refresh_movies_library():
+                        st.success("✅ Biblioteca de películas refrescada")
+                    else:
+                        st.error("❌ Error refrescando películas")
+        
+        with col_refresh2:
+            if st.button("🔄 Refrescar Series", key="refresh_tv"):
+                with st.spinner("Refrescando biblioteca de series..."):
+                    if self.plex_refresh_service.refresh_tv_shows_library():
+                        st.success("✅ Biblioteca de series refrescada")
+                    else:
+                        st.error("❌ Error refrescando series")
+        
+        # Refresh via API
+        if st.button("🚀 Refrescar Todas las Bibliotecas (API)", key="refresh_all_api"):
+            with st.spinner("Refrescando todas las bibliotecas via API..."):
+                if self.plex_refresh_service.refresh_all_libraries_via_api():
+                    st.success("✅ Todas las bibliotecas refrescadas via API")
+                else:
+                    st.error("❌ Error refrescando bibliotecas via API")
+        
+        # Información del servidor
+        if st.button("ℹ️ Info del Servidor Plex", key="plex_server_info"):
+            server_info = self.plex_refresh_service.get_plex_server_info()
+            if "error" in server_info:
+                st.error(f"❌ {server_info['error']}")
+            else:
+                st.success("✅ Servidor Plex conectado")
+                st.json(server_info)
+        
         with col2:
             if st.button("💾 Guardar Configuración", key="save_plex_config"):
                 settings.set_plex_database_path(db_path)
@@ -352,6 +405,24 @@ class StreamlitAppManager:
                 st.session_state.detector = None
                 st.rerun()
         
+        # Sección de gestión de datos de escaneo
+        st.markdown("---")
+        st.subheader("💾 Gestión de Datos de Escaneo")
+        
+        col_save, col_load, col_list = st.columns(3)
+        
+        with col_save:
+            if st.button("💾 Guardar Escaneo", disabled=not hasattr(st.session_state, 'detector') or not st.session_state.detector):
+                self._save_scan_data()
+        
+        with col_load:
+            if st.button("📂 Cargar Escaneo"):
+                self._show_load_scan_interface()
+        
+        with col_list:
+            if st.button("📋 Ver Escaneos Guardados"):
+                self._show_saved_scans()
+        
         # Procesar escaneo
         if scan_button and carpeta:
             st.write("🔍 Botón presionado, iniciando escaneo...")
@@ -368,6 +439,9 @@ class StreamlitAppManager:
         st.session_state.scanning = True
         progress_bar = st.progress(0)
         status_text = st.empty()
+        
+        # Resetear contadores de pares
+        settings.reset_pairs_counters()
         
         try:
             status_text.text("🔍 Iniciando escaneo...")
@@ -424,11 +498,19 @@ class StreamlitAppManager:
     
     def render_results(self):
         """Renderiza los resultados del escaneo"""
-        if not st.session_state.peliculas:
+        # Debug: verificar estado de la sesión
+        logging.info(f"🔍 render_results - duplicados: {len(st.session_state.duplicados) if st.session_state.duplicados else 0}")
+        logging.info(f"🔍 render_results - peliculas: {len(st.session_state.peliculas) if st.session_state.peliculas else 0}")
+        
+        # Verificar si hay duplicados
+        if not st.session_state.duplicados:
+            logging.info("⚠️ render_results - No hay duplicados, saliendo")
+            # Mostrar mensaje de debug en la interfaz
+            st.info("💡 No hay datos de duplicados para mostrar. Escanea una carpeta o carga un escaneo guardado.")
             return
         
         # Métricas
-        total_peliculas = len(st.session_state.peliculas)
+        total_peliculas = len(st.session_state.peliculas) if st.session_state.peliculas else 0
         total_duplicados = len(st.session_state.duplicados)
         
         col1, col2, col3 = st.columns(3)
@@ -438,11 +520,41 @@ class StreamlitAppManager:
             st.metric("🔍 Duplicados Encontrados", total_duplicados)
         with col3:
             if total_duplicados > 0:
-                espacio_ahorrado = sum(
-                    min(duplicado[0].get('tamaño', 0), duplicado[1].get('tamaño', 0)) 
-                    for duplicado in st.session_state.duplicados
-                ) / (1024**3)
-                st.metric("💾 Espacio Ahorrable (GB)", f"{espacio_ahorrado:.1f} GB)")
+                # Calcular espacio ahorrable manejando ambos formatos
+                espacio_ahorrado = 0
+                for duplicado in st.session_state.duplicados:
+                    size1, size2 = 0, 0
+                    
+                    # Verificar si es una lista (formato antiguo) o diccionario (formato nuevo)
+                    if isinstance(duplicado, list) and len(duplicado) >= 2:
+                        # Formato antiguo: [archivo1, archivo2]
+                        archivo1, archivo2 = duplicado[0], duplicado[1]
+                        size1 = archivo1.get('tamaño', 0) / (1024**3) if isinstance(archivo1, dict) else 0
+                        size2 = archivo2.get('tamaño', 0) / (1024**3) if isinstance(archivo2, dict) else 0
+                    elif isinstance(duplicado, dict):
+                        # Formato nuevo: {'Tamaño 1': '1.5 GB', 'Tamaño 2': '1.4 GB', ...}
+                        size1_str = duplicado.get('Tamaño 1', '0 GB')
+                        size2_str = duplicado.get('Tamaño 2', '0 GB')
+                        
+                        # Convertir a GB
+                        if isinstance(size1_str, str) and 'GB' in size1_str:
+                            size1 = float(size1_str.replace(' GB', ''))
+                        elif isinstance(size1_str, str) and 'MB' in size1_str:
+                            size1 = float(size1_str.replace(' MB', '')) / 1024
+                        else:
+                            size1 = 0
+                            
+                        if isinstance(size2_str, str) and 'GB' in size2_str:
+                            size2 = float(size2_str.replace(' GB', ''))
+                        elif isinstance(size2_str, str) and 'MB' in size2_str:
+                            size2 = float(size2_str.replace(' MB', '')) / 1024
+                        else:
+                            size2 = 0
+                    
+                    # Sumar el menor de los dos tamaños
+                    espacio_ahorrado += min(size1, size2)
+                
+                st.metric("💾 Espacio Ahorrable (GB)", f"{espacio_ahorrado:.1f} GB")
         
         st.markdown("---")
         
@@ -451,7 +563,7 @@ class StreamlitAppManager:
             self._render_duplicates()
     
     def _render_duplicates(self):
-        """Renderiza la lista de duplicados"""
+        """Renderiza la lista de duplicados usando el nuevo gestor de pares"""
         # Crear datos para el DataFrame
         df_data = self._create_dataframe_data()
         
@@ -459,43 +571,54 @@ class StreamlitAppManager:
             st.warning("⚠️ No hay datos de duplicados para mostrar")
             return
         
-        # Mostrar resumen de selecciones
-        self.ui_components.render_selection_summary(st.session_state.selecciones)
+        # Establecer la lista de pares en el gestor
+        self.pairs_manager.set_pairs_list(df_data)
         
-        # Botón de mover archivos seleccionados
-        self._render_bulk_operations(df_data)
+        # Mostrar interfaz principal del gestor de pares
+        self.pairs_manager.render_main_interface()
         
-        # Sistema de paginación
-        total_pares = len(df_data)
+        # Integrar con análisis de Plex existente
+        current_pair = self.pairs_manager.navigation.get_current_pair()
+        if current_pair:
+            current_index = self.pairs_manager.navigation.get_current_index()
+            self._render_current_pair_with_plex(current_pair, current_index)
+    
+    def _render_current_pair_with_plex(self, pair_data: Dict[str, Any], index: int):
+        """Renderiza el par actual con análisis de Plex integrado"""
+        # Mostrar información básica inmediatamente
+        self._render_basic_info_immediate(pair_data, index)
         
-        # Controles de navegación
-        col_nav1, col_nav2, col_nav3, col_nav4 = st.columns([1, 2, 1, 1])
+        # Análisis de Plex si está habilitado
+        if settings.get_plex_fetch_metadata() and self.plex_service.is_configured():
+            # Cargar metadatos automáticamente si está habilitado
+            self._render_plex_metadata_auto(pair_data, index)
+        else:
+            # Mostrar expander opcional si no está habilitado
+            with st.expander("🎬 Metadatos de Plex (deshabilitado)", expanded=False):
+                st.info("💡 Habilita 'Traer metadatos de Plex' en la configuración para ver metadatos automáticamente")
         
-        with col_nav1:
-            if st.button("⬅️ Anterior", disabled=st.session_state.par_actual == 0, key=f"prev_{st.session_state.par_actual}"):
-                if st.session_state.par_actual > 0:
-                    st.session_state.par_actual -= 1
-                    st.rerun()
+        # SIEMPRE mostrar reproductores (más consistente)
+        self._render_video_comparison(pair_data, index)
         
-        with col_nav2:
-            st.markdown(f"**Par {st.session_state.par_actual + 1} de {total_pares}**")
+        # Información y controles
+        self._render_movie_controls(pair_data, index)
+    
+    def _parse_size_to_bytes(self, size_str: str) -> int:
+        """Convierte una cadena de tamaño a bytes"""
+        if not size_str or not isinstance(size_str, str):
+            return 0
         
-        with col_nav3:
-            if st.button("Siguiente ➡️", disabled=st.session_state.par_actual >= total_pares - 1, key=f"next_{st.session_state.par_actual}"):
-                if st.session_state.par_actual < total_pares - 1:
-                    st.session_state.par_actual += 1
-                    st.rerun()
-        
-        with col_nav4:
-            if st.button("🔄 Reiniciar", key=f"reset_{st.session_state.par_actual}"):
-                st.session_state.par_actual = 0
-                st.rerun()
-        
-        st.markdown("---")
-        
-        # Mostrar par actual
-        if st.session_state.par_actual < total_pares:
-            self._render_current_pair(df_data, st.session_state.par_actual)
+        try:
+            if 'GB' in size_str:
+                return int(float(size_str.replace(' GB', '')) * (1024**3))
+            elif 'MB' in size_str:
+                return int(float(size_str.replace(' MB', '')) * (1024**2))
+            elif 'KB' in size_str:
+                return int(float(size_str.replace(' KB', '')) * 1024)
+            else:
+                return 0
+        except (ValueError, TypeError):
+            return 0
     
     def _create_dataframe_data(self) -> List[Dict[str, Any]]:
         """Crea los datos para el DataFrame"""
@@ -507,8 +630,17 @@ class StreamlitAppManager:
                 archivo1, archivo2 = duplicado[0], duplicado[1]
             elif isinstance(duplicado, dict):
                 # Si ya es un diccionario, usar directamente
-                archivo1 = duplicado.get('archivo1', {})
-                archivo2 = duplicado.get('archivo2', {})
+                # Los datos vienen en formato: {'Peli 1': ..., 'Ruta 1': ..., 'Tamaño 1': ..., etc.}
+                archivo1 = {
+                    'archivo': duplicado.get('Ruta 1', ''),
+                    'nombre': duplicado.get('Peli 1', 'N/A'),
+                    'tamaño': self._parse_size_to_bytes(duplicado.get('Tamaño 1', '0 GB'))
+                }
+                archivo2 = {
+                    'archivo': duplicado.get('Ruta 2', ''),
+                    'nombre': duplicado.get('Peli 2', 'N/A'),
+                    'tamaño': self._parse_size_to_bytes(duplicado.get('Tamaño 2', '0 GB'))
+                }
             else:
                 continue
             
@@ -787,7 +919,6 @@ class StreamlitAppManager:
             if st.checkbox(f"Seleccionar Película 1", key=select1_key):
                 st.session_state[f"selected_{index}_1"] = True
                 st.session_state[f"selected_{index}_2"] = False  # Deseleccionar la otra
-                st.rerun()
             else:
                 st.session_state[f"selected_{index}_1"] = False
         
@@ -803,7 +934,6 @@ class StreamlitAppManager:
             if st.checkbox(f"Seleccionar Película 2", key=select2_key):
                 st.session_state[f"selected_{index}_2"] = True
                 st.session_state[f"selected_{index}_1"] = False  # Deseleccionar la otra
-                st.rerun()
             else:
                 st.session_state[f"selected_{index}_2"] = False
         
@@ -1069,26 +1199,81 @@ class StreamlitAppManager:
         with col1:
             st.write("**Película 1:**")
             st.markdown(f"<h4 style='color: #1f77b4'>{row.get('Peli 1', 'N/A')}</h4>", unsafe_allow_html=True)
-            st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
+            # Obtener tamaño real del archivo
+            ruta1 = row.get('Ruta 1', '')
+            if ruta1:
+                file_info = self._get_file_info(ruta1)
+                if file_info and 'size' in file_info:
+                    size_gb = file_info['size'] / (1024**3)
+                    st.write(f"📊 Tamaño: {size_gb:.2f} GB")
+                else:
+                    st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
+            else:
+                st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
             st.write(f"⏱️ Duración: {row.get('Duración 1', 'N/A')}")
             st.write(f"📁 Ruta: {row.get('Ruta 1', 'N/A')}")
             
-            # Información de video local
+            # Fecha de creación
             ruta1 = row.get('Ruta 1', '')
+            if ruta1:
+                creation_date1 = self._format_creation_date(ruta1)
+                st.write(f"📅 Creado: {creation_date1}")
+                
+                # Obtener comparación para mostrar etiqueta
+                ruta2 = row.get('Ruta 2', '')
+                if ruta2:
+                    comparison = self._compare_creation_dates(ruta1, ruta2)
+                    if comparison['newer'] == 1:
+                        st.markdown("🆕 **Archivo más nuevo**")
+                    elif comparison['newer'] == 2:
+                        st.markdown("📜 **Archivo más viejo**")
+            
+            # Información de video local
             if ruta1 and os.path.exists(ruta1):
                 self._render_local_video_info(ruta1, f"local1_{index}")
         
         with col2:
             st.write("**Película 2:**")
             st.markdown(f"<h4 style='color: #ff7f0e'>{row.get('Peli 2', 'N/A')}</h4>", unsafe_allow_html=True)
-            st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
+            # Obtener tamaño real del archivo
+            ruta2 = row.get('Ruta 2', '')
+            if ruta2:
+                file_info = self._get_file_info(ruta2)
+                if file_info and 'size' in file_info:
+                    size_gb = file_info['size'] / (1024**3)
+                    st.write(f"📊 Tamaño: {size_gb:.2f} GB")
+                else:
+                    st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
+            else:
+                st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
             st.write(f"⏱️ Duración: {row.get('Duración 2', 'N/A')}")
             st.write(f"📁 Ruta: {row.get('Ruta 2', 'N/A')}")
+            
+            # Fecha de creación
+            ruta2 = row.get('Ruta 2', '')
+            if ruta2:
+                creation_date2 = self._format_creation_date(ruta2)
+                st.write(f"📅 Creado: {creation_date2}")
+                
+                # Obtener comparación para mostrar etiqueta
+                ruta1 = row.get('Ruta 1', '')
+                if ruta1:
+                    comparison = self._compare_creation_dates(ruta1, ruta2)
+                    if comparison['newer'] == 2:
+                        st.markdown("🆕 **Archivo más nuevo**")
+                    elif comparison['newer'] == 1:
+                        st.markdown("📜 **Archivo más viejo**")
             
             # Información de video local
             ruta2 = row.get('Ruta 2', '')
             if ruta2 and os.path.exists(ruta2):
                 self._render_local_video_info(ruta2, f"local2_{index}")
+        
+        # Comparación de fechas de creación
+        ruta1 = row.get('Ruta 1', '')
+        ruta2 = row.get('Ruta 2', '')
+        if ruta1 and ruta2:
+            self._render_creation_date_comparison(ruta1, ruta2)
         
         st.markdown("---")
     
@@ -1324,10 +1509,12 @@ class StreamlitAppManager:
             file1_path = row.get('Ruta 1', '')
             file2_path = row.get('Ruta 2', '')
             
-            # Análisis completo con ediciones
-            analysis = self.plex_editions_manager.analyze_duplicate_pair_with_editions(
-                file1_path, file2_path, plex_info['file1'], plex_info['file2']
-            )
+            # Mostrar indicador de progreso para análisis que puede tardar
+            with st.spinner("🔍 Analizando duplicados (calculando hash si es necesario)..."):
+                # Análisis completo con ediciones
+                analysis = self.plex_editions_manager.analyze_duplicate_pair_with_editions(
+                    file1_path, file2_path, plex_info['file1'], plex_info['file2']
+                )
             
             # Mostrar resultados del análisis
             self._display_editions_analysis(analysis, file1_path, file2_path, index)
@@ -1602,8 +1789,17 @@ class StreamlitAppManager:
                 help="Ejemplo: 'Avatar (2009)' o 'Avatar (2009) {edition-Director\'s Cut}'"
             )
             
-            if st.button("💾 Renombrar", key=f"rename_btn_{key}"):
-                self._rename_file(file_path, new_name)
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                if st.button("💾 Renombrar", key=f"rename_btn_{key}"):
+                    self._rename_file(file_path, new_name)
+            
+            with col2:
+                # Botón para refrescar búsqueda de Plex después de renombrar
+                if st.button("🔄 Refrescar Plex", key=f"refresh_plex_{key}", 
+                           help="Refresca la búsqueda de Plex para ver si ahora encuentra el archivo"):
+                    self._refresh_plex_search_for_file(file_path)
         
         # Opción 2: Crear edición diferente
         with st.expander("🎬 Crear edición diferente", expanded=False):
@@ -1656,13 +1852,17 @@ class StreamlitAppManager:
             # Renombrar archivo
             os.rename(file_path, new_path)
             st.success(f"✅ Archivo renombrado: {os.path.basename(new_path)}")
+            
+            # Refrescar biblioteca de Plex automáticamente
+            self._refresh_plex_after_rename()
+            
             st.rerun()
             
         except Exception as e:
             st.error(f"❌ Error renombrando archivo: {e}")
     
     def _create_edition(self, file_path: str, selected_movie: str, edition_name: str):
-        """Crea una edición diferente de una película"""
+        """Crea una edición diferente de una película con soporte para rutas UNC"""
         try:
             if not edition_name:
                 st.error("❌ Nombre de edición no puede estar vacío")
@@ -1684,42 +1884,320 @@ class StreamlitAppManager:
             new_name = f"{title} ({year}) {{edition-{edition_name}}}{extension}"
             new_path = os.path.join(directory, new_name)
             
-            # Renombrar archivo
-            os.rename(file_path, new_path)
-            st.success(f"✅ Edición creada: {os.path.basename(new_path)}")
-            st.info("💡 Reinicia Plex para que detecte la nueva edición")
-            st.rerun()
+            # Verificar si es una ruta UNC
+            is_unc = file_path.startswith('\\')
+            
+            if is_unc:
+                # Para rutas UNC, usar manejo especial
+                try:
+                    # Intentar renombrar directamente
+                    os.rename(file_path, new_path)
+                    st.success(f"✅ Edición creada: {os.path.basename(new_path)}")
+                    
+                    # Refrescar biblioteca de Plex automáticamente
+                    self._refresh_plex_after_rename()
+                    
+                    st.rerun()
+                except Exception as unc_error:
+                    st.warning(f"⚠️ Error con ruta UNC: {unc_error}")
+                    st.info("💡 Intentando con método alternativo...")
+                    
+                    # Método alternativo para UNC
+                    try:
+                        import shutil
+                        shutil.move(file_path, new_path)
+                        st.success(f"✅ Edición creada (método alternativo): {os.path.basename(new_path)}")
+                        
+                        # Refrescar biblioteca de Plex automáticamente
+                        self._refresh_plex_after_rename()
+                        
+                        st.rerun()
+                    except Exception as alt_error:
+                        st.error(f"❌ Error con método alternativo: {alt_error}")
+                        st.error("💡 Verifica que tienes permisos de escritura en la ruta UNC")
+            else:
+                # Para rutas locales, usar método normal
+                os.rename(file_path, new_path)
+                st.success(f"✅ Edición creada: {os.path.basename(new_path)}")
+                
+                # Refrescar biblioteca de Plex automáticamente
+                self._refresh_plex_after_rename()
+                
+                st.rerun()
             
         except Exception as e:
             st.error(f"❌ Error creando edición: {e}")
     
+    def _refresh_plex_after_rename(self):
+        """Refresca automáticamente la biblioteca de Plex después de un renombrado"""
+        try:
+            # Verificar si Plex está configurado
+            if not self.plex_refresh_service.is_configured():
+                st.info("💡 Plex no configurado - no se puede refrescar automáticamente")
+                return
+            
+            # Determinar qué biblioteca refrescar basándose en la configuración
+            movies_library = settings.get_plex_movies_library()
+            tv_library = settings.get_plex_tv_shows_library()
+            
+            # Intentar refrescar biblioteca de películas primero
+            if movies_library:
+                with st.spinner("🔄 Refrescando biblioteca de películas..."):
+                    if self.plex_refresh_service.refresh_library_by_name(movies_library):
+                        st.success("✅ Biblioteca de películas refrescada automáticamente")
+                    else:
+                        st.warning("⚠️ No se pudo refrescar la biblioteca de películas")
+            
+            # Si hay biblioteca de series configurada, también refrescarla
+            if tv_library and tv_library != movies_library:
+                with st.spinner("🔄 Refrescando biblioteca de series..."):
+                    if self.plex_refresh_service.refresh_library_by_name(tv_library):
+                        st.success("✅ Biblioteca de series refrescada automáticamente")
+                    else:
+                        st.warning("⚠️ No se pudo refrescar la biblioteca de series")
+                        
+        except Exception as e:
+            st.warning(f"⚠️ Error refrescando Plex automáticamente: {e}")
+            st.info("💡 Puedes refrescar manualmente desde la configuración de Plex")
+    
+    def _refresh_plex_search_for_file(self, file_path: str):
+        """Refresca la búsqueda de Plex para un archivo específico"""
+        try:
+            with st.spinner("🔄 Refrescando búsqueda de Plex..."):
+                # Refrescar biblioteca primero
+                self._refresh_plex_after_rename()
+                
+                # Esperar un momento para que Plex procese
+                import time
+                time.sleep(2)
+                
+                # Buscar el archivo nuevamente en Plex
+                plex_info = self.plex_service.get_library_info_by_filename(file_path)
+                
+                if plex_info:
+                    st.success("✅ ¡Archivo encontrado en Plex!")
+                    st.info(f"📚 Biblioteca: {plex_info.get('library_name', 'N/A')}")
+                    st.info(f"🎬 Título: {plex_info.get('title', 'N/A')}")
+                    st.info(f"📅 Año: {plex_info.get('year', 'N/A')}")
+                    st.rerun()  # Refrescar la interfaz para mostrar el nuevo estado
+                else:
+                    st.warning("⚠️ Archivo aún no encontrado en Plex")
+                    st.info("💡 Puede que necesites esperar más tiempo o refrescar manualmente")
+                    
+        except Exception as e:
+            st.error(f"❌ Error refrescando búsqueda: {e}")
+    
+    def _save_scan_data(self):
+        """Guarda los datos del escaneo actual"""
+        try:
+            if not hasattr(st.session_state, 'duplicados') or not st.session_state.duplicados:
+                st.warning("⚠️ No hay datos de escaneo para guardar")
+                return
+            
+            # Obtener ruta escaneada
+            scan_path = getattr(st.session_state, 'last_scan_path', 'Carpeta desconocida')
+            
+            # Guardar datos
+            file_path = self.scan_data_manager.save_scan_data(
+                pairs_data=st.session_state.duplicados,
+                scan_path=scan_path
+            )
+            
+            st.success(f"✅ Escaneo guardado: {Path(file_path).name}")
+            
+        except Exception as e:
+            st.error(f"❌ Error guardando escaneo: {e}")
+    
+    def _show_load_scan_interface(self):
+        """Muestra la interfaz para cargar un escaneo"""
+        try:
+            scans = self.scan_data_manager.get_available_scans()
+            
+            if not scans:
+                st.info("📋 No hay escaneos guardados")
+                return
+            
+            st.subheader("📂 Cargar Escaneo Guardado")
+            
+            # Crear opciones para el selectbox
+            scan_options = []
+            for scan in scans:
+                scan_date = scan.get('scan_date', 'N/A')
+                scan_path = scan.get('scan_path', 'N/A')
+                total_pairs = scan.get('total_pairs', 0)
+                scan_options.append(f"{scan_date[:19]} - {scan_path} ({total_pairs} pares)")
+            
+            selected_scan = st.selectbox(
+                "Seleccionar escaneo:",
+                options=range(len(scans)),
+                format_func=lambda x: scan_options[x],
+                key="load_scan_select"
+            )
+            
+            if st.button("📂 Cargar Escaneo Seleccionado"):
+                self._load_scan_data(scans[selected_scan]['file_path'])
+                
+        except Exception as e:
+            st.error(f"❌ Error mostrando escaneos: {e}")
+    
+    def _load_scan_data(self, file_path: str):
+        """Carga los datos de un escaneo"""
+        try:
+            logging.info(f"📂 Cargando escaneo desde: {file_path}")
+            scan_data = self.scan_data_manager.load_scan_data(file_path)
+            
+            # Actualizar estado de sesión
+            pairs_data = scan_data.get('pairs_data', [])
+            logging.info(f"📊 Datos cargados: {len(pairs_data)} pares")
+            
+            # Establecer datos en session_state
+            st.session_state.duplicados = pairs_data
+            st.session_state.last_scan_path = scan_data.get('metadata', {}).get('scan_path', '')
+            
+            # Establecer la lista en el pairs_manager
+            self.pairs_manager.set_pairs_list(pairs_data)
+            logging.info(f"🔄 Lista establecida en pairs_manager: {len(pairs_data)} pares")
+            
+            # Actualizar contadores
+            settings.set_total_pairs(len(pairs_data))
+            settings.set_pairs_deleted(0)
+            logging.info(f"📈 Contadores actualizados: total={len(pairs_data)}")
+            
+            # Debug: verificar que los datos se establecieron correctamente
+            logging.info(f"🔍 Después de cargar - st.session_state.duplicados: {len(st.session_state.duplicados) if st.session_state.duplicados else 0}")
+            logging.info(f"🔍 Después de cargar - pairs_manager tiene: {len(self.pairs_manager.get_pairs_list()) if hasattr(self.pairs_manager, 'get_pairs_list') else 'N/A'}")
+            
+            st.success(f"✅ Escaneo cargado: {len(pairs_data)} pares")
+            
+            # Mostrar información de debug
+            st.info(f"🔍 Debug: st.session_state.duplicados tiene {len(st.session_state.duplicados)} pares")
+            st.info(f"🔍 Debug: pairs_manager tiene {len(self.pairs_manager.get_pairs_list())} pares")
+            
+            # Forzar actualización del estado - NO usar scan_loaded flags
+            # Los datos ya están en st.session_state.duplicados
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"❌ Error cargando escaneo: {e}")
+    
+    def _show_saved_scans(self):
+        """Muestra la lista de escaneos guardados"""
+        try:
+            scans = self.scan_data_manager.get_available_scans()
+            
+            if not scans:
+                st.info("📋 No hay escaneos guardados")
+                return
+            
+            st.subheader("📋 Escaneos Guardados")
+            
+            for i, scan in enumerate(scans):
+                with st.expander(f"📁 {scan['filename']}", expanded=False):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.write(f"**Ruta:** {scan['scan_path']}")
+                        st.write(f"**Fecha:** {scan['scan_date']}")
+                    
+                    with col2:
+                        st.write(f"**Pares:** {scan['total_pairs']}")
+                        st.write(f"**Archivo:** {scan['filename']}")
+                    
+                    with col3:
+                        if st.button(f"📂 Cargar", key=f"load_{i}"):
+                            self._load_scan_data(scan['file_path'])
+                        
+                        if st.button(f"🗑️ Eliminar", key=f"delete_{i}"):
+                            if self.scan_data_manager.delete_scan_data(scan['file_path']):
+                                st.success("✅ Escaneo eliminado")
+                                st.rerun()
+                            else:
+                                st.error("❌ Error eliminando escaneo")
+                
+        except Exception as e:
+            st.error(f"❌ Error mostrando escaneos: {e}")
+    
     def _calculate_file_hash(self, file_path: str) -> Optional[str]:
-        """Calcula el hash MD5 de un archivo"""
+        """Calcula el hash MD5 de un archivo con indicador de progreso"""
         try:
             # Normalizar la ruta para rutas UNC
             normalized_path = os.path.normpath(file_path)
             
-            if not os.path.exists(normalized_path):
-                st.warning(f"⚠️ Archivo no encontrado: {normalized_path}")
-                return None
-            
-            # Verificar que es un archivo (no directorio)
-            if not os.path.isfile(normalized_path):
-                st.warning(f"⚠️ No es un archivo: {normalized_path}")
-                return None
-            
-            hash_md5 = hashlib.md5()
-            
-            # Usar try/except para manejar errores de acceso
-            try:
-                with open(normalized_path, "rb") as f:
-                    # Leer en chunks para archivos grandes
-                    for chunk in iter(lambda: f.read(8192), b""):  # Chunks más grandes
-                        hash_md5.update(chunk)
-                return hash_md5.hexdigest()
-            except (OSError, IOError) as e:
-                st.warning(f"⚠️ Error accediendo al archivo: {e}")
-                return None
+            # Para rutas UNC, intentar acceso directo sin verificar existencia previa
+            if file_path.startswith('\\\\'):
+                logging.info(f"🔗 Calculando hash de ruta UNC: {file_path}")
+                try:
+                    hash_md5 = hashlib.md5()
+                    bytes_read = 0
+                    chunk_size = 8192
+                    
+                    # Obtener tamaño del archivo para mostrar progreso
+                    try:
+                        file_size = os.path.getsize(normalized_path)
+                        logging.info(f"📊 Tamaño del archivo: {file_size / (1024*1024):.1f} MB")
+                    except:
+                        file_size = 0
+                    
+                    with open(normalized_path, "rb") as f:
+                        while True:
+                            chunk = f.read(chunk_size)
+                            if not chunk:
+                                break
+                            hash_md5.update(chunk)
+                            bytes_read += len(chunk)
+                            
+                            # Mostrar progreso cada 10MB
+                            if file_size > 0 and bytes_read % (10 * 1024 * 1024) == 0:
+                                progress = (bytes_read / file_size) * 100
+                                logging.info(f"🔄 Progreso hash: {progress:.1f}% ({bytes_read / (1024*1024):.1f}MB/{file_size / (1024*1024):.1f}MB)")
+                    
+                    logging.info(f"✅ Hash calculado: {hash_md5.hexdigest()[:16]}...")
+                    return hash_md5.hexdigest()
+                except (OSError, IOError) as e:
+                    logging.warning(f"⚠️ No se puede acceder a ruta UNC {file_path}: {e}")
+                    return None
+            else:
+                # Para rutas locales, verificar existencia
+                if not os.path.exists(normalized_path):
+                    st.warning(f"⚠️ Archivo no encontrado: {normalized_path}")
+                    return None
+                
+                # Verificar que es un archivo (no directorio)
+                if not os.path.isfile(normalized_path):
+                    st.warning(f"⚠️ No es un archivo: {normalized_path}")
+                    return None
+                
+                hash_md5 = hashlib.md5()
+                bytes_read = 0
+                chunk_size = 8192
+                
+                # Obtener tamaño del archivo para mostrar progreso
+                try:
+                    file_size = os.path.getsize(normalized_path)
+                    if file_size > 50 * 1024 * 1024:  # Solo mostrar progreso para archivos > 50MB
+                        logging.info(f"📊 Calculando hash de archivo local: {file_size / (1024*1024):.1f} MB")
+                except:
+                    file_size = 0
+                
+                # Usar try/except para manejar errores de acceso
+                try:
+                    with open(normalized_path, "rb") as f:
+                        while True:
+                            chunk = f.read(chunk_size)
+                            if not chunk:
+                                break
+                            hash_md5.update(chunk)
+                            bytes_read += len(chunk)
+                            
+                            # Mostrar progreso cada 10MB para archivos grandes
+                            if file_size > 50 * 1024 * 1024 and bytes_read % (10 * 1024 * 1024) == 0:
+                                progress = (bytes_read / file_size) * 100
+                                logging.info(f"🔄 Progreso hash: {progress:.1f}% ({bytes_read / (1024*1024):.1f}MB/{file_size / (1024*1024):.1f}MB)")
+                    
+                    return hash_md5.hexdigest()
+                except (OSError, IOError) as e:
+                    st.warning(f"⚠️ Error accediendo al archivo: {e}")
+                    return None
                 
         except Exception as e:
             st.warning(f"⚠️ Error calculando hash: {e}")
@@ -1736,11 +2214,93 @@ class StreamlitAppManager:
             stat = os.stat(normalized_path)
             return {
                 'size': stat.st_size,
-                'mtime': stat.st_mtime
+                'mtime': stat.st_mtime,
+                'ctime': stat.st_ctime  # Fecha de creación
             }
         except Exception as e:
             st.warning(f"⚠️ Error obteniendo info del archivo: {e}")
             return None
+    
+    def _format_creation_date(self, file_path: str) -> str:
+        """Formatea la fecha de creación del archivo"""
+        try:
+            file_info = self._get_file_info(file_path)
+            if file_info and 'ctime' in file_info:
+                import datetime
+                creation_time = datetime.datetime.fromtimestamp(file_info['ctime'])
+                return creation_time.strftime("%Y-%m-%d %H:%M:%S")
+            return "N/A"
+        except Exception:
+            return "N/A"
+    
+    def _compare_creation_dates(self, file_path1: str, file_path2: str) -> Dict[str, Any]:
+        """Compara las fechas de creación de dos archivos"""
+        try:
+            info1 = self._get_file_info(file_path1)
+            info2 = self._get_file_info(file_path2)
+            
+            if not info1 or not info2 or 'ctime' not in info1 or 'ctime' not in info2:
+                return {'newer': None, 'difference': None}
+            
+            ctime1 = info1['ctime']
+            ctime2 = info2['ctime']
+            
+            if ctime1 > ctime2:
+                newer = 1
+                difference = ctime1 - ctime2
+            elif ctime2 > ctime1:
+                newer = 2
+                difference = ctime2 - ctime1
+            else:
+                newer = None
+                difference = 0
+            
+            return {
+                'newer': newer,
+                'difference': difference
+            }
+        except Exception:
+            return {'newer': None, 'difference': None}
+    
+    def _render_creation_date_comparison(self, file_path1: str, file_path2: str):
+        """Renderiza la comparación de fechas de creación"""
+        try:
+            comparison = self._compare_creation_dates(file_path1, file_path2)
+            
+            if comparison['newer'] is None:
+                return
+            
+            import datetime
+            
+            # Calcular diferencia en formato legible
+            if comparison['difference']:
+                diff_seconds = comparison['difference']
+                if diff_seconds < 60:
+                    diff_text = f"{int(diff_seconds)} segundos"
+                elif diff_seconds < 3600:
+                    diff_text = f"{int(diff_seconds/60)} minutos"
+                elif diff_seconds < 86400:
+                    diff_text = f"{int(diff_seconds/3600)} horas"
+                else:
+                    diff_text = f"{int(diff_seconds/86400)} días"
+            else:
+                diff_text = "mismo momento"
+            
+            # Mostrar resultado de la comparación
+            st.markdown("---")
+            st.subheader("📅 Comparación de Fechas de Creación")
+            
+            if comparison['newer'] == 1:
+                st.success(f"🆕 **Película 1 es más reciente** (por {diff_text})")
+                st.info("💡 La Película 1 fue creada más tarde, probablemente es la versión más actualizada")
+            elif comparison['newer'] == 2:
+                st.success(f"🆕 **Película 2 es más reciente** (por {diff_text})")
+                st.info("💡 La Película 2 fue creada más tarde, probablemente es la versión más actualizada")
+            else:
+                st.info("📅 **Ambas películas fueron creadas al mismo tiempo**")
+                
+        except Exception as e:
+            st.warning(f"⚠️ Error comparando fechas: {e}")
     
     def _show_edition_creator(self, file_path: str, movie_title: str, key: str):
         """Muestra el creador de ediciones para Plex"""

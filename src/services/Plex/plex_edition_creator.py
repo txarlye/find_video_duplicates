@@ -33,9 +33,50 @@ class PlexEditionCreator:
             # Normalizar la ruta del archivo
             normalized_path = os.path.normpath(file_path)
             
-            if not os.path.exists(normalized_path):
-                self.logger.error(f"Archivo no encontrado: {normalized_path}")
-                return None
+            # Verificar existencia con múltiples métodos para rutas UNC
+            file_exists = False
+            working_path = None
+            
+            # Método 1: Ruta normalizada
+            try:
+                if os.path.exists(normalized_path):
+                    file_exists = True
+                    working_path = normalized_path
+            except Exception:
+                pass
+            
+            # Método 2: Ruta original
+            if not file_exists:
+                try:
+                    if os.path.exists(file_path):
+                        file_exists = True
+                        working_path = file_path
+                except Exception:
+                    pass
+            
+            # Método 3: pathlib para rutas UNC
+            if not file_exists:
+                try:
+                    from pathlib import Path
+                    path_obj = Path(file_path)
+                    if path_obj.exists():
+                        file_exists = True
+                        working_path = str(path_obj)
+                except Exception:
+                    pass
+            
+            if not file_exists:
+                # Para rutas UNC, intentar continuar de todas formas
+                if file_path.startswith('\\\\'):
+                    self.logger.warning(f"Ruta UNC no accesible desde script: {file_path}")
+                    self.logger.warning("Continuando con la ruta original (puede funcionar en Streamlit)")
+                    working_path = file_path
+                else:
+                    self.logger.error(f"Archivo no encontrado: {file_path}")
+                    return None
+            
+            # Usar la ruta que funciona
+            file_path = working_path
             
             # Obtener directorio y nombre base
             directory = os.path.dirname(normalized_path)
@@ -76,10 +117,20 @@ class PlexEditionCreator:
                 return None
             
             # Renombrar archivo
-            os.rename(normalized_path, new_path)
-            
-            self.logger.info(f"Edición creada exitosamente: {new_path}")
-            return new_path
+            try:
+                os.rename(file_path, new_path)
+                self.logger.info(f"Edición creada exitosamente: {new_path}")
+                return new_path
+            except Exception as rename_error:
+                self.logger.error(f"Error renombrando archivo: {rename_error}")
+                # Intentar con ruta normalizada si falla
+                try:
+                    os.rename(normalized_path, new_path)
+                    self.logger.info(f"Edición creada exitosamente (ruta normalizada): {new_path}")
+                    return new_path
+                except Exception as final_error:
+                    self.logger.error(f"Error final renombrando: {final_error}")
+                    return None
             
         except Exception as e:
             self.logger.error(f"Error creando edición: {e}")
@@ -261,3 +312,76 @@ class PlexEditionCreator:
             clean_name = clean_name[:100]
         
         return clean_name.strip() or "Archivo"
+    
+    def create_edition_file_unc_safe(self, file_path: str, movie_title: str, edition_name: str, 
+                                    create_subfolder: bool = False) -> Optional[str]:
+        """
+        Crea una edición con manejo seguro de rutas UNC
+        
+        Args:
+            file_path: Ruta del archivo original
+            movie_title: Título de la película
+            edition_name: Nombre de la edición
+            create_subfolder: Si crear subcarpeta o no
+            
+        Returns:
+            Nueva ruta del archivo o None si hay error
+        """
+        try:
+            # Para rutas UNC, usar la ruta original sin verificar existencia
+            if file_path.startswith('\\\\'):
+                self.logger.info(f"Procesando ruta UNC: {file_path}")
+                return self._create_edition_with_path(file_path, movie_title, edition_name, create_subfolder)
+            else:
+                # Para rutas locales, usar el método normal
+                return self.create_edition_file(file_path, movie_title, edition_name, create_subfolder)
+                
+        except Exception as e:
+            self.logger.error(f"Error en creación UNC-safe: {e}")
+            return None
+    
+    def _create_edition_with_path(self, file_path: str, movie_title: str, edition_name: str, 
+                                 create_subfolder: bool = False) -> Optional[str]:
+        """Crea edición con una ruta específica sin verificar existencia previa"""
+        try:
+            # Obtener directorio y nombre base
+            directory = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+            name, ext = os.path.splitext(filename)
+            
+            # Limpiar el nombre de la edición
+            clean_edition_name = self._clean_edition_name(edition_name)
+            
+            # Crear nuevo nombre con formato Plex
+            new_filename = f"{name} {{edition-{clean_edition_name}}}{ext}"
+            
+            # Verificar longitud
+            if len(new_filename) > 255:
+                max_name_length = 255 - len(ext) - len(f" {{edition-{clean_edition_name}}}")
+                truncated_name = name[:max_name_length]
+                new_filename = f"{truncated_name} {{edition-{clean_edition_name}}}{ext}"
+            
+            if create_subfolder:
+                # Crear subcarpeta
+                clean_movie_title = self._clean_filename(movie_title)
+                folder_name = f"{clean_movie_title} {{edition-{clean_edition_name}}}"
+                new_directory = os.path.join(directory, folder_name)
+                os.makedirs(new_directory, exist_ok=True)
+                new_path = os.path.join(new_directory, new_filename)
+            else:
+                # Solo renombrar archivo
+                new_path = os.path.join(directory, new_filename)
+            
+            # Verificar que el destino no existe
+            if os.path.exists(new_path):
+                self.logger.error(f"El archivo de destino ya existe: {new_path}")
+                return None
+            
+            # Renombrar archivo
+            os.rename(file_path, new_path)
+            self.logger.info(f"Edición creada exitosamente: {new_path}")
+            return new_path
+            
+        except Exception as e:
+            self.logger.error(f"Error creando edición con ruta: {e}")
+            return None

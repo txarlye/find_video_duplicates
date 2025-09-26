@@ -6,6 +6,7 @@ Componentes de interfaz de usuario reutilizables
 
 import streamlit as st
 import re
+import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from src.settings.settings import settings
@@ -267,3 +268,555 @@ class SelectionManager:
     def clear_selections(self) -> None:
         """Limpia todas las selecciones"""
         st.session_state[self.session_key] = {}
+
+
+class PairNavigationManager:
+    """Gestor de navegación entre pares de duplicados"""
+    
+    def __init__(self, session_key: str = "pair_navigation"):
+        """
+        Inicializa el gestor de navegación
+        
+        Args:
+            session_key: Clave para el estado de sesión
+        """
+        self.session_key = session_key
+        self.logger = logging.getLogger(__name__)
+        self._initialize_session_state()
+    
+    def _initialize_session_state(self) -> None:
+        """Inicializa el estado de sesión para la navegación"""
+        if self.session_key not in st.session_state:
+            st.session_state[self.session_key] = {
+                'current_pair': 0,
+                'total_pairs': 0,
+                'pairs_list': []
+            }
+    
+    def set_pairs_list(self, pairs_list: List[Dict[str, Any]]) -> None:
+        """
+        Establece la lista de pares disponibles
+        
+        Args:
+            pairs_list: Lista de pares de duplicados
+        """
+        st.session_state[self.session_key]['pairs_list'] = pairs_list
+        st.session_state[self.session_key]['total_pairs'] = len(pairs_list)
+        if st.session_state[self.session_key]['current_pair'] >= len(pairs_list):
+            st.session_state[self.session_key]['current_pair'] = 0
+        
+        # Guardar el total original para las métricas
+        st.session_state['original_total_pairs'] = len(pairs_list)
+        
+        # Actualizar contadores en settings
+        settings.set_total_pairs(len(pairs_list))
+        settings.set_pairs_deleted(0)  # Resetear contador de eliminados
+    
+    def get_current_pair(self) -> Optional[Dict[str, Any]]:
+        """
+        Obtiene el par actual
+        
+        Returns:
+            Diccionario con el par actual o None si no hay pares
+        """
+        pairs_list = st.session_state[self.session_key]['pairs_list']
+        current_index = st.session_state[self.session_key]['current_pair']
+        
+        if not pairs_list or current_index >= len(pairs_list):
+            return None
+        
+        return pairs_list[current_index]
+    
+    def get_current_index(self) -> int:
+        """
+        Obtiene el índice del par actual
+        
+        Returns:
+            Índice del par actual
+        """
+        return st.session_state[self.session_key]['current_pair']
+    
+    def get_total_pairs(self) -> int:
+        """
+        Obtiene el total de pares
+        
+        Returns:
+            Total de pares disponibles
+        """
+        return st.session_state[self.session_key]['total_pairs']
+    
+    def go_to_pair(self, index: int) -> None:
+        """
+        Va a un par específico
+        
+        Args:
+            index: Índice del par al que ir
+        """
+        total_pairs = st.session_state[self.session_key]['total_pairs']
+        if 0 <= index < total_pairs:
+            old_index = st.session_state[self.session_key]['current_pair']
+            st.session_state[self.session_key]['current_pair'] = index
+            self.logger.info(f"🔄 Navegación: Cambiando de Par {old_index + 1} a Par {index + 1}")
+            st.rerun()
+        else:
+            self.logger.warning(f"⚠️ Navegación: Índice {index} fuera de rango (0-{total_pairs-1})")
+    
+    def go_to_next(self) -> None:
+        """Va al siguiente par"""
+        current = st.session_state[self.session_key]['current_pair']
+        total = st.session_state[self.session_key]['total_pairs']
+        
+        if total > 0:
+            next_index = (current + 1) % total
+            st.session_state[self.session_key]['current_pair'] = next_index
+            self.logger.info(f"⏭️ Navegación: Siguiente - Par {current + 1} → Par {next_index + 1}")
+            st.rerun()
+        else:
+            self.logger.warning("⚠️ Navegación: No hay pares disponibles para navegar")
+    
+    def go_to_previous(self) -> None:
+        """Va al par anterior"""
+        current = st.session_state[self.session_key]['current_pair']
+        total = st.session_state[self.session_key]['total_pairs']
+        
+        if total > 0:
+            prev_index = (current - 1) % total
+            st.session_state[self.session_key]['current_pair'] = prev_index
+            self.logger.info(f"⏮️ Navegación: Anterior - Par {current + 1} → Par {prev_index + 1}")
+            st.rerun()
+        else:
+            self.logger.warning("⚠️ Navegación: No hay pares disponibles para navegar")
+    
+    def render_navigation_controls(self) -> None:
+        """Renderiza los controles de navegación"""
+        current_index = self.get_current_index()
+        total_pairs = self.get_total_pairs()
+        
+        if total_pairs == 0:
+            st.info("📋 No hay pares de duplicados para mostrar")
+            return
+        
+        # Crear controles de navegación
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+        
+        with col1:
+            if st.button("⏮️ Anterior", key="nav_prev", disabled=total_pairs <= 1):
+                self.go_to_previous()
+        
+        with col2:
+            st.markdown(f"**Par {current_index + 1} de {total_pairs}**")
+        
+        with col3:
+            # Selector de par específico con nombres de archivos
+            pairs_list = st.session_state[self.session_key]['pairs_list']
+            pair_options = []
+            for i, pair in enumerate(pairs_list):
+                file1_name = Path(pair.get('Ruta 1', '')).name if pair.get('Ruta 1') else 'N/A'
+                file2_name = Path(pair.get('Ruta 2', '')).name if pair.get('Ruta 2') else 'N/A'
+                pair_options.append(f"Par {i+1} - [{file1_name}] [{file2_name}]")
+            
+            selected_pair = st.selectbox(
+                "Ir a par específico:",
+                options=range(total_pairs),
+                index=current_index,
+                format_func=lambda x: pair_options[x] if x < len(pair_options) else f"Par {x+1}",
+                key="pair_selector"
+            )
+            
+            if selected_pair != current_index:
+                self.go_to_pair(selected_pair)
+        
+        with col4:
+            if st.button("⏭️ Siguiente", key="nav_next", disabled=total_pairs <= 1):
+                self.go_to_next()
+        
+        with col5:
+            if st.button("🔄 Reiniciar", key="nav_reset"):
+                self.logger.info("🔄 Navegación: Reiniciando a Par 1")
+                self.go_to_pair(0)
+        
+        # Botón para eliminar par de la lista
+        if st.button("🗑️ Eliminar Par de la Lista", key="delete_pair"):
+            self._delete_current_pair()
+    
+    def _delete_current_pair(self) -> None:
+        """Elimina el par actual de la lista"""
+        current_index = self.get_current_index()
+        pairs_list = st.session_state[self.session_key]['pairs_list']
+        
+        if 0 <= current_index < len(pairs_list):
+            # Obtener información del par antes de eliminarlo
+            pair_data = pairs_list[current_index]
+            file1_name = Path(pair_data.get('Ruta 1', '')).name if pair_data.get('Ruta 1') else 'N/A'
+            file2_name = Path(pair_data.get('Ruta 2', '')).name if pair_data.get('Ruta 2') else 'N/A'
+            
+            # Eliminar el par de la lista
+            del pairs_list[current_index]
+            st.session_state[self.session_key]['pairs_list'] = pairs_list
+            st.session_state[self.session_key]['total_pairs'] = len(pairs_list)
+            
+            # ACTUALIZAR st.session_state.duplicados para que se refleje en la interfaz
+            st.session_state.duplicados = pairs_list
+            self.logger.info(f"🔄 Actualizado st.session_state.duplicados: {len(pairs_list)} pares")
+            
+            # Actualizar contadores en settings
+            # No incrementar eliminados, solo actualizar el total
+            settings.set_total_pairs(len(pairs_list))
+            remaining_pairs = len(pairs_list)
+            self.logger.info(f"📊 Contadores actualizados: total={settings.get_total_pairs()}, restantes={remaining_pairs}")
+            
+            # Ajustar índice actual si es necesario
+            if current_index >= len(pairs_list) and len(pairs_list) > 0:
+                st.session_state[self.session_key]['current_pair'] = len(pairs_list) - 1
+            elif len(pairs_list) == 0:
+                st.session_state[self.session_key]['current_pair'] = 0
+            
+            self.logger.info(f"🗑️ Navegación: Eliminado Par {current_index + 1} - [{file1_name}] [{file2_name}] - Quedan {remaining_pairs} pares")
+            
+            # Mostrar confirmación visual
+            st.success(f"✅ Par {current_index + 1} eliminado - Quedan {remaining_pairs} pares")
+            
+            st.rerun()
+        else:
+            self.logger.warning(f"⚠️ Navegación: No se puede eliminar - índice {current_index} fuera de rango")
+    
+    def render_pair_info(self, pair_data: Dict[str, Any]) -> None:
+        """
+        Renderiza la información del par actual
+        
+        Args:
+            pair_data: Datos del par de duplicados
+        """
+        if not pair_data:
+            st.warning("⚠️ No hay datos del par disponible")
+            return
+        
+        st.markdown("---")
+        st.subheader(f"🎬 Par {self.get_current_index() + 1}: Información Básica")
+        
+        # Mostrar información básica del par
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            if 'Ruta 1' in pair_data:
+                filename1 = Path(pair_data['Ruta 1']).name
+                st.write(f"📁 {filename1}")
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 1', 'N/A')}")
+        
+        with col2:
+            st.write("**Película 2:**")
+            if 'Ruta 2' in pair_data:
+                filename2 = Path(pair_data['Ruta 2']).name
+                st.write(f"📁 {filename2}")
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 2', 'N/A')}")
+
+
+class PairListManager:
+    """Gestor para mostrar y seleccionar pares de duplicados"""
+    
+    def __init__(self, session_key: str = "pair_list"):
+        """
+        Inicializa el gestor de lista de pares
+        
+        Args:
+            session_key: Clave para el estado de sesión
+        """
+        self.session_key = session_key
+        self._initialize_session_state()
+    
+    def _initialize_session_state(self) -> None:
+        """Inicializa el estado de sesión para la lista de pares"""
+        if self.session_key not in st.session_state:
+            st.session_state[self.session_key] = {
+                'pairs_list': [],
+                'selected_pairs': [],
+                'filter_options': {
+                    'show_only_plex_found': False,
+                    'show_only_different_sizes': False,
+                    'min_size_difference': 0
+                }
+            }
+    
+    def set_pairs_list(self, pairs_list: List[Dict[str, Any]]) -> None:
+        """
+        Establece la lista de pares
+        
+        Args:
+            pairs_list: Lista de pares de duplicados
+        """
+        st.session_state[self.session_key]['pairs_list'] = pairs_list
+    
+    def get_pairs_list(self) -> List[Dict[str, Any]]:
+        """
+        Obtiene la lista de pares
+        
+        Returns:
+            Lista de pares de duplicados
+        """
+        return st.session_state[self.session_key]['pairs_list']
+    
+    def render_pairs_summary(self) -> None:
+        """Renderiza un resumen de los pares encontrados"""
+        pairs_list = self.get_pairs_list()
+        
+        if not pairs_list:
+            st.info("📋 No se encontraron pares de duplicados")
+            return
+        
+        # Usar valores actuales
+        remaining_pairs = len(pairs_list)  # Usar la lista actual
+        
+        # Obtener el total original desde session_state si está disponible
+        original_total = st.session_state.get('original_total_pairs', remaining_pairs)
+        
+        st.success(f"🎯 **{remaining_pairs} pares de duplicados encontrados**")
+        
+        # Mostrar estadísticas básicas
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Total de pares", original_total)
+        
+        with col2:
+            st.metric("Pares restantes", remaining_pairs)
+        
+        with col3:
+            st.metric("Pares eliminados", original_total - remaining_pairs)
+        
+        # Calcular pares con diferentes tamaños
+        different_sizes = 0
+        for pair in pairs_list:
+            size1 = pair.get('Tamaño 1', 0)
+            size2 = pair.get('Tamaño 2', 0)
+            if size1 and size2 and size1 != size2:
+                different_sizes += 1
+        
+        # Mostrar métricas adicionales
+        st.write(f"📊 **Tamaños diferentes:** {different_sizes}")
+        st.write(f"📊 **Tamaños similares:** {len(pairs_list) - different_sizes}")
+    
+    def render_pairs_table(self) -> None:
+        """Renderiza una tabla con los pares encontrados"""
+        pairs_list = self.get_pairs_list()
+        
+        if not pairs_list:
+            return
+        
+        st.subheader("📋 Lista de Pares de Duplicados")
+        
+        # Crear tabla de pares
+        for i, pair in enumerate(pairs_list):
+            with st.expander(f"Par {i+1}: {Path(pair.get('Ruta 1', '')).name} vs {Path(pair.get('Ruta 2', '')).name}"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write("**Película 1:**")
+                    st.write(f"📁 {Path(pair.get('Ruta 1', '')).name}")
+                    st.write(f"📊 Tamaño: {pair.get('Tamaño 1', 'N/A')}")
+                    st.write(f"📏 Similitud: {pair.get('Similitud', 'N/A')}")
+                
+                with col2:
+                    st.write("**Película 2:**")
+                    st.write(f"📁 {Path(pair.get('Ruta 2', '')).name}")
+                    st.write(f"📊 Tamaño: {pair.get('Tamaño 2', 'N/A')}")
+                    st.write(f"📏 Similitud: {pair.get('Similitud', 'N/A')}")
+                
+                # Botón para ir a este par
+                if st.button(f"🎯 Ir a Par {i+1}", key=f"go_to_pair_{i}"):
+                    # Aquí se implementaría la navegación al par específico
+                    st.session_state['selected_pair_index'] = i
+                    st.rerun()
+
+
+class PairDetailViewer:
+    """Visor detallado para un par específico de duplicados"""
+    
+    def __init__(self, session_key: str = "pair_detail"):
+        """
+        Inicializa el visor de detalles
+        
+        Args:
+            session_key: Clave para el estado de sesión
+        """
+        self.session_key = session_key
+        self._initialize_session_state()
+    
+    def _initialize_session_state(self) -> None:
+        """Inicializa el estado de sesión para el visor de detalles"""
+        if self.session_key not in st.session_state:
+            st.session_state[self.session_key] = {
+                'current_pair_data': None,
+                'show_plex_analysis': True,
+                'show_video_players': True,
+                'show_edition_options': True
+            }
+    
+    def set_current_pair(self, pair_data: Dict[str, Any]) -> None:
+        """
+        Establece el par actual para mostrar
+        
+        Args:
+            pair_data: Datos del par de duplicados
+        """
+        st.session_state[self.session_key]['current_pair_data'] = pair_data
+    
+    def get_current_pair(self) -> Optional[Dict[str, Any]]:
+        """
+        Obtiene el par actual
+        
+        Returns:
+            Datos del par actual o None
+        """
+        return st.session_state[self.session_key]['current_pair_data']
+    
+    def render_pair_header(self, pair_index: int, total_pairs: int) -> None:
+        """
+        Renderiza el encabezado del par
+        
+        Args:
+            pair_index: Índice del par actual
+            total_pairs: Total de pares
+        """
+        st.markdown("---")
+        st.subheader(f"🎬 Par {pair_index + 1} de {total_pairs}")
+        
+        # Mostrar información básica
+        pair_data = self.get_current_pair()
+        if not pair_data:
+            st.warning("⚠️ No hay datos del par disponible")
+            return
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            if 'Ruta 1' in pair_data:
+                filename1 = Path(pair_data['Ruta 1']).name
+                st.write(f"📁 {filename1}")
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 1', 'N/A')}")
+                st.write(f"📏 Similitud: {pair_data.get('Similitud', 'N/A')}")
+        
+        with col2:
+            st.write("**Película 2:**")
+            if 'Ruta 2' in pair_data:
+                filename2 = Path(pair_data['Ruta 2']).name
+                st.write(f"📁 {filename2}")
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 2', 'N/A')}")
+                st.write(f"📏 Similitud: {pair_data.get('Similitud', 'N/A')}")
+    
+    def render_analysis_options(self) -> None:
+        """Renderiza las opciones de análisis (simplificado)"""
+        # Opciones de análisis se manejan en la aplicación principal
+        pass
+    
+    def render_quick_actions(self, pair_index: int) -> None:
+        """
+        Renderiza acciones rápidas para el par
+        
+        Args:
+            pair_index: Índice del par actual
+        """
+        st.subheader("⚡ Acciones Rápidas")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            if st.button("🗑️ Eliminar Película 1", key=f"delete_1_{pair_index}"):
+                st.warning("⚠️ Función de eliminación no implementada")
+        
+        with col2:
+            if st.button("🗑️ Eliminar Película 2", key=f"delete_2_{pair_index}"):
+                st.warning("⚠️ Función de eliminación no implementada")
+        
+        with col3:
+            if st.button("📝 Renombrar Película 1", key=f"rename_1_{pair_index}"):
+                st.info("💡 Función de renombrado no implementada")
+        
+        with col4:
+            if st.button("📝 Renombrar Película 2", key=f"rename_2_{pair_index}"):
+                st.info("💡 Función de renombrado no implementada")
+    
+    def render_pair_summary(self) -> None:
+        """Renderiza un resumen del par actual (simplificado)"""
+        # Resumen se maneja en la aplicación principal
+        pass
+
+
+class DuplicatePairsManager:
+    """Gestor principal para la gestión de pares de duplicados"""
+    
+    def __init__(self):
+        """Inicializa el gestor principal"""
+        self.navigation = PairNavigationManager()
+        self.list_manager = PairListManager()
+        self.detail_viewer = PairDetailViewer()
+        self.selection_manager = SelectionManager()
+    
+    def set_pairs_list(self, pairs_list: List[Dict[str, Any]]) -> None:
+        """
+        Establece la lista de pares en todos los gestores
+        
+        Args:
+            pairs_list: Lista de pares de duplicados
+        """
+        self.navigation.set_pairs_list(pairs_list)
+        self.list_manager.set_pairs_list(pairs_list)
+    
+    def render_main_interface(self) -> None:
+        """Renderiza la interfaz principal de gestión de pares"""
+        st.title("🎬 Gestor de Pares de Duplicados")
+        
+        # Mostrar resumen de pares
+        self.list_manager.render_pairs_summary()
+        
+        # Mostrar controles de navegación
+        self.navigation.render_navigation_controls()
+        
+        # Obtener par actual
+        current_pair = self.navigation.get_current_pair()
+        if current_pair:
+            # Establecer par actual en el visor de detalles
+            self.detail_viewer.set_current_pair(current_pair)
+            
+            # Mostrar información del par actual
+            current_index = self.navigation.get_current_index()
+            total_pairs = self.navigation.get_total_pairs()
+            
+            self.detail_viewer.render_pair_header(current_index, total_pairs)
+        else:
+            st.info("📋 No hay pares de duplicados para mostrar")
+    
+    def _render_specific_analysis(self, pair_data: Dict[str, Any], pair_index: int) -> None:
+        """
+        Renderiza el análisis específico según las opciones seleccionadas
+        
+        Args:
+            pair_data: Datos del par de duplicados
+            pair_index: Índice del par actual
+        """
+        # Solo mostrar análisis si es necesario (se implementará en la aplicación principal)
+        pass
+    
+    def render_pairs_list_view(self) -> None:
+        """Renderiza la vista de lista de pares"""
+        st.title("📋 Lista de Pares de Duplicados")
+        
+        # Mostrar tabla de pares
+        self.list_manager.render_pairs_table()
+    
+    def get_selected_movies(self) -> List[Dict[str, Any]]:
+        """
+        Obtiene las películas seleccionadas
+        
+        Returns:
+            Lista de películas seleccionadas
+        """
+        return self.selection_manager.get_selected_movies(
+            self.navigation.get_total_pairs()
+        )
+    
+    def clear_all_selections(self) -> None:
+        """Limpia todas las selecciones"""
+        self.selection_manager.clear_selections()
+        st.rerun()

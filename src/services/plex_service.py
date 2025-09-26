@@ -36,20 +36,49 @@ class PlexService:
         return self._db_path
     
     def _get_connection(self) -> sqlite3.Connection:
-        """Obtiene una conexión a la base de datos"""
-        if not self._connection:
-            db_path = self._get_db_path()
-            
-            try:
-                # Intentar conexión de solo lectura
-                self._connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            except Exception:
-                # Fallback a conexión normal
-                self._connection = sqlite3.connect(str(db_path))
-            
-            self._connection.row_factory = sqlite3.Row
+        """Obtiene una conexión a la base de datos con manejo robusto de errores"""
+        db_path = self._get_db_path()
         
-        return self._connection
+        # Crear nueva conexión cada vez para evitar problemas de concurrencia
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Intentar conexión de solo lectura primero
+                conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+                conn.row_factory = sqlite3.Row
+                
+                # Verificar que la conexión funciona
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+                cursor.close()
+                
+                return conn
+                
+            except sqlite3.OperationalError as e:
+                if "disk I/O error" in str(e) and attempt < max_retries - 1:
+                    import time
+                    time.sleep(0.5)  # Esperar antes de reintentar
+                    continue
+                else:
+                    # Fallback a conexión normal
+                    try:
+                        conn = sqlite3.connect(str(db_path))
+                        conn.row_factory = sqlite3.Row
+                        return conn
+                    except Exception:
+                        if attempt == max_retries - 1:
+                            raise
+                        time.sleep(0.5)
+                        continue
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                import time
+                time.sleep(0.5)
+                continue
+        
+        raise Exception("No se pudo establecer conexión con la base de datos después de múltiples intentos")
     
     def close_connection(self):
         """Cierra la conexión a la base de datos"""
@@ -304,20 +333,21 @@ class PlexService:
         Returns:
             Lista de diccionarios con información de películas
         """
+        conn = None
         try:
             conn = self._get_connection()
             cur = conn.cursor()
             
-            # Consulta simplificada que debería funcionar
+            # Consulta corregida usando metadata_items
             sql = """
             SELECT 
-                m.title,
-                m.year,
+                mi.title,
+                mi.year,
                 ls.name as library_name
-            FROM media_items m
-            JOIN library_sections ls ON m.library_section_id = ls.id
-            WHERE ls.section_type = 1
-            ORDER BY m.title, m.year
+            FROM metadata_items mi
+            JOIN library_sections ls ON mi.library_section_id = ls.id
+            WHERE ls.section_type = 1 AND mi.metadata_type = 1
+            ORDER BY mi.title, mi.year
             """
             
             cur.execute(sql)
@@ -336,6 +366,12 @@ class PlexService:
         except Exception as e:
             self.logger.error(f"Error obteniendo películas: {e}")
             return []
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
     def get_available_libraries(self) -> List[Dict[str, str]]:
         """
         Obtiene las bibliotecas disponibles en Plex

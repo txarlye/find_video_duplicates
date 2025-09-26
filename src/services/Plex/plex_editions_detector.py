@@ -82,9 +82,13 @@ class PlexEditionsDetector:
             sql = """
             SELECT id, title, year, edition_title, summary, originally_available_at
             FROM metadata_items 
-            WHERE title = ? AND year = ? 
-            AND edition_title IS NOT NULL
-            ORDER BY edition_title
+            WHERE title = ? AND year = ?
+            ORDER BY 
+                CASE 
+                    WHEN edition_title IS NULL THEN 0 
+                    ELSE 1 
+                END,
+                edition_title
             """
             
             cur.execute(sql, (title, year))
@@ -92,11 +96,12 @@ class PlexEditionsDetector:
             
             editions = []
             for row in results:
+                edition_name = row[3] if row[3] else 'Original'
                 editions.append({
                     'id': row[0],
                     'title': row[1], 
                     'year': row[2],
-                    'edition': row[3],
+                    'edition': edition_name,
                     'summary': row[4],
                     'release_date': row[5]
                 })
@@ -176,7 +181,7 @@ class PlexEditionsDetector:
             
             # Consulta simplificada para evitar problemas de base de datos
             sql = """
-            SELECT mp.media_item_id, mi.metadata_item_id, mi.title, mi.year, mi.edition_title
+            SELECT mp.media_item_id, mi.metadata_item_id, mdi.title, mdi.year, mdi.edition_title
             FROM media_parts mp
             LEFT JOIN media_items mi ON mp.media_item_id = mi.id
             LEFT JOIN metadata_items mdi ON mi.metadata_item_id = mdi.id

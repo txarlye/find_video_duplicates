@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "scan_path": "Carpeta desconocida",
+    "scan_date": "2025-09-26T19:40:39.966199",
+    "total_pairs": 15,
+    "version": "1.0"
+  },
+  "pairs_data": [
+    {
+      "Peli 1": "Un Hombre Lobo Americano En Londres @Todogram.mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Un Hombre Lobo Americano En Londres @Todogram.mp4",
+      "Tamaño 1": "1.76 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Un Hombre Lobo Americano En París @Todogram.mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Un Hombre Lobo Americano En París @Todogram.mp4",
+      "Tamaño 2": "1.75 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Toy story 3.mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Toy story 3.mp4",
+      "Tamaño 1": "1.09 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Toy story 4.mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Toy story 4.mp4",
+      "Tamaño 2": "1.34 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Los Nibelungos Parte 1 [by Erpiyo].mkv",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Los Nibelungos Parte 1 [by Erpiyo].mkv",
+      "Tamaño 1": "3.30 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Los Nibelungos Parte 2 [by Erpiyo].mkv",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Los Nibelungos Parte 2 [by Erpiyo].mkv",
+      "Tamaño 2": "2.89 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "instinto-básico-1-en-calidad-4k-hd-español.mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\instinto-básico-1-en-calidad-4k-hd-español.mp4",
+      "Tamaño 1": "1.22 GB",
+      "Duración 1": "0s",
+      "Peli 2": "instinto-básico-2-en-calidad-4k-hd-español.mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\instinto-básico-2-en-calidad-4k-hd-español.mp4",
+      "Tamaño 2": "1.92 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Mortal Kombat - Aniquilación.mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Mortal Kombat - Aniquilación.mp4",
+      "Tamaño 1": "3.20 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Mortal kombat.MP4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Mortal kombat.MP4",
+      "Tamaño 2": "1.87 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Shingeki.no.kyojin.Kouhen.(Spanish).HDrip.XviD-AC3.avi",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Shingeki.no.kyojin.Kouhen.(Spanish).HDrip.XviD-AC3.avi",
+      "Tamaño 1": "1.49 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Shingeki.no.kyojin.Zenpen.(Spanish).HDrip.XviD-AC3.avi",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Shingeki.no.kyojin.Zenpen.(Spanish).HDrip.XviD-AC3.avi",
+      "Tamaño 2": "1.63 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Mandíbulas 5 - Mandíbulas contra Anaconda.mkv",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Mandíbulas 5 - Mandíbulas contra Anaconda.mkv",
+      "Tamaño 1": "1.50 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Mandíbulas 6 - El legado.mkv",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Mandíbulas 6 - El legado.mkv",
+      "Tamaño 2": "1.49 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Omni Loop (2024) .mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Omni Loop (2024) .mp4",
+      "Tamaño 1": "1.90 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Omni Loop (2024).mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Omni Loop (2024).mp4",
+      "Tamaño 2": "1.91 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Noche de caza (2023).mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Noche de caza (2023).mp4",
+      "Tamaño 1": "1.61 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Noche de paz (2023).mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Noche de paz (2023).mp4",
+      "Tamaño 2": "1.66 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Purgatory.Jack.(2023).(Spanish.English.Subs).WEB-DL.1080p.x264-EAC3.by.diavliyo-xusman.(nocturniap2p).mkv",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Purgatory.Jack.(2023).(Spanish.English.Subs).WEB-DL.1080p.x264-EAC3.by.diavliyo-xusman.(nocturniap2p).mkv",
+      "Tamaño 1": "2.66 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Purgatory Jack (2023).mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Purgatory Jack (2023).mp4",
+      "Tamaño 2": "2.12 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Amateur (2025).mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Amateur (2025).mp4",
+      "Tamaño 1": "2.96 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Amateur.(2025).(Spanish.English.Subs).WEB-DL.1080p.x264-EAC3.by.xusman.(nocturniap2p).mkv",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Amateur.(2025).(Spanish.English.Subs).WEB-DL.1080p.x264-EAC3.by.xusman.(nocturniap2p).mkv",
+      "Tamaño 2": "2.81 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Blood_ el ultimo vampiro (2009)[by Erpiyo].mkv",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Blood_ el ultimo vampiro (2009)[by Erpiyo].mkv",
+      "Tamaño 1": "0.40 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Blood_ el ultimo vampiro (2009)[by Erpiyo]_2.mkv",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Blood_ el ultimo vampiro (2009)[by Erpiyo]_2.mkv",
+      "Tamaño 2": "3.80 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "soldado universal 4 (2012).avi",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\soldado universal 4 (2012).avi",
+      "Tamaño 1": "0.02 GB",
+      "Duración 1": "0s",
+      "Peli 2": "soldado universal 4 (2012)_2.avi",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\soldado universal 4 (2012)_2.avi",
+      "Tamaño 2": "0.90 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "El candidato (1972) 1080p.mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\El candidato (1972) 1080p.mp4",
+      "Tamaño 1": "2.82 GB",
+      "Duración 1": "0s",
+      "Peli 2": "El candidato (1972) seriescuellar castellano.mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\El candidato (1972) seriescuellar castellano.mp4",
+      "Tamaño 2": "0.38 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    },
+    {
+      "Peli 1": "Una proposición indecente (1993) 1080p.mp4",
+      "Ruta 1": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Una proposición indecente (1993) 1080p.mp4",
+      "Tamaño 1": "1.37 GB",
+      "Duración 1": "0s",
+      "Peli 2": "Una proposición indecente (1993).mp4",
+      "Ruta 2": "\\\\DiskStation\\data\\media\\movies\\00- Recién descargadas\\Una proposición indecente (1993).mp4",
+      "Tamaño 2": "1.36 GB",
+      "Duración 2": "0s",
+      "Similitud": "N/A"
+    }
+  ]
+}

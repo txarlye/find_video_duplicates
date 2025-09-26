@@ -115,8 +115,11 @@ class PlexEditionsManager:
                 self.logger.error(f"Nombre de edición inválido: {edition_name}")
                 return None
             
-            # Crear edición
-            new_path = self.creator.create_edition_file(file_path, movie_title, edition_name, create_subfolder)
+            # Crear edición (usar método UNC-safe para rutas de red)
+            if file_path.startswith('\\\\'):
+                new_path = self.creator.create_edition_file_unc_safe(file_path, movie_title, edition_name, create_subfolder)
+            else:
+                new_path = self.creator.create_edition_file(file_path, movie_title, edition_name, create_subfolder)
             
             if new_path:
                 self.logger.info(f"Edición creada exitosamente: {new_path}")

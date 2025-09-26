@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "scan_path": "/test/path",
+    "scan_date": "2025-09-26T19:33:45.174019",
+    "total_pairs": 2,
+    "version": "1.0"
+  },
+  "pairs_data": [
+    {
+      "Peli 1": "Test Movie 1.mkv",
+      "Ruta 1": "/path/to/test1.mkv",
+      "Tamaño 1": "1.5 GB",
+      "Peli 2": "Test Movie 2.mkv",
+      "Ruta 2": "/path/to/test2.mkv",
+      "Tamaño 2": "1.4 GB",
+      "Similitud": "95%"
+    },
+    {
+      "Peli 1": "Another Movie 1.mp4",
+      "Ruta 1": "/path/to/another1.mp4",
+      "Tamaño 1": "2.1 GB",
+      "Peli 2": "Another Movie 2.mp4",
+      "Ruta 2": "/path/to/another2.mp4",
+      "Tamaño 2": "2.0 GB",
+      "Similitud": "92%"
+    }
+  ]
+}

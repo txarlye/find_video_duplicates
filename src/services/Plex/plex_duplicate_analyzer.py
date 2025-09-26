@@ -171,20 +171,74 @@ class PlexDuplicateAnalyzer:
             }
     
     def _calculate_file_hash(self, file_path: str) -> Optional[str]:
-        """Calcula el hash MD5 de un archivo"""
+        """Calcula el hash MD5 de un archivo con indicador de progreso"""
         try:
             normalized_path = os.path.normpath(file_path)
             
-            if not os.path.exists(normalized_path) or not os.path.isfile(normalized_path):
-                return None
-            
-            hash_md5 = hashlib.md5()
-            
-            with open(normalized_path, "rb") as f:
-                for chunk in iter(lambda: f.read(8192), b""):
-                    hash_md5.update(chunk)
-            
-            return hash_md5.hexdigest()
+            # Para rutas UNC, intentar acceso directo sin verificar existencia previa
+            if file_path.startswith('\\\\'):
+                self.logger.info(f"🔗 Calculando hash de ruta UNC: {file_path}")
+                try:
+                    hash_md5 = hashlib.md5()
+                    bytes_read = 0
+                    chunk_size = 8192
+                    
+                    # Obtener tamaño del archivo para mostrar progreso
+                    try:
+                        file_size = os.path.getsize(normalized_path)
+                        self.logger.info(f"📊 Tamaño del archivo: {file_size / (1024*1024):.1f} MB")
+                    except:
+                        file_size = 0
+                    
+                    with open(normalized_path, "rb") as f:
+                        while True:
+                            chunk = f.read(chunk_size)
+                            if not chunk:
+                                break
+                            hash_md5.update(chunk)
+                            bytes_read += len(chunk)
+                            
+                            # Mostrar progreso cada 10MB
+                            if file_size > 0 and bytes_read % (10 * 1024 * 1024) == 0:
+                                progress = (bytes_read / file_size) * 100
+                                self.logger.info(f"🔄 Progreso hash: {progress:.1f}% ({bytes_read / (1024*1024):.1f}MB/{file_size / (1024*1024):.1f}MB)")
+                    
+                    self.logger.info(f"✅ Hash calculado: {hash_md5.hexdigest()[:16]}...")
+                    return hash_md5.hexdigest()
+                except (OSError, IOError) as e:
+                    self.logger.warning(f"⚠️ No se puede acceder a ruta UNC {file_path}: {e}")
+                    return None
+            else:
+                # Para rutas locales, verificar existencia
+                if not os.path.exists(normalized_path) or not os.path.isfile(normalized_path):
+                    return None
+                
+                hash_md5 = hashlib.md5()
+                bytes_read = 0
+                chunk_size = 8192
+                
+                # Obtener tamaño del archivo para mostrar progreso
+                try:
+                    file_size = os.path.getsize(normalized_path)
+                    if file_size > 50 * 1024 * 1024:  # Solo mostrar progreso para archivos > 50MB
+                        self.logger.info(f"📊 Calculando hash de archivo local: {file_size / (1024*1024):.1f} MB")
+                except:
+                    file_size = 0
+                
+                with open(normalized_path, "rb") as f:
+                    while True:
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            break
+                        hash_md5.update(chunk)
+                        bytes_read += len(chunk)
+                        
+                        # Mostrar progreso cada 10MB para archivos grandes
+                        if file_size > 50 * 1024 * 1024 and bytes_read % (10 * 1024 * 1024) == 0:
+                            progress = (bytes_read / file_size) * 100
+                            self.logger.info(f"🔄 Progreso hash: {progress:.1f}% ({bytes_read / (1024*1024):.1f}MB/{file_size / (1024*1024):.1f}MB)")
+                
+                return hash_md5.hexdigest()
             
         except Exception as e:
             self.logger.error(f"Error calculando hash de {file_path}: {e}")

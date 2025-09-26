@@ -304,6 +304,37 @@ class Settings:
     def set_plex_duration_tolerance_minutes(self, value: int):
         """Establece la tolerancia de duración en minutos para Plex"""
         self.set("plex.duration_tolerance_minutes", value)
+    
+    # Métodos para manejo temporal de pares de duplicados
+    def get_total_pairs(self) -> int:
+        """Obtiene el total de pares de duplicados actual"""
+        return self.get("runtime.total_pairs", 0)
+    
+    def set_total_pairs(self, value: int):
+        """Establece el total de pares de duplicados"""
+        self.set("runtime.total_pairs", value)
+    
+    def get_pairs_deleted(self) -> int:
+        """Obtiene el número de pares eliminados"""
+        return self.get("runtime.pairs_deleted", 0)
+    
+    def set_pairs_deleted(self, value: int):
+        """Establece el número de pares eliminados"""
+        self.set("runtime.pairs_deleted", value)
+    
+    def increment_pairs_deleted(self):
+        """Incrementa el contador de pares eliminados"""
+        current = self.get_pairs_deleted()
+        self.set_pairs_deleted(current + 1)
+    
+    def get_pairs_remaining(self) -> int:
+        """Obtiene el número de pares restantes"""
+        return self.get_total_pairs() - self.get_pairs_deleted()
+    
+    def reset_pairs_counters(self):
+        """Resetea los contadores de pares"""
+        self.set_total_pairs(0)
+        self.set_pairs_deleted(0)
 
 
 # Instancia global del singleton
