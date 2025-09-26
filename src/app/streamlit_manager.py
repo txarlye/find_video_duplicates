@@ -22,6 +22,7 @@ from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionMan
 from src.utils.file_operations import FileBatchProcessor
 from src.services.plex_service import PlexService
 from src.services.video_info_service import VideoInfoService
+from src.services.Plex.plex_title_extractor import PlexTitleExtractor
 
 
 class StreamlitAppManager:
@@ -37,6 +38,7 @@ class StreamlitAppManager:
         self.file_processor = FileBatchProcessor()
         self.plex_service = PlexService()
         self.video_info_service = VideoInfoService()
+        self.plex_title_extractor = PlexTitleExtractor(settings.get_plex_database_path())
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -991,12 +993,15 @@ class StreamlitAppManager:
                     st.write("🔍 **Archivo no identificado en Plex**")
                     st.write("💡 *Solo disponible por nombre de archivo*")
                 else:
-                    st.write(f"🎬 **{title}** ({year})")
+                    # Verificar si es duplicado (mismo título y año)
+                    is_duplicate = self._is_plex_duplicate(metadata1, plex_metadata.get('file2', {}))
+                    title_color = "🔴" if is_duplicate else "🎬"
+                    
+                    st.write(f"{title_color} **{title}** ({year})")
                     st.write(f"📊 Estudio: {metadata1.get('studio', 'N/A')}")
-                    st.write(f"⏱️ Duración: {metadata1.get('duration_hms_meta', 'N/A')}")
-                    st.write(f"🎥 Resolución: {metadata1.get('width', 'N/A')}x{metadata1.get('height', 'N/A')}")
-                    st.write(f"📦 Contenedor: {metadata1.get('container', 'N/A')}")
-                    st.write(f"🎵 Audio: {metadata1.get('audio_codec', 'N/A')} ({metadata1.get('audio_channels', 'N/A')} canales)")
+                    st.write(f"⏱️ Duración: {metadata1.get('duration', 'N/A')}")
+                    st.write(f"📁 Biblioteca: {metadata1.get('library_name', 'N/A')}")
+                    st.write(f"📝 Resumen: {metadata1.get('summary', 'N/A')[:100]}...")
             else:
                 st.write("❌ No encontrada en Plex")
                 st.write("💡 *Solo disponible por nombre de archivo*")
@@ -1013,12 +1018,15 @@ class StreamlitAppManager:
                     st.write("🔍 **Archivo no identificado en Plex**")
                     st.write("💡 *Solo disponible por nombre de archivo*")
                 else:
-                    st.write(f"🎬 **{title}** ({year})")
+                    # Verificar si es duplicado (mismo título y año)
+                    is_duplicate = self._is_plex_duplicate(metadata2, plex_metadata.get('file1', {}))
+                    title_color = "🔴" if is_duplicate else "🎬"
+                    
+                    st.write(f"{title_color} **{title}** ({year})")
                     st.write(f"📊 Estudio: {metadata2.get('studio', 'N/A')}")
-                    st.write(f"⏱️ Duración: {metadata2.get('duration_hms_meta', 'N/A')}")
-                    st.write(f"🎥 Resolución: {metadata2.get('width', 'N/A')}x{metadata2.get('height', 'N/A')}")
-                    st.write(f"📦 Contenedor: {metadata2.get('container', 'N/A')}")
-                    st.write(f"🎵 Audio: {metadata2.get('audio_codec', 'N/A')} ({metadata2.get('audio_channels', 'N/A')} canales)")
+                    st.write(f"⏱️ Duración: {metadata2.get('duration', 'N/A')}")
+                    st.write(f"📁 Biblioteca: {metadata2.get('library_name', 'N/A')}")
+                    st.write(f"📝 Resumen: {metadata2.get('summary', 'N/A')[:100]}...")
             else:
                 st.write("❌ No encontrada en Plex")
                 st.write("💡 *Solo disponible por nombre de archivo*")
@@ -1033,6 +1041,20 @@ class StreamlitAppManager:
                 st.warning(f"⚠️ {duration_check['message']}")
         
         st.markdown("---")
+    
+    def _is_plex_duplicate(self, metadata1: Dict, metadata2: Dict) -> bool:
+        """Verifica si dos metadatos de Plex representan la misma película"""
+        if not metadata1 or not metadata2:
+            return False
+        
+        # Comparar título y año
+        title1 = metadata1.get('title', '')
+        title2 = metadata2.get('title', '')
+        year1 = metadata1.get('year', '')
+        year2 = metadata2.get('year', '')
+        
+        # Si tienen el mismo título y año, son la misma película
+        return title1 == title2 and year1 == year2 and title1 != 'N/A' and year1 != 'N/A'
     
 
     def _render_basic_info_immediate(self, row: Dict[str, Any], index: int):
@@ -1153,7 +1175,7 @@ class StreamlitAppManager:
                 st.warning(f"⚠️ {duration_check['message']}")
 
     def _render_plex_metadata_auto(self, row: Dict[str, Any], index: int):
-        """Renderiza metadatos de Plex automáticamente si está habilitado"""
+        """Renderiza información de Plex: biblioteca + opciones de mejora"""
         # Verificar si ya tenemos cache para estos archivos
         filename1 = os.path.basename(row.get('Ruta 1', ''))
         filename2 = os.path.basename(row.get('Ruta 2', ''))
@@ -1162,21 +1184,20 @@ class StreamlitAppManager:
         
         if cache_key in st.session_state.plex_cache:
             # Usar cache
-            plex_metadata = st.session_state.plex_cache[cache_key]
-            st.subheader("🎬 Metadatos de Plex")
-            self._render_plex_metadata_content(plex_metadata)
+            plex_info = st.session_state.plex_cache[cache_key]
+            self._render_plex_library_info(plex_info, row, index)
         else:
             # Consultar Plex automáticamente
             with st.spinner("🔍 Consultando base de datos de Plex..."):
-                plex_metadata = self._get_plex_metadata_for_pair(row)
+                plex_info = self._get_plex_library_info_for_pair(row)
                 
-                if plex_metadata:
+                if plex_info:
                     # Guardar en cache
-                    st.session_state.plex_cache[cache_key] = plex_metadata
-                    st.subheader("🎬 Metadatos de Plex")
-                    self._render_plex_metadata_content(plex_metadata)
+                    st.session_state.plex_cache[cache_key] = plex_info
+                    self._render_plex_library_info(plex_info, row, index)
                 else:
-                    st.info("💡 No se encontraron metadatos en Plex para estos archivos")
+                    st.info("💡 No se encontraron archivos en Plex")
+                    self._render_plex_enhancement_options(row, index)
         
         st.markdown("---")
 
@@ -1203,6 +1224,207 @@ class StreamlitAppManager:
                 
         except Exception as e:
             st.write(f"❌ Error obteniendo información: {e}")
+
+    def _get_plex_library_info_for_pair(self, row: Dict[str, Any]) -> Optional[Dict]:
+        """Obtiene información de biblioteca de Plex para un par de películas"""
+        try:
+            # Extraer nombres de archivo de las rutas
+            filename1 = os.path.basename(row.get('Ruta 1', ''))
+            filename2 = os.path.basename(row.get('Ruta 2', ''))
+            
+            if not filename1 or not filename2:
+                return None
+            
+            # Obtener información de biblioteca para ambos archivos
+            library_info1 = self.plex_service.get_library_info_by_filename(filename1)
+            library_info2 = self.plex_service.get_library_info_by_filename(filename2)
+            
+            # Si encontramos los archivos en Plex, intentar obtener títulos reales (sin bloquear)
+            if library_info1:
+                try:
+                    real_title1 = self.plex_title_extractor.get_real_title_by_filename(filename1)
+                    if real_title1:
+                        library_info1['title'] = real_title1['title']
+                        library_info1['year'] = real_title1['year']
+                except Exception:
+                    # Si falla, mantener el título del archivo
+                    pass
+            
+            if library_info2:
+                try:
+                    real_title2 = self.plex_title_extractor.get_real_title_by_filename(filename2)
+                    if real_title2:
+                        library_info2['title'] = real_title2['title']
+                        library_info2['year'] = real_title2['year']
+                except Exception:
+                    # Si falla, mantener el título del archivo
+                    pass
+            
+            if library_info1 or library_info2:
+                return {
+                    'file1': library_info1,
+                    'file2': library_info2
+                }
+            
+            return None
+            
+        except Exception as e:
+            st.error(f"Error obteniendo información de biblioteca: {e}")
+            return None
+    
+    def _render_plex_library_info(self, plex_info: Dict, row: Dict[str, Any], index: int):
+        """Renderiza información de biblioteca de Plex"""
+        st.subheader("🎬 Estado en Plex")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            library_info1 = plex_info['file1']
+            if library_info1:
+                st.success(f"✅ Encontrada en biblioteca: {library_info1.get('library_name', 'N/A')}")
+                st.write(f"📁 Título: {library_info1.get('title', 'N/A')}")
+                st.write(f"📅 Año: {library_info1.get('year', 'N/A')}")
+            else:
+                st.warning("❌ No encontrada en Plex")
+                self._render_enhancement_options_for_file(row.get('Ruta 1', ''), f"enhance1_{index}")
+        
+        with col2:
+            st.write("**Película 2:**")
+            library_info2 = plex_info['file2']
+            if library_info2:
+                st.success(f"✅ Encontrada en biblioteca: {library_info2.get('library_name', 'N/A')}")
+                st.write(f"📁 Título: {library_info2.get('title', 'N/A')}")
+                st.write(f"📅 Año: {library_info2.get('year', 'N/A')}")
+            else:
+                st.warning("❌ No encontrada en Plex")
+                self._render_enhancement_options_for_file(row.get('Ruta 2', ''), f"enhance2_{index}")
+    
+    def _render_plex_enhancement_options(self, row: Dict[str, Any], index: int):
+        """Renderiza opciones de mejora cuando no se encuentran archivos en Plex"""
+        st.subheader("🔧 Opciones de Mejora")
+        st.info("💡 Los archivos no están en Plex. Puedes mejorarlos:")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            self._render_enhancement_options_for_file(row.get('Ruta 1', ''), f"enhance1_{index}")
+        
+        with col2:
+            st.write("**Película 2:**")
+            self._render_enhancement_options_for_file(row.get('Ruta 2', ''), f"enhance2_{index}")
+    
+    def _render_enhancement_options_for_file(self, file_path: str, key: str):
+        """Renderiza opciones de mejora para un archivo específico"""
+        if not file_path:
+            st.write("❌ Ruta no disponible")
+            return
+        
+        filename = os.path.basename(file_path)
+        st.write(f"📁 {filename}")
+        
+        # Opción 1: Renombrar archivo
+        with st.expander("📝 Renombrar archivo", expanded=False):
+            st.write("💡 Renombra el archivo para que Plex lo reconozca mejor")
+            
+            new_name = st.text_input(
+                "Nuevo nombre (sin extensión):",
+                value=filename.rsplit('.', 1)[0],
+                key=f"rename_{key}",
+                help="Ejemplo: 'Avatar (2009)' o 'Avatar (2009) {edition-Director\'s Cut}'"
+            )
+            
+            if st.button("💾 Renombrar", key=f"rename_btn_{key}"):
+                self._rename_file(file_path, new_name)
+        
+        # Opción 2: Crear edición diferente
+        with st.expander("🎬 Crear edición diferente", expanded=False):
+            st.write("💡 Crea una edición diferente de una película existente")
+            
+            # Obtener lista de películas de Plex
+            movies_list = self._get_plex_movies_list()
+            
+            if movies_list:
+                selected_movie = st.selectbox(
+                    "Seleccionar película base:",
+                    options=movies_list,
+                    key=f"movie_select_{key}",
+                    help="Selecciona la película de la que quieres crear una edición"
+                )
+                
+                edition_name = st.text_input(
+                    "Nombre de la edición:",
+                    key=f"edition_{key}",
+                    help="Ejemplo: 'Director\'s Cut', 'Extended Edition', 'Unrated'"
+                )
+                
+                if st.button("🎬 Crear Edición", key=f"edition_btn_{key}"):
+                    self._create_edition(file_path, selected_movie, edition_name)
+            else:
+                st.warning("❌ No se pudo cargar la lista de películas de Plex")
+    
+    def _get_plex_movies_list(self) -> List[str]:
+        """Obtiene lista de películas de Plex para selección"""
+        try:
+            # Obtener películas de Plex
+            movies = self.plex_service.get_all_movies()
+            return [f"{movie.get('title', 'N/A')} ({movie.get('year', 'N/A')})" for movie in movies]
+        except Exception as e:
+            st.error(f"Error obteniendo películas: {e}")
+            return []
+    
+    def _rename_file(self, file_path: str, new_name: str):
+        """Renombra un archivo"""
+        try:
+            if not new_name:
+                st.error("❌ Nombre no puede estar vacío")
+                return
+            
+            # Obtener directorio y extensión
+            directory = os.path.dirname(file_path)
+            extension = os.path.splitext(file_path)[1]
+            new_path = os.path.join(directory, f"{new_name}{extension}")
+            
+            # Renombrar archivo
+            os.rename(file_path, new_path)
+            st.success(f"✅ Archivo renombrado: {os.path.basename(new_path)}")
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"❌ Error renombrando archivo: {e}")
+    
+    def _create_edition(self, file_path: str, selected_movie: str, edition_name: str):
+        """Crea una edición diferente de una película"""
+        try:
+            if not edition_name:
+                st.error("❌ Nombre de edición no puede estar vacío")
+                return
+            
+            # Extraer título y año de la película seleccionada
+            # Formato: "Título (Año)"
+            import re
+            match = re.match(r"(.+?)\s*\((\d{4})\)", selected_movie)
+            if not match:
+                st.error("❌ Formato de película no válido")
+                return
+            
+            title, year = match.groups()
+            
+            # Crear nuevo nombre con edición
+            directory = os.path.dirname(file_path)
+            extension = os.path.splitext(file_path)[1]
+            new_name = f"{title} ({year}) {{edition-{edition_name}}}{extension}"
+            new_path = os.path.join(directory, new_name)
+            
+            # Renombrar archivo
+            os.rename(file_path, new_path)
+            st.success(f"✅ Edición creada: {os.path.basename(new_path)}")
+            st.info("💡 Reinicia Plex para que detecte la nueva edición")
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"❌ Error creando edición: {e}")
     def run(self):
         """Ejecuta la aplicación completa"""
         self.render_header()

@@ -54,8 +54,13 @@ class PlexService:
     def close_connection(self):
         """Cierra la conexión a la base de datos"""
         if self._connection:
-            self._connection.close()
-            self._connection = None
+            try:
+                self._connection.close()
+            except Exception:
+                # Ignorar errores de cierre en diferentes hilos
+                pass
+            finally:
+                self._connection = None
     
     def _ms_to_hms(self, ms: Optional[int]) -> str:
         """Convierte milisegundos a formato h:m:s"""
@@ -235,6 +240,102 @@ class PlexService:
         except Exception:
             return False
     
+    
+    def get_library_info_by_filename(self, filename: str) -> Optional[Dict]:
+        """
+        Obtiene información de biblioteca por nombre de archivo
+        
+        Args:
+            filename: Nombre del archivo
+            
+        Returns:
+            Diccionario con información de biblioteca o None
+        """
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+            
+            # Buscar solo en media_parts (más simple y robusto)
+            sql = "SELECT file FROM media_parts WHERE file LIKE ?"
+            
+            # Buscar por nombre de archivo en la ruta
+            search_term = f"%{filename}%"
+            cur.execute(sql, (search_term,))
+            row = cur.fetchone()
+            
+            if row:
+                # Determinar biblioteca basándose en la ruta
+                file_path = row[0]
+                if '/movies/' in file_path:
+                    library_name = "Películas"
+                    library_type = "movie"
+                elif '/tvshows/' in file_path or '/series/' in file_path:
+                    library_name = "Series"
+                    library_type = "show"
+                else:
+                    library_name = "Plex"
+                    library_type = "unknown"
+                
+                # Si encontramos el archivo, devolver información con biblioteca
+                return {
+                    'library_name': library_name,
+                    'library_type': library_type,
+                    'title': filename.rsplit('.', 1)[0],  # Nombre sin extensión
+                    'year': 'N/A',
+                    'summary': f'Archivo encontrado en biblioteca "{library_name}"',
+                    'studio': 'N/A',
+                    'content_rating': 'N/A',
+                    'rating': 'N/A',
+                    'duration': 'N/A',
+                    'originally_available_at': 'N/A',
+                    'file_path': file_path
+                }
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error obteniendo información de biblioteca: {e}")
+            return None
+    
+    def get_all_movies(self) -> List[Dict]:
+        """
+        Obtiene todas las películas de Plex
+        
+        Returns:
+            Lista de diccionarios con información de películas
+        """
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+            
+            # Consulta simplificada que debería funcionar
+            sql = """
+            SELECT 
+                m.title,
+                m.year,
+                ls.name as library_name
+            FROM media_items m
+            JOIN library_sections ls ON m.library_section_id = ls.id
+            WHERE ls.section_type = 1
+            ORDER BY m.title, m.year
+            """
+            
+            cur.execute(sql)
+            rows = cur.fetchall()
+            
+            movies = []
+            for row in rows:
+                movies.append({
+                    'title': row[0],
+                    'year': row[1],
+                    'library_name': row[2]
+                })
+            
+            return movies
+            
+        except Exception as e:
+            self.logger.error(f"Error obteniendo películas: {e}")
+            return []
     def get_available_libraries(self) -> List[Dict[str, str]]:
         """
         Obtiene las bibliotecas disponibles en Plex
