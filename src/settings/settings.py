@@ -255,6 +255,55 @@ class Settings:
     def set_last_scan_path(self, value: str):
         """Establece la última ruta de escaneo"""
         self.set("paths.last_scan_path", value)
+    
+    # Métodos para configuración de Plex
+    def get_plex_database_path(self) -> str:
+        """Obtiene la ruta de la base de datos de Plex"""
+        return self.get("plex.database_path", "")
+    
+    def set_plex_database_path(self, value: str):
+        """Establece la ruta de la base de datos de Plex"""
+        self.set("plex.database_path", value)
+    
+    def get_plex_movies_library(self) -> str:
+        """Obtiene el nombre de la biblioteca de películas en Plex"""
+        return self.get("plex.libraries.movies", "Películas")
+    
+    def set_plex_movies_library(self, value: str):
+        """Establece el nombre de la biblioteca de películas en Plex"""
+        self.set("plex.libraries.movies", value)
+    
+    def get_plex_tv_shows_library(self) -> str:
+        """Obtiene el nombre de la biblioteca de series en Plex"""
+        return self.get("plex.libraries.tv_shows", "Series")
+    
+    def set_plex_tv_shows_library(self, value: str):
+        """Establece el nombre de la biblioteca de series en Plex"""
+        self.set("plex.libraries.tv_shows", value)
+    
+    def get_plex_fetch_metadata(self) -> bool:
+        """Obtiene si se deben traer metadatos de Plex"""
+        return self.get("plex.fetch_metadata", True)
+    
+    def set_plex_fetch_metadata(self, value: bool):
+        """Establece si se deben traer metadatos de Plex"""
+        self.set("plex.fetch_metadata", value)
+    
+    def get_plex_duration_filter_enabled(self) -> bool:
+        """Obtiene si el filtro por duración de Plex está activado"""
+        return self.get("plex.duration_filter_enabled", True)
+    
+    def set_plex_duration_filter_enabled(self, value: bool):
+        """Establece si el filtro por duración de Plex está activado"""
+        self.set("plex.duration_filter_enabled", value)
+    
+    def get_plex_duration_tolerance_minutes(self) -> int:
+        """Obtiene la tolerancia de duración en minutos para Plex"""
+        return self.get("plex.duration_tolerance_minutes", 5)
+    
+    def set_plex_duration_tolerance_minutes(self, value: int):
+        """Establece la tolerancia de duración en minutos para Plex"""
+        self.set("plex.duration_tolerance_minutes", value)
 
 
 # Instancia global del singleton

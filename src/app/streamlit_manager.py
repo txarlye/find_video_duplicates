@@ -9,7 +9,7 @@ import sys
 import time
 import os
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # Configurar el path
 current_dir = Path(__file__).parent.parent.parent.absolute()
@@ -20,6 +20,8 @@ from src.utils.movie_detector import MovieDetector
 from src.utils.video import VideoPlayer, VideoFormatter, VideoComparison
 from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionManager
 from src.utils.file_operations import FileBatchProcessor
+from src.services.plex_service import PlexService
+from src.services.video_info_service import VideoInfoService
 
 
 class StreamlitAppManager:
@@ -33,6 +35,8 @@ class StreamlitAppManager:
         self.movie_display = MovieInfoDisplay()
         self.selection_manager = SelectionManager()
         self.file_processor = FileBatchProcessor()
+        self.plex_service = PlexService()
+        self.video_info_service = VideoInfoService()
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -49,6 +53,8 @@ class StreamlitAppManager:
             st.session_state.scanning = False
         if 'par_actual' not in st.session_state:
             st.session_state.par_actual = 0
+        if 'plex_cache' not in st.session_state:
+            st.session_state.plex_cache = {}
     
     def render_header(self):
         """Renderiza el encabezado de la aplicación"""
@@ -65,13 +71,16 @@ class StreamlitAppManager:
             st.header("⚙️ Configuración")
             
             # Pestañas en el sidebar
-            tab1, tab2 = st.tabs(["🔍 Detección", "⚙️ Configuración"])
+            tab1, tab2, tab3 = st.tabs(["🔍 Detección", "⚙️ Configuración", "🎬 Plex"])
             
             with tab1:
                 self._render_detection_tab()
             
             with tab2:
                 self._render_configuration_tab()
+            
+            with tab3:
+                self._render_plex_tab()
     
     def _render_detection_tab(self):
         """Renderiza la pestaña de detección"""
@@ -183,6 +192,129 @@ class StreamlitAppManager:
             settings.set_debug_folder(debug_folder)
             st.success("✅ Configuración de debug guardada")
     
+    def _render_plex_tab(self):
+        """Renderiza la pestaña de configuración de Plex"""
+        st.subheader("🎬 Configuración de Plex")
+        
+        # Estado de conexión
+        plex_configured = self.plex_service.is_configured()
+        if plex_configured:
+            st.success("✅ Plex configurado")
+        else:
+            st.error("❌ Plex no configurado")
+        
+        # Ruta de base de datos
+        db_path = st.text_input(
+            "📁 Ruta de Base de Datos",
+            value=settings.get_plex_database_path(),
+            help="Ruta completa al archivo com.plexapp.plugins.library.db"
+        )
+        
+        # Bibliotecas
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("🎬 Biblioteca de Películas")
+            if st.button("🔄 Cargar Bibliotecas", key="load_libraries"):
+                st.rerun()
+            
+            # Obtener bibliotecas disponibles
+            libraries = self.plex_service.get_available_libraries()
+            if libraries:
+                library_names = [lib['name'] for lib in libraries]
+                current_movies_lib = settings.get_plex_movies_library()
+                
+                try:
+                    default_index = library_names.index(current_movies_lib)
+                except ValueError:
+                    default_index = 0
+                
+                movies_lib = st.selectbox(
+                    "Seleccionar biblioteca de películas:",
+                    options=library_names,
+                    index=default_index,
+                    key="movies_library_select",
+                    help="Biblioteca de películas en Plex"
+                )
+            else:
+                movies_lib = st.text_input(
+                    "Biblioteca de Películas",
+                    value=settings.get_plex_movies_library(),
+                    help="Nombre de la biblioteca de películas en Plex"
+                )
+        
+        with col2:
+            st.write("📺 Biblioteca de Series")
+            if libraries:
+                current_tv_lib = settings.get_plex_tv_shows_library()
+                
+                try:
+                    default_index = library_names.index(current_tv_lib)
+                except ValueError:
+                    default_index = 0
+                
+                tv_lib = st.selectbox(
+                    "Seleccionar biblioteca de series:",
+                    options=library_names,
+                    index=default_index,
+                    key="tv_library_select",
+                    help="Biblioteca de series en Plex"
+                )
+            else:
+                tv_lib = st.text_input(
+                    "Biblioteca de Series",
+                    value=settings.get_plex_tv_shows_library(),
+                    help="Nombre de la biblioteca de series en Plex"
+                )
+        
+        # Opciones de metadatos
+        st.subheader("📊 Metadatos")
+        
+        fetch_metadata = st.checkbox(
+            "🔍 Traer metadatos de Plex",
+            value=settings.get_plex_fetch_metadata(),
+            help="Obtener metadatos de Plex para mostrar información adicional"
+        )
+        
+        duration_filter = st.checkbox(
+            "⏱️ Filtro por duración",
+            value=settings.get_plex_duration_filter_enabled(),
+            help="Usar duración de Plex para filtrar duplicados"
+        )
+        
+        if duration_filter:
+            tolerance = st.slider(
+                "Tolerancia de duración (minutos)",
+                min_value=1,
+                max_value=30,
+                value=settings.get_plex_duration_tolerance_minutes(),
+                step=1,
+                help="Diferencia máxima en minutos permitida entre duplicados"
+            )
+        else:
+            tolerance = settings.get_plex_duration_tolerance_minutes()
+        
+        # Botones de prueba y guardado
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🧪 Probar Conexión", key="test_plex"):
+                if self.plex_service.test_connection():
+                    st.success("✅ Conexión exitosa")
+                else:
+                    st.error("❌ Error de conexión")
+        
+        with col2:
+            if st.button("💾 Guardar Configuración", key="save_plex_config"):
+                settings.set_plex_database_path(db_path)
+                settings.set_plex_movies_library(movies_lib)
+                settings.set_plex_tv_shows_library(tv_lib)
+                settings.set_plex_fetch_metadata(fetch_metadata)
+                settings.set_plex_duration_filter_enabled(duration_filter)
+                settings.set_plex_duration_tolerance_minutes(tolerance)
+                st.success("✅ Configuración de Plex guardada")
+                st.rerun()
+    
     def render_scan_section(self):
         """Renderiza la sección de escaneo"""
         st.header("📁 Escanear Carpeta")
@@ -198,6 +330,10 @@ class StreamlitAppManager:
             value=last_path,
             help="Seleccione la carpeta que contiene las películas"
         )
+        
+        # Mostrar última ruta usada si existe
+        if last_path:
+            st.caption(f"📁 Última ruta escaneada: {last_path}")
         
         col1, col2 = st.columns([1, 1])
         
@@ -478,126 +614,153 @@ class StreamlitAppManager:
         
         st.markdown(f"**Par {index+1}:**")
         
-        # Mostrar reproductores si están habilitados
-        try:
-            show_players = settings.get_show_video_players()
-        except AttributeError:
-            show_players = True  # Por defecto mostrar reproductores
+        # 1. MOSTRAR INFORMACIÓN BÁSICA INMEDIATAMENTE
+        self._render_basic_info_immediate(row, index)
         
-        if show_players:
-            self._render_video_comparison(row, index)
+        # 2. Plex metadata - cargar automáticamente si está habilitado
+        if settings.get_plex_fetch_metadata() and self.plex_service.is_configured():
+            # Cargar metadatos automáticamente si está habilitado
+            self._render_plex_metadata_auto(row, index)
+        else:
+            # Mostrar expander opcional si no está habilitado
+            with st.expander("🎬 Metadatos de Plex (deshabilitado)", expanded=False):
+                st.info("💡 Habilita 'Traer metadatos de Plex' en la configuración para ver metadatos automáticamente")
         
-        # Información y controles
+        # 3. SIEMPRE mostrar reproductores (más consistente)
+        self._render_video_comparison(row, index)
+        
+        # 4. Información y controles
         self._render_movie_controls(row, index)
     
     def _render_video_comparison(self, row: Dict[str, Any], index: int):
-        """Renderiza la comparación de videos"""
+        """Renderiza la comparación de videos mejorada"""
         st.subheader("🎬 Comparar Videos")
+        
+        # Verificar si se deben mostrar reproductores embebidos
+        try:
+            show_embedded = settings.get_show_embedded_players()
+        except AttributeError:
+            show_embedded = False
         
         # Crear columnas
         col1, col2 = st.columns(2)
         
         # Película 1
         with col1:
-            st.write("**Película 1:**")
-            st.write(f"📁 {row.get('Peli 1', 'N/A')}")
-            st.write(f"Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
-            st.write(f"Duración: {row.get('Duración 1', 'N/A')}")
-            
-            # Reproductor embebido y botón
-            ruta1 = row.get('Ruta 1', '')
-            if ruta1 and os.path.exists(ruta1):
-                # Verificar si se deben mostrar reproductores embebidos
-                try:
-                    show_embedded = settings.get_show_embedded_players()
-                except AttributeError:
-                    show_embedded = False
-                
-                if show_embedded:
-                    try:
-                        # Obtener tiempo de inicio desde configuración
-                        start_time = settings.get_video_start_time_seconds()
-                        
-                        # Verificar tamaño del archivo (máximo 2GB para reproductor embebido)
-                        file_size = os.path.getsize(ruta1) / (1024**3)  # GB
-                        if file_size <= 2.0:
-                            try:
-                                # Leer archivo como bytes según documentación de Streamlit
-                                with open(ruta1, "rb") as video_file:
-                                    video_bytes = video_file.read()
-                                
-                                # Verificar si es un formato compatible
-                                file_ext = os.path.splitext(ruta1)[1].lower()
-                                if file_ext in ['.mp4', '.webm', '.ogg']:
-                                    st.video(video_bytes, start_time=start_time, width=300)
-                                    st.caption(f"⏱️ Inicia en el minuto {start_time//60}")
-                                else:
-                                    st.write(f"❌ Formato no compatible: {file_ext}")
-                                    st.write("📁 Formatos soportados: MP4, WebM, OGG")
-                            except Exception as video_error:
-                                st.write(f"❌ Error cargando video: {str(video_error)}")
-                                st.write("💡 El codec del video puede no ser compatible con el navegador")
-                        else:
-                            st.write("📁 Archivo muy grande para reproductor embebido")
-                    except Exception as e:
-                        st.write(f"❌ Error cargando video: {str(e)}")
-                
-                # Botón para abrir en reproductor (siempre visible)
-                if st.button(f"🎬 Abrir en Reproductor", key=f"open1_{index}"):
-                    os.startfile(ruta1)
-            else:
-                st.error("Archivo no encontrado")
+            self._render_single_video(row, 1, index, col1, show_embedded)
         
         # Película 2
         with col2:
-            st.write("**Película 2:**")
-            st.write(f"📁 {row.get('Peli 2', 'N/A')}")
-            st.write(f"Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
-            st.write(f"Duración: {row.get('Duración 2', 'N/A')}")
+            self._render_single_video(row, 2, index, col2, show_embedded)
+    
+    def _render_single_video(self, row: Dict[str, Any], video_num: int, index: int, col, show_embedded: bool = False):
+        """Renderiza un solo video con mejor manejo de errores"""
+        with col:
+            st.write(f"**Película {video_num}:**")
+            st.write(f"📁 {row.get(f'Peli {video_num}', 'N/A')}")
+            st.write(f"Tamaño: {row.get(f'Tamaño {video_num} (GB)', 'N/A')} GB")
+            st.write(f"Duración: {row.get(f'Duración {video_num}', 'N/A')}")
             
-            # Reproductor embebido y botón
-            ruta2 = row.get('Ruta 2', '')
-            if ruta2 and os.path.exists(ruta2):
-                # Verificar si se deben mostrar reproductores embebidos
-                try:
-                    show_embedded = settings.get_show_embedded_players()
-                except AttributeError:
-                    show_embedded = False
+            # Obtener ruta del archivo
+            ruta = row.get(f'Ruta {video_num}', '')
+            
+            if not ruta or not os.path.exists(ruta):
+                st.error("❌ Archivo no encontrado")
+                return
+            
+            # Información del archivo
+            try:
+                file_size_gb = os.path.getsize(ruta) / (1024**3)
+                file_ext = os.path.splitext(ruta)[1].lower()
                 
+                # Mostrar información del archivo
+                st.write(f"📊 Tamaño: {file_size_gb:.2f} GB")
+                st.write(f"📄 Extensión: {file_ext}")
+                
+                # SIEMPRE mostrar botón de reproductor externo
+                self._render_external_player_button(ruta, f"open{video_num}_{index}")
+                
+                # Mostrar reproductores embebidos si están habilitados
                 if show_embedded:
-                    try:
-                        # Obtener tiempo de inicio desde configuración
-                        start_time = settings.get_video_start_time_seconds()
-                        
-                        # Verificar tamaño del archivo (máximo 2GB para reproductor embebido)
-                        file_size = os.path.getsize(ruta2) / (1024**3)  # GB
-                        if file_size <= 2.0:
-                            try:
-                                # Leer archivo como bytes según documentación de Streamlit
-                                with open(ruta2, "rb") as video_file:
-                                    video_bytes = video_file.read()
-                                
-                                # Verificar si es un formato compatible
-                                file_ext = os.path.splitext(ruta2)[1].lower()
-                                if file_ext in ['.mp4', '.webm', '.ogg']:
-                                    st.video(video_bytes, start_time=start_time, width=300)
-                                    st.caption(f"⏱️ Inicia en el minuto {start_time//60}")
-                                else:
-                                    st.write(f"❌ Formato no compatible: {file_ext}")
-                                    st.write("📁 Formatos soportados: MP4, WebM, OGG")
-                            except Exception as video_error:
-                                st.write(f"❌ Error cargando video: {str(video_error)}")
-                                st.write("💡 El codec del video puede no ser compatible con el navegador")
-                        else:
-                            st.write("📁 Archivo muy grande para reproductor embebido")
-                    except Exception as e:
-                        st.write(f"❌ Error cargando video: {str(e)}")
+                    self._render_embedded_video(ruta, file_size_gb, file_ext, f"video{video_num}_{index}")
+                else:
+                    st.info("💡 Reproductores embebidos deshabilitados en configuración")
                 
-                # Botón para abrir en reproductor (siempre visible)
-                if st.button(f"🎬 Abrir en Reproductor", key=f"open2_{index}"):
-                    os.startfile(ruta2)
-            else:
-                st.error("Archivo no encontrado")
+            except Exception as e:
+                st.error(f"❌ Error procesando archivo: {e}")
+                # Aún así mostrar botón de reproductor externo
+                self._render_external_player_button(ruta, f"open{video_num}_{index}")
+    
+    def _render_embedded_video(self, file_path: str, file_size_gb: float, file_ext: str, key: str):
+        """Renderiza un video embebido con mejor manejo de errores"""
+        try:
+            # Obtener tiempo de inicio desde configuración
+            start_time = settings.get_video_start_time_seconds()
+            
+            # Verificar tamaño del archivo (límite más permisivo)
+            max_size_gb = 2.0  # Volver a 2GB como límite original
+            if file_size_gb > max_size_gb:
+                st.warning(f"📁 Archivo muy grande ({file_size_gb:.1f}GB) para reproductor embebido")
+                st.info("💡 Usa el botón 'Abrir en Reproductor' para archivos grandes")
+                return
+            
+            # Verificar formato compatible
+            supported_formats = ['.mp4', '.webm', '.ogg', '.avi', '.mov']
+            if file_ext not in supported_formats:
+                st.warning(f"❌ Formato no compatible: {file_ext}")
+                st.info(f"📁 Formatos soportados: {', '.join(supported_formats)}")
+                return
+            
+            # Intentar cargar el video
+            try:
+                # Método mejorado: usar ruta directa en lugar de bytes para archivos grandes
+                if file_size_gb <= 0.5:  # Archivos pequeños: usar bytes
+                    with open(file_path, "rb") as video_file:
+                        video_bytes = video_file.read()
+                    st.video(video_bytes, start_time=start_time, width=300)
+                else:  # Archivos medianos: usar ruta directa
+                    st.video(file_path, start_time=start_time, width=300)
+                
+                # Mostrar información del tiempo de inicio
+                minutes = start_time // 60
+                seconds = start_time % 60
+                st.caption(f"⏱️ Inicia en {minutes}:{seconds:02d}")
+                
+            except Exception as video_error:
+                st.error(f"❌ Error cargando video: {str(video_error)}")
+                st.info("💡 Posibles causas:")
+                st.info("• Codec no compatible con el navegador")
+                st.info("• Archivo corrupto o incompleto")
+                st.info("• Problema de permisos de archivo")
+                
+                # Sugerir alternativas
+                st.info("🔧 Soluciones:")
+                st.info("• Usa el botón 'Abrir en Reproductor' para reproducir externamente")
+                st.info("• Verifica que el archivo no esté corrupto")
+                st.info("• Intenta con un archivo más pequeño para prueba")
+                
+        except Exception as e:
+            st.error(f"❌ Error inesperado: {e}")
+    
+    def _render_external_player_button(self, file_path: str, key: str):
+        """Renderiza botón para abrir en reproductor externo"""
+        if st.button(f"🎬 Abrir en Reproductor", key=key, help="Abre el video en tu reproductor predeterminado"):
+            try:
+                # Intentar abrir con el sistema operativo
+                if os.name == 'nt':  # Windows
+                    os.startfile(file_path)
+                elif os.name == 'posix':  # macOS y Linux
+                    os.system(f'open "{file_path}"' if sys.platform == 'darwin' else f'xdg-open "{file_path}"')
+                else:
+                    st.warning("⚠️ Sistema operativo no soportado para apertura automática")
+                    st.info(f"📁 Ruta del archivo: {file_path}")
+                
+                st.success("✅ Abriendo en reproductor externo...")
+                
+            except Exception as e:
+                st.error(f"❌ No se pudo abrir automáticamente: {e}")
+                st.info(f"📁 Ruta del archivo: {file_path}")
+                st.info("💡 Copia la ruta y ábrela manualmente en tu reproductor")
         
         st.markdown("---")
     
@@ -615,9 +778,11 @@ class StreamlitAppManager:
             st.write(f"Ruta: {row.get('Ruta 1', 'N/A')}")
             
             # Checkbox para película 1
-            if st.checkbox(f"Seleccionar Película 1", key=f"select1_{index}"):
+            select1_key = f"select1_{index}"
+            if st.checkbox(f"Seleccionar Película 1", key=select1_key):
                 st.session_state[f"selected_{index}_1"] = True
                 st.session_state[f"selected_{index}_2"] = False  # Deseleccionar la otra
+                st.rerun()
             else:
                 st.session_state[f"selected_{index}_1"] = False
         
@@ -629,9 +794,11 @@ class StreamlitAppManager:
             st.write(f"Ruta: {row.get('Ruta 2', 'N/A')}")
             
             # Checkbox para película 2
-            if st.checkbox(f"Seleccionar Película 2", key=f"select2_{index}"):
+            select2_key = f"select2_{index}"
+            if st.checkbox(f"Seleccionar Película 2", key=select2_key):
                 st.session_state[f"selected_{index}_2"] = True
                 st.session_state[f"selected_{index}_1"] = False  # Deseleccionar la otra
+                st.rerun()
             else:
                 st.session_state[f"selected_{index}_2"] = False
         
@@ -756,6 +923,286 @@ class StreamlitAppManager:
         else:
             st.warning("⚠️ No se encontraron archivos para eliminar")
     
+    def _get_plex_metadata_for_pair(self, row: Dict[str, Any]) -> Optional[Dict]:
+        """Obtiene metadatos de Plex para un par de películas"""
+        try:
+            # Extraer nombres de archivo de las rutas
+            filename1 = os.path.basename(row.get('Ruta 1', ''))
+            filename2 = os.path.basename(row.get('Ruta 2', ''))
+            
+            if not filename1 or not filename2:
+                return None
+            
+            # Obtener metadatos para ambos archivos
+            metadata1 = self.plex_service.get_movie_metadata_by_filename(filename1)
+            metadata2 = self.plex_service.get_movie_metadata_by_filename(filename2)
+            
+            if metadata1 or metadata2:
+                return {
+                    'file1': metadata1,
+                    'file2': metadata2,
+                    'compatibility': self._check_plex_compatibility(metadata1, metadata2)
+                }
+            
+            return None
+            
+        except Exception as e:
+            st.error(f"Error obteniendo metadatos de Plex: {e}")
+            return None
+    
+    def _check_plex_compatibility(self, metadata1: Optional[Dict], metadata2: Optional[Dict]) -> Dict:
+        """Verifica compatibilidad entre dos películas usando metadatos de Plex"""
+        if not metadata1 or not metadata2:
+            return {
+                'compatible': True,
+                'message': 'No se pudieron obtener metadatos de Plex',
+                'duration_check': None
+            }
+        
+        # Verificar duración si está habilitado
+        duration_compatible, duration_message = self.plex_service.check_duration_compatibility(
+            metadata1, metadata2
+        )
+        
+        return {
+            'compatible': duration_compatible,
+            'message': duration_message,
+            'duration_check': {
+                'compatible': duration_compatible,
+                'message': duration_message
+            }
+        }
+    
+    def _render_plex_metadata(self, plex_metadata: Dict):
+        """Renderiza los metadatos de Plex para un par"""
+        st.subheader("🎬 Metadatos de Plex")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            metadata1 = plex_metadata['file1']
+            if metadata1:
+                # Analizar si es None o no encontrado
+                title = metadata1.get('title', 'N/A')
+                year = metadata1.get('year', 'N/A')
+                
+                if title == 'N/A' or year == 'N/A' or year is None:
+                    st.write("🔍 **Archivo no identificado en Plex**")
+                    st.write("💡 *Solo disponible por nombre de archivo*")
+                else:
+                    st.write(f"🎬 **{title}** ({year})")
+                    st.write(f"📊 Estudio: {metadata1.get('studio', 'N/A')}")
+                    st.write(f"⏱️ Duración: {metadata1.get('duration_hms_meta', 'N/A')}")
+                    st.write(f"🎥 Resolución: {metadata1.get('width', 'N/A')}x{metadata1.get('height', 'N/A')}")
+                    st.write(f"📦 Contenedor: {metadata1.get('container', 'N/A')}")
+                    st.write(f"🎵 Audio: {metadata1.get('audio_codec', 'N/A')} ({metadata1.get('audio_channels', 'N/A')} canales)")
+            else:
+                st.write("❌ No encontrada en Plex")
+                st.write("💡 *Solo disponible por nombre de archivo*")
+        
+        with col2:
+            st.write("**Película 2:**")
+            metadata2 = plex_metadata['file2']
+            if metadata2:
+                # Analizar si es None o no encontrado
+                title = metadata2.get('title', 'N/A')
+                year = metadata2.get('year', 'N/A')
+                
+                if title == 'N/A' or year == 'N/A' or year is None:
+                    st.write("🔍 **Archivo no identificado en Plex**")
+                    st.write("💡 *Solo disponible por nombre de archivo*")
+                else:
+                    st.write(f"🎬 **{title}** ({year})")
+                    st.write(f"📊 Estudio: {metadata2.get('studio', 'N/A')}")
+                    st.write(f"⏱️ Duración: {metadata2.get('duration_hms_meta', 'N/A')}")
+                    st.write(f"🎥 Resolución: {metadata2.get('width', 'N/A')}x{metadata2.get('height', 'N/A')}")
+                    st.write(f"📦 Contenedor: {metadata2.get('container', 'N/A')}")
+                    st.write(f"🎵 Audio: {metadata2.get('audio_codec', 'N/A')} ({metadata2.get('audio_channels', 'N/A')} canales)")
+            else:
+                st.write("❌ No encontrada en Plex")
+                st.write("💡 *Solo disponible por nombre de archivo*")
+        
+        # Mostrar análisis de compatibilidad
+        compatibility = plex_metadata['compatibility']
+        if compatibility['duration_check']:
+            duration_check = compatibility['duration_check']
+            if duration_check['compatible']:
+                st.success(f"✅ {duration_check['message']}")
+            else:
+                st.warning(f"⚠️ {duration_check['message']}")
+        
+        st.markdown("---")
+    
+
+    def _render_basic_info_immediate(self, row: Dict[str, Any], index: int):
+        """Renderiza información básica inmediatamente (nombres, tamaños, rutas)"""
+        st.subheader("📁 Información Básica")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            st.markdown(f"<h4 style='color: #1f77b4'>{row.get('Peli 1', 'N/A')}</h4>", unsafe_allow_html=True)
+            st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
+            st.write(f"⏱️ Duración: {row.get('Duración 1', 'N/A')}")
+            st.write(f"📁 Ruta: {row.get('Ruta 1', 'N/A')}")
+            
+            # Información de video local
+            ruta1 = row.get('Ruta 1', '')
+            if ruta1 and os.path.exists(ruta1):
+                self._render_local_video_info(ruta1, f"local1_{index}")
+        
+        with col2:
+            st.write("**Película 2:**")
+            st.markdown(f"<h4 style='color: #ff7f0e'>{row.get('Peli 2', 'N/A')}</h4>", unsafe_allow_html=True)
+            st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
+            st.write(f"⏱️ Duración: {row.get('Duración 2', 'N/A')}")
+            st.write(f"📁 Ruta: {row.get('Ruta 2', 'N/A')}")
+            
+            # Información de video local
+            ruta2 = row.get('Ruta 2', '')
+            if ruta2 and os.path.exists(ruta2):
+                self._render_local_video_info(ruta2, f"local2_{index}")
+        
+        st.markdown("---")
+    
+    def _render_plex_metadata_optional(self, row: Dict[str, Any], index: int):
+        """Renderiza metadatos de Plex en expander opcional"""
+        # Verificar si ya tenemos cache para estos archivos
+        filename1 = os.path.basename(row.get('Ruta 1', ''))
+        filename2 = os.path.basename(row.get('Ruta 2', ''))
+        
+        cache_key = f"{filename1}_{filename2}"
+        
+        if cache_key in st.session_state.plex_cache:
+            # Usar cache
+            plex_metadata = st.session_state.plex_cache[cache_key]
+            self._render_plex_metadata_content(plex_metadata)
+        else:
+            # Consultar Plex
+            if st.button("🔍 Cargar Metadatos de Plex", key=f"load_plex_{index}"):
+                with st.spinner("Consultando base de datos de Plex..."):
+                    plex_metadata = self._get_plex_metadata_for_pair(row)
+                    
+                    if plex_metadata:
+                        # Guardar en cache
+                        st.session_state.plex_cache[cache_key] = plex_metadata
+                        self._render_plex_metadata_content(plex_metadata)
+                        st.success("✅ Metadatos cargados")
+                    else:
+                        st.info("💡 No se encontraron metadatos en Plex para estos archivos")
+            else:
+                st.info("💡 Haz clic en 'Cargar Metadatos de Plex' para obtener información adicional")
+    
+    def _render_plex_metadata_content(self, plex_metadata: Dict):
+        """Renderiza el contenido de metadatos de Plex"""
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Película 1:**")
+            metadata1 = plex_metadata['file1']
+            if metadata1:
+                # Analizar si es None o no encontrado
+                title = metadata1.get('title', 'N/A')
+                year = metadata1.get('year', 'N/A')
+                
+                if title == 'N/A' or year == 'N/A' or year is None:
+                    st.write("🔍 **Archivo no identificado en Plex**")
+                    st.write("💡 *Solo disponible por nombre de archivo*")
+                else:
+                    st.write(f"🎬 **{title}** ({year})")
+                    st.write(f"📊 Estudio: {metadata1.get('studio', 'N/A')}")
+                    st.write(f"⏱️ Duración: {metadata1.get('duration_hms_meta', 'N/A')}")
+                    st.write(f"🎥 Resolución: {metadata1.get('width', 'N/A')}x{metadata1.get('height', 'N/A')}")
+                    st.write(f"📦 Contenedor: {metadata1.get('container', 'N/A')}")
+                    st.write(f"🎵 Audio: {metadata1.get('audio_codec', 'N/A')} ({metadata1.get('audio_channels', 'N/A')} canales)")
+            else:
+                st.write("❌ No encontrada en Plex")
+                st.write("💡 *Solo disponible por nombre de archivo*")
+        
+        with col2:
+            st.write("**Película 2:**")
+            metadata2 = plex_metadata['file2']
+            if metadata2:
+                # Analizar si es None o no encontrado
+                title = metadata2.get('title', 'N/A')
+                year = metadata2.get('year', 'N/A')
+                
+                if title == 'N/A' or year == 'N/A' or year is None:
+                    st.write("🔍 **Archivo no identificado en Plex**")
+                    st.write("💡 *Solo disponible por nombre de archivo*")
+                else:
+                    st.write(f"🎬 **{title}** ({year})")
+                    st.write(f"📊 Estudio: {metadata2.get('studio', 'N/A')}")
+                    st.write(f"⏱️ Duración: {metadata2.get('duration_hms_meta', 'N/A')}")
+                    st.write(f"🎥 Resolución: {metadata2.get('width', 'N/A')}x{metadata2.get('height', 'N/A')}")
+                    st.write(f"📦 Contenedor: {metadata2.get('container', 'N/A')}")
+                    st.write(f"🎵 Audio: {metadata2.get('audio_codec', 'N/A')} ({metadata2.get('audio_channels', 'N/A')} canales)")
+            else:
+                st.write("❌ No encontrada en Plex")
+                st.write("💡 *Solo disponible por nombre de archivo*")
+        
+        # Mostrar análisis de compatibilidad
+        compatibility = plex_metadata['compatibility']
+        if compatibility['duration_check']:
+            duration_check = compatibility['duration_check']
+            if duration_check['compatible']:
+                st.success(f"✅ {duration_check['message']}")
+            else:
+                st.warning(f"⚠️ {duration_check['message']}")
+
+    def _render_plex_metadata_auto(self, row: Dict[str, Any], index: int):
+        """Renderiza metadatos de Plex automáticamente si está habilitado"""
+        # Verificar si ya tenemos cache para estos archivos
+        filename1 = os.path.basename(row.get('Ruta 1', ''))
+        filename2 = os.path.basename(row.get('Ruta 2', ''))
+        
+        cache_key = f"{filename1}_{filename2}"
+        
+        if cache_key in st.session_state.plex_cache:
+            # Usar cache
+            plex_metadata = st.session_state.plex_cache[cache_key]
+            st.subheader("🎬 Metadatos de Plex")
+            self._render_plex_metadata_content(plex_metadata)
+        else:
+            # Consultar Plex automáticamente
+            with st.spinner("🔍 Consultando base de datos de Plex..."):
+                plex_metadata = self._get_plex_metadata_for_pair(row)
+                
+                if plex_metadata:
+                    # Guardar en cache
+                    st.session_state.plex_cache[cache_key] = plex_metadata
+                    st.subheader("🎬 Metadatos de Plex")
+                    self._render_plex_metadata_content(plex_metadata)
+                else:
+                    st.info("💡 No se encontraron metadatos en Plex para estos archivos")
+        
+        st.markdown("---")
+
+    def _render_local_video_info(self, file_path: str, key: str):
+        """Renderiza información de video local"""
+        try:
+            # Obtener información del video
+            video_info = self.video_info_service.get_summary_info(file_path)
+            
+            if video_info:
+                st.write("🎬 **Información Local:**")
+                st.write(f"⏱️ Duración: {video_info['duration']}")
+                st.write(f"🎥 Resolución: {video_info['resolution']}")
+                st.write(f"📺 Calidad: {video_info['quality']}")
+                st.write(f"🎵 Audio: {video_info['audio']}")
+                st.write(f"📦 Contenedor: {video_info['container']}")
+                
+                if video_info['fps'] != 'N/A':
+                    st.write(f"🎞️ FPS: {video_info['fps']}")
+                if video_info['bitrate'] != 'N/A':
+                    st.write(f"📊 Bitrate: {video_info['bitrate']}")
+            else:
+                st.write("❌ No se pudo obtener información del video")
+                
+        except Exception as e:
+            st.write(f"❌ Error obteniendo información: {e}")
     def run(self):
         """Ejecuta la aplicación completa"""
         self.render_header()
