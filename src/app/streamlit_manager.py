@@ -8,6 +8,7 @@ import streamlit as st
 import sys
 import time
 import os
+import hashlib
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -23,6 +24,7 @@ from src.utils.file_operations import FileBatchProcessor
 from src.services.plex_service import PlexService
 from src.services.video_info_service import VideoInfoService
 from src.services.Plex.plex_title_extractor import PlexTitleExtractor
+from src.services.Plex.plex_editions_manager import PlexEditionsManager
 
 
 class StreamlitAppManager:
@@ -39,6 +41,7 @@ class StreamlitAppManager:
         self.plex_service = PlexService()
         self.video_info_service = VideoInfoService()
         self.plex_title_extractor = PlexTitleExtractor(settings.get_plex_database_path())
+        self.plex_editions_manager = PlexEditionsManager(settings.get_plex_database_path())
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -1299,6 +1302,270 @@ class StreamlitAppManager:
             else:
                 st.warning("❌ No encontrada en Plex")
                 self._render_enhancement_options_for_file(row.get('Ruta 2', ''), f"enhance2_{index}")
+        
+        # Verificar si son la misma película en Plex
+        if library_info1 and library_info2:
+            title1 = library_info1.get('title', '')
+            title2 = library_info2.get('title', '')
+            year1 = library_info1.get('year', '')
+            year2 = library_info2.get('year', '')
+            
+            if title1 == title2 and year1 == year2 and title1 != 'N/A':
+                # Usar el nuevo análisis de ediciones
+                self._render_plex_editions_analysis(plex_info, row, index)
+    
+    def _render_plex_editions_analysis(self, plex_info: Dict, row: Dict[str, Any], index: int):
+        """Renderiza el análisis de ediciones usando PlexEditionsManager"""
+        st.markdown("---")
+        st.subheader("🔍 Análisis de Duplicados con Ediciones")
+        
+        try:
+            # Obtener rutas de archivos
+            file1_path = row.get('Ruta 1', '')
+            file2_path = row.get('Ruta 2', '')
+            
+            # Análisis completo con ediciones
+            analysis = self.plex_editions_manager.analyze_duplicate_pair_with_editions(
+                file1_path, file2_path, plex_info['file1'], plex_info['file2']
+            )
+            
+            # Mostrar resultados del análisis
+            self._display_editions_analysis(analysis, file1_path, file2_path, index)
+            
+        except Exception as e:
+            st.error(f"❌ Error en análisis de ediciones: {e}")
+            # Fallback al método anterior
+            self._render_legacy_duplicate_analysis(plex_info, row, index)
+    
+    def _display_editions_analysis(self, analysis: Dict, file1_path: str, file2_path: str, index: int):
+        """Muestra los resultados del análisis de ediciones"""
+        
+        if not analysis['same_movie']:
+            st.info("🎬 **Películas diferentes** según Plex")
+            return
+        
+        # Mostrar información de ediciones existentes
+        if analysis.get('has_existing_editions', False):
+            st.info(f"📚 **Ediciones existentes**: {len(analysis['existing_editions'])} encontradas")
+            
+            with st.expander("Ver ediciones existentes"):
+                for edition in analysis['existing_editions']:
+                    st.write(f"• **{edition['edition']}** ({edition['year']})")
+                    if edition.get('summary'):
+                        st.write(f"  _{edition['summary'][:100]}..._")
+        
+        # Mostrar si los archivos ya tienen ediciones
+        if analysis.get('file1_has_edition', False):
+            st.warning("⚠️ **Archivo 1** ya tiene una edición asignada")
+            edition_info = analysis.get('file1_edition', {})
+            st.write(f"   Edición: **{edition_info.get('edition', 'N/A')}**")
+        
+        if analysis.get('file2_has_edition', False):
+            st.warning("⚠️ **Archivo 2** ya tiene una edición asignada")
+            edition_info = analysis.get('file2_edition', {})
+            st.write(f"   Edición: **{edition_info.get('edition', 'N/A')}**")
+        
+        # Mostrar recomendaciones
+        recommendations = analysis.get('recommendations', [])
+        if recommendations:
+            st.info("💡 **Recomendaciones:**")
+            for rec in recommendations:
+                st.write(f"• {rec}")
+        
+        # Mostrar análisis específico
+        if analysis['recommendation'] == 'create_editions':
+            self._render_editions_creation_ui(analysis, file1_path, file2_path, index)
+        elif analysis['recommendation'] == 'delete_duplicate':
+            self._render_delete_duplicate_ui(analysis, file1_path, file2_path, index)
+        else:
+            st.warning(f"⚠️ **Análisis no concluyente**: {analysis.get('message', 'Error desconocido')}")
+    
+    def _render_editions_creation_ui(self, analysis: Dict, file1_path: str, file2_path: str, index: int):
+        """Renderiza la UI para crear ediciones"""
+        
+        if 'size_difference_percent' in analysis:
+            st.warning("🎬 **MISMA PELÍCULA, ARCHIVOS DIFERENTES**")
+            st.info(f"💡 **Tamaños muy diferentes**: {analysis['file1_size_gb']:.2f}GB vs {analysis['file2_size_gb']:.2f}GB ({analysis['size_difference_percent']:.1f}% diferencia)")
+        else:
+            st.warning("🎬 **MISMA PELÍCULA, ARCHIVOS DIFERENTES**")
+            st.info("💡 **Opciones**: Puedes crear ediciones diferentes en Plex")
+        
+        # Botones para crear ediciones
+        col_edit1, col_edit2 = st.columns(2)
+        
+        with col_edit1:
+            if st.button("🎬 Crear Edición - Archivo 1", key=f"edition1_{index}"):
+                self._show_edition_creator_advanced(file1_path, analysis, f"edition1_{index}")
+        
+        with col_edit2:
+            if st.button("🎬 Crear Edición - Archivo 2", key=f"edition2_{index}"):
+                self._show_edition_creator_advanced(file2_path, analysis, f"edition2_{index}")
+    
+    def _render_delete_duplicate_ui(self, analysis: Dict, file1_path: str, file2_path: str, index: int):
+        """Renderiza la UI para eliminar duplicados"""
+        st.error("⚠️ **MISMO ARCHIVO**: El hash es idéntico")
+        st.info("💡 **Recomendación**: Es el mismo archivo con diferente nombre. Puedes eliminar uno de los dos.")
+        
+        # Botones para eliminar duplicados
+        col_del1, col_del2 = st.columns(2)
+        
+        with col_del1:
+            if st.button("🗑️ Eliminar Archivo 1", key=f"delete1_{index}"):
+                st.warning("⚠️ Función de eliminación no implementada por seguridad")
+        
+        with col_del2:
+            if st.button("🗑️ Eliminar Archivo 2", key=f"delete2_{index}"):
+                st.warning("⚠️ Función de eliminación no implementada por seguridad")
+    
+    def _show_edition_creator_advanced(self, file_path: str, analysis: Dict, key: str):
+        """Muestra el creador de ediciones avanzado"""
+        st.markdown("---")
+        st.subheader("🎬 Crear Edición en Plex")
+        
+        # Mostrar información del archivo
+        filename = os.path.basename(file_path)
+        st.write(f"**Archivo:** {filename}")
+        
+        # Obtener título de la película
+        movie_title = "Película"
+        if analysis.get('file1_edition'):
+            movie_title = analysis['file1_edition'].get('title', 'Película')
+        elif analysis.get('file2_edition'):
+            movie_title = analysis['file2_edition'].get('title', 'Película')
+        
+        st.write(f"**Película:** {movie_title}")
+        
+        # Obtener sugerencias de edición
+        suggestions = self.plex_editions_manager.get_edition_suggestions_for_movie(movie_title)
+        
+        # Selector de edición
+        selected_edition = st.selectbox(
+            "Selecciona el tipo de edición:",
+            ["Personalizada"] + suggestions,
+            key=f"edition_type_{key}"
+        )
+        
+        # Campo para edición personalizada
+        if selected_edition == "Personalizada":
+            custom_edition = st.text_input(
+                "Nombre de la edición:",
+                placeholder="Ej: Edición del Director, Versión Extendida...",
+                key=f"custom_edition_{key}"
+            )
+            edition_name = custom_edition
+        else:
+            edition_name = selected_edition
+        
+        # Opción de subcarpeta
+        create_subfolder = st.checkbox(
+            "Crear subcarpeta para la edición",
+            value=False,
+            key=f"subfolder_{key}"
+        )
+        
+        # Botón para aplicar
+        if st.button("✅ Crear Edición", key=f"apply_edition_{key}"):
+            if edition_name:
+                if self.plex_editions_manager.creator.validate_edition_name(edition_name):
+                    new_path = self.plex_editions_manager.create_edition_for_file(
+                        file_path, movie_title, edition_name, create_subfolder
+                    )
+                    
+                    if new_path:
+                        st.success("✅ Edición creada exitosamente!")
+                        st.info(f"📁 **Nuevo archivo:** {os.path.basename(new_path)}")
+                        st.info("💡 **Siguiente paso:** Ejecuta un escaneo en Plex para que detecte la nueva edición")
+                        
+                        # Mostrar instrucciones
+                        st.markdown("### 📋 Instrucciones para Plex:")
+                        st.markdown("""
+                        1. **Abre Plex Media Server**
+                        2. **Ve a la biblioteca** donde está la película
+                        3. **Haz clic en "Más" → "Escanear archivos de biblioteca"**
+                        4. **Espera** a que termine el escaneo
+                        5. **Verifica** que aparezca la nueva edición
+                        """)
+                    else:
+                        st.error("❌ Error creando la edición")
+                else:
+                    st.error("❌ Nombre de edición inválido. Evita caracteres especiales.")
+            else:
+                st.error("❌ Debes especificar un nombre para la edición")
+    
+    def _render_legacy_duplicate_analysis(self, plex_info: Dict, row: Dict[str, Any], index: int):
+        """Método de respaldo para análisis de duplicados (método anterior)"""
+        st.warning("⚠️ Usando análisis de respaldo...")
+        
+        # Obtener información de archivos (tamaño y fecha)
+        file_info1 = self._get_file_info(row.get('Ruta 1', ''))
+        file_info2 = self._get_file_info(row.get('Ruta 2', ''))
+
+        if file_info1 and file_info2:
+            size1 = file_info1['size']
+            size2 = file_info2['size']
+            
+            # Calcular diferencia porcentual de tamaño
+            size_diff_percent = abs(size1 - size2) / max(size1, size2) * 100 if max(size1, size2) > 0 else 0
+            
+            # DECISIÓN INTELIGENTE: Solo calcular hash si tamaños son similares
+            if size_diff_percent > 10:  # Si la diferencia es mayor al 10%
+                st.warning("🎬 **MISMA PELÍCULA, ARCHIVOS DIFERENTES**")
+                st.info(f"💡 **Tamaños muy diferentes**: {size1/1024/1024/1024:.2f}GB vs {size2/1024/1024/1024:.2f}GB ({size_diff_percent:.1f}% diferencia)")
+                st.info("💡 **Opciones**: Puedes crear ediciones diferentes en Plex")
+                
+                # Botones para crear ediciones (sin calcular hash)
+                col_edit1, col_edit2 = st.columns(2)
+                with col_edit1:
+                    if st.button("🎬 Crear Edición - Película 1", key=f"edition1_{index}"):
+                        self._show_edition_creator_advanced(row.get('Ruta 1', ''), {'file1_edition': {'title': 'Película'}}, f"edition1_{index}")
+                with col_edit2:
+                    if st.button("🎬 Crear Edición - Película 2", key=f"edition2_{index}"):
+                        self._show_edition_creator_advanced(row.get('Ruta 2', ''), {'file2_edition': {'title': 'Película'}}, f"edition2_{index}")
+            else:
+                # Tamaños similares - proceder a calcular hash
+                st.info(f"📊 **Tamaños similares**: {size1/1024/1024/1024:.2f}GB vs {size2/1024/1024/1024:.2f}GB ({size_diff_percent:.1f}% diferencia)")
+                st.info("🔍 Calculando hash para verificar si son idénticos...")
+                
+                with st.spinner("🔍 Calculando hash de archivos..."):
+                    hash1 = self._calculate_file_hash(row.get('Ruta 1', ''))
+                    hash2 = self._calculate_file_hash(row.get('Ruta 2', ''))
+                
+                if hash1 and hash2:
+                    if hash1 == hash2:
+                        st.error("⚠️ **MISMO ARCHIVO**: El hash es idéntico")
+                        st.info("💡 **Recomendación**: Es el mismo archivo con diferente nombre. Puedes eliminar uno de los dos.")
+                    else:
+                        st.warning("🎬 **MISMA PELÍCULA, ARCHIVOS DIFERENTES**")
+                        st.info("💡 **Opciones**: Puedes crear ediciones diferentes en Plex")
+                        
+                        # Botones para crear ediciones
+                        col_edit1, col_edit2 = st.columns(2)
+                        with col_edit1:
+                            if st.button("🎬 Crear Edición - Película 1", key=f"edition1_{index}"):
+                                self._show_edition_creator_advanced(row.get('Ruta 1', ''), {'file1_edition': {'title': 'Película'}}, f"edition1_{index}")
+                        with col_edit2:
+                            if st.button("🎬 Crear Edición - Película 2", key=f"edition2_{index}"):
+                                self._show_edition_creator_advanced(row.get('Ruta 2', ''), {'file2_edition': {'title': 'Película'}}, f"edition2_{index}")
+                else:
+                    # Fallback si el cálculo de hash falla (a pesar de tamaños similares)
+                    st.warning("⚠️ No se pudo calcular hash, usando comparación por fecha...")
+                    if (file_info1['mtime'] == file_info2['mtime']):
+                        st.error("⚠️ **MISMO ARCHIVO**: Tamaño y fecha idénticos")
+                        st.info("💡 **Recomendación**: Es el mismo archivo con diferente nombre. Puedes eliminar uno de los dos.")
+                    else:
+                        st.warning("🎬 **MISMA PELÍCULA, ARCHIVOS DIFERENTES**")
+                        st.info("💡 **Opciones**: Puedes crear ediciones diferentes en Plex")
+                        
+                        # Botones para crear ediciones
+                        col_edit1, col_edit2 = st.columns(2)
+                        with col_edit1:
+                            if st.button("🎬 Crear Edición - Película 1", key=f"edition1_{index}"):
+                                self._show_edition_creator_advanced(row.get('Ruta 1', ''), {'file1_edition': {'title': 'Película'}}, f"edition1_{index}")
+                        with col_edit2:
+                            if st.button("🎬 Crear Edición - Película 2", key=f"edition2_{index}"):
+                                self._show_edition_creator_advanced(row.get('Ruta 2', ''), {'file2_edition': {'title': 'Película'}}, f"edition2_{index}")
+        else:
+            st.warning("⚠️ No se pudo obtener información de tamaño/fecha de los archivos.")
     
     def _render_plex_enhancement_options(self, row: Dict[str, Any], index: int):
         """Renderiza opciones de mejora cuando no se encuentran archivos en Plex"""
@@ -1425,6 +1692,136 @@ class StreamlitAppManager:
             
         except Exception as e:
             st.error(f"❌ Error creando edición: {e}")
+    
+    def _calculate_file_hash(self, file_path: str) -> Optional[str]:
+        """Calcula el hash MD5 de un archivo"""
+        try:
+            # Normalizar la ruta para rutas UNC
+            normalized_path = os.path.normpath(file_path)
+            
+            if not os.path.exists(normalized_path):
+                st.warning(f"⚠️ Archivo no encontrado: {normalized_path}")
+                return None
+            
+            # Verificar que es un archivo (no directorio)
+            if not os.path.isfile(normalized_path):
+                st.warning(f"⚠️ No es un archivo: {normalized_path}")
+                return None
+            
+            hash_md5 = hashlib.md5()
+            
+            # Usar try/except para manejar errores de acceso
+            try:
+                with open(normalized_path, "rb") as f:
+                    # Leer en chunks para archivos grandes
+                    for chunk in iter(lambda: f.read(8192), b""):  # Chunks más grandes
+                        hash_md5.update(chunk)
+                return hash_md5.hexdigest()
+            except (OSError, IOError) as e:
+                st.warning(f"⚠️ Error accediendo al archivo: {e}")
+                return None
+                
+        except Exception as e:
+            st.warning(f"⚠️ Error calculando hash: {e}")
+            return None
+    
+    def _get_file_info(self, file_path: str) -> Optional[Dict]:
+        """Obtiene información básica del archivo (tamaño y fecha)"""
+        try:
+            normalized_path = os.path.normpath(file_path)
+            
+            if not os.path.exists(normalized_path):
+                return None
+            
+            stat = os.stat(normalized_path)
+            return {
+                'size': stat.st_size,
+                'mtime': stat.st_mtime
+            }
+        except Exception as e:
+            st.warning(f"⚠️ Error obteniendo info del archivo: {e}")
+            return None
+    
+    def _show_edition_creator(self, file_path: str, movie_title: str, key: str):
+        """Muestra el creador de ediciones para Plex"""
+        st.markdown("---")
+        st.subheader("🎬 Crear Edición en Plex")
+        
+        # Mostrar información del archivo
+        st.write(f"**Archivo:** {os.path.basename(file_path)}")
+        st.write(f"**Película:** {movie_title}")
+        
+        # Opciones de edición predefinidas
+        edition_options = [
+            "Edición del Director",
+            "Edición Especial",
+            "Edición Extendida", 
+            "Edición Teatral",
+            "Edición 20 Aniversario",
+            "Edición 4K",
+            "Edición Remasterizada",
+            "Edición Sin Cortes",
+            "Edición Unrated",
+            "Edición Especial 25 Aniversario"
+        ]
+        
+        # Selector de edición
+        selected_edition = st.selectbox(
+            "Selecciona el tipo de edición:",
+            ["Personalizada"] + edition_options,
+            key=f"edition_type_{key}"
+        )
+        
+        # Campo para edición personalizada
+        if selected_edition == "Personalizada":
+            custom_edition = st.text_input(
+                "Nombre de la edición:",
+                placeholder="Ej: Edición del Director, Versión Extendida...",
+                key=f"custom_edition_{key}"
+            )
+            edition_name = custom_edition
+        else:
+            edition_name = selected_edition
+        
+        # Botón para aplicar
+        if st.button("✅ Aplicar Edición", key=f"apply_edition_{key}"):
+            if edition_name:
+                self._apply_plex_edition(file_path, edition_name)
+            else:
+                st.error("❌ Debes especificar un nombre para la edición")
+    
+    def _apply_plex_edition(self, file_path: str, edition_name: str):
+        """Aplica la edición renombrando el archivo según las convenciones de Plex"""
+        try:
+            # Obtener directorio y nombre base
+            directory = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+            name, ext = os.path.splitext(filename)
+            
+            # Crear nuevo nombre con formato Plex: {edition-Nombre de la Edición}
+            new_filename = f"{name} {{edition-{edition_name}}}{ext}"
+            new_path = os.path.join(directory, new_filename)
+            
+            # Renombrar archivo
+            os.rename(file_path, new_path)
+            
+            st.success(f"✅ Archivo renombrado exitosamente!")
+            st.info(f"📁 **Nuevo nombre:** {new_filename}")
+            st.info("💡 **Siguiente paso:** Ejecuta un escaneo en Plex para que detecte la nueva edición")
+            
+            # Mostrar instrucciones
+            st.markdown("### 📋 Instrucciones para Plex:")
+            st.markdown("""
+            1. **Abre Plex Media Server**
+            2. **Ve a la biblioteca** donde está la película
+            3. **Haz clic en "Más" → "Escanear archivos de biblioteca"**
+            4. **Espera** a que termine el escaneo
+            5. **Verifica** que aparezca la nueva edición
+            """)
+            
+        except Exception as e:
+            st.error(f"❌ Error aplicando edición: {e}")
+    
     def run(self):
         """Ejecuta la aplicación completa"""
         self.render_header()
