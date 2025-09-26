@@ -335,6 +335,19 @@ class Settings:
         """Resetea los contadores de pares"""
         self.set_total_pairs(0)
         self.set_pairs_deleted(0)
+    
+    # Métodos para configuración de hash
+    def get_hash_calculation_enabled(self) -> bool:
+        """Obtiene si el cálculo de hash está habilitado"""
+        return self.get("plex.hash_calculation_enabled", False)
+    
+    def set_hash_calculation_enabled(self, value: bool):
+        """Establece si el cálculo de hash está habilitado"""
+        self.set("plex.hash_calculation_enabled", value)
+    
+    def get_hash_calculation_warning(self) -> str:
+        """Obtiene el mensaje de advertencia para el cálculo de hash"""
+        return self.get("plex.hash_calculation_warning", "⚠️ El cálculo de hash puede tardar 5+ minutos para archivos grandes")
 
 
 # Instancia global del singleton

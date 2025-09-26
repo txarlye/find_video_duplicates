@@ -59,7 +59,9 @@
         },
         "fetch_metadata": true,
         "duration_filter_enabled": true,
-        "duration_tolerance_minutes": 3
+        "duration_tolerance_minutes": 3,
+        "hash_calculation_enabled": false,
+        "hash_calculation_warning": "⚠️ El cálculo de hash puede tardar 5+ minutos para archivos grandes"
     },
     "runtime": {
         "total_pairs": 344,

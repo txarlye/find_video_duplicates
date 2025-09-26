@@ -153,3 +153,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Scan data files (JSON files in scan_data folder)
+scan_data/*.json
+
+# Keep scan_data directory structure
+!scan_data/.gitkeep

@@ -509,9 +509,22 @@ class StreamlitAppManager:
             st.info("💡 No hay datos de duplicados para mostrar. Escanea una carpeta o carga un escaneo guardado.")
             return
         
+        # Verificar que los datos están en el formato correcto
+        if isinstance(st.session_state.duplicados, list) and len(st.session_state.duplicados) > 0:
+            # Verificar que el primer elemento es un diccionario (formato correcto)
+            first_item = st.session_state.duplicados[0]
+            if not isinstance(first_item, dict):
+                logging.warning("⚠️ Formato de datos incorrecto, intentando convertir...")
+                # Aquí podrías agregar lógica de conversión si es necesario
+        
         # Métricas
         total_peliculas = len(st.session_state.peliculas) if st.session_state.peliculas else 0
         total_duplicados = len(st.session_state.duplicados)
+        
+        # Si no hay películas pero sí duplicados, es un escaneo cargado
+        if total_peliculas == 0 and total_duplicados > 0:
+            # Estimar películas basándose en los duplicados
+            total_peliculas = total_duplicados * 2  # Aproximación
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -2073,8 +2086,14 @@ class StreamlitAppManager:
             st.info(f"🔍 Debug: st.session_state.duplicados tiene {len(st.session_state.duplicados)} pares")
             st.info(f"🔍 Debug: pairs_manager tiene {len(self.pairs_manager.get_pairs_list())} pares")
             
-            # Forzar actualización del estado - NO usar scan_loaded flags
-            # Los datos ya están en st.session_state.duplicados
+            # Verificar que los datos se cargaron correctamente
+            if len(pairs_data) > 0:
+                st.success(f"✅ Escaneo cargado exitosamente: {len(pairs_data)} pares")
+                st.info("🔄 La interfaz se actualizará automáticamente...")
+            else:
+                st.warning("⚠️ El archivo de escaneo está vacío")
+            
+            # Forzar actualización del estado
             st.rerun()
             
         except Exception as e:

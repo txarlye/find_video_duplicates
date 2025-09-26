@@ -64,22 +64,33 @@ class PlexDuplicateAnalyzer:
                     'file2_size_gb': size_analysis['file2_size_gb']
                 }
             
-            # 4. Tamaños similares - calcular hash
-            hash_analysis = self._analyze_file_hashes(file1_path, file2_path)
+            # 4. Tamaños similares - calcular hash solo si está habilitado
+            from src.settings.settings import settings
             
-            if hash_analysis['identical']:
-                return {
-                    'same_movie': True,
-                    'recommendation': 'delete_duplicate',
-                    'message': 'Mismo archivo, diferente nombre',
-                    'hash_identical': True
-                }
+            if settings.get_hash_calculation_enabled():
+                hash_analysis = self._analyze_file_hashes(file1_path, file2_path)
+                
+                if hash_analysis['identical']:
+                    return {
+                        'same_movie': True,
+                        'recommendation': 'delete_duplicate',
+                        'message': 'Mismo archivo, diferente nombre',
+                        'hash_identical': True
+                    }
+                else:
+                    return {
+                        'same_movie': True,
+                        'recommendation': 'create_editions',
+                        'message': 'Misma película, archivos diferentes',
+                        'hash_identical': False
+                    }
             else:
+                # Sin cálculo de hash - asumir archivos diferentes
                 return {
                     'same_movie': True,
                     'recommendation': 'create_editions',
-                    'message': 'Misma película, archivos diferentes',
-                    'hash_identical': False
+                    'message': 'Misma película, archivos diferentes (hash no calculado)',
+                    'hash_calculation_disabled': True
                 }
                 
         except Exception as e:
@@ -265,3 +276,49 @@ class PlexDuplicateAnalyzer:
             return "Películas diferentes. No son duplicados."
         else:
             return "Análisis no concluyente."
+    
+    def calculate_hash_manually(self, file1_path: str, file2_path: str) -> Dict:
+        """
+        Calcula hash manualmente para un par de archivos
+        
+        Args:
+            file1_path: Ruta del primer archivo
+            file2_path: Ruta del segundo archivo
+            
+        Returns:
+            Resultado del análisis con hash
+        """
+        try:
+            self.logger.info("🔍 Iniciando cálculo manual de hash...")
+            
+            # Calcular hash de ambos archivos
+            hash1 = self._calculate_file_hash(file1_path)
+            hash2 = self._calculate_file_hash(file2_path)
+            
+            if not hash1 or not hash2:
+                return {
+                    'success': False,
+                    'message': 'Error calculando hash de uno o ambos archivos',
+                    'hash1': hash1,
+                    'hash2': hash2
+                }
+            
+            # Comparar hashes
+            identical = hash1 == hash2
+            
+            return {
+                'success': True,
+                'identical': identical,
+                'hash1': hash1,
+                'hash2': hash2,
+                'message': 'Hash idéntico - mismo archivo' if identical else 'Hash diferente - archivos distintos'
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error en cálculo manual de hash: {e}")
+            return {
+                'success': False,
+                'message': f'Error: {e}',
+                'hash1': None,
+                'hash2': None
+            }
