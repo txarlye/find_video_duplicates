@@ -868,6 +868,9 @@ class StreamlitAppManager:
                 st.error("❌ Archivo no encontrado")
                 return
             
+            # Mostrar información de carpeta
+            self._render_folder_comparison(row, video_num)
+            
             # Información del archivo
             try:
                 file_size_gb = os.path.getsize(ruta) / (1024**3)
@@ -890,6 +893,39 @@ class StreamlitAppManager:
                 st.error(f"❌ Error procesando archivo: {e}")
                 # Aún así mostrar botón de reproductor externo
                 self._render_external_player_button(ruta, f"open{video_num}_{index}")
+    
+    def _render_folder_comparison(self, row: Dict[str, Any], video_num: int):
+        """Renderiza la comparación de carpetas entre los dos archivos"""
+        try:
+            # Obtener rutas de ambos archivos
+            ruta1 = row.get('Ruta 1', '')
+            ruta2 = row.get('Ruta 2', '')
+            
+            if not ruta1 or not ruta2:
+                return
+            
+            # Extraer carpetas de las rutas
+            from pathlib import Path
+            carpeta1 = Path(ruta1).parent.name
+            carpeta2 = Path(ruta2).parent.name
+            
+            # Mostrar información de carpeta
+            if video_num == 1:
+                st.write(f"📁 Carpeta: `{carpeta1}`")
+            else:
+                st.write(f"📁 Carpeta: `{carpeta2}`")
+            
+            # Comparar carpetas (solo mostrar una vez, en el primer video)
+            if video_num == 1:
+                if carpeta1 != carpeta2:
+                    st.warning("⚠️ **Carpetas diferentes**")
+                    st.info(f"📂 Izquierda: `{carpeta1}` | Derecha: `{carpeta2}`")
+                else:
+                    st.info("👁️ **Ojo que están en la misma carpeta**")
+                    st.info(f"📂 Ambas en: `{carpeta1}`")
+                    
+        except Exception as e:
+            logging.error(f"Error en comparación de carpetas: {e}")
     
     def _render_embedded_video(self, file_path: str, file_size_gb: float, file_ext: str, key: str):
         """Renderiza un video embebido con mejor manejo de errores"""
@@ -2181,13 +2217,50 @@ class StreamlitAppManager:
                     st.write(f"**Archivo 1:** {duplicado.get('Peli 1', 'N/A')}")
                     st.write(f"**Ruta 1:** {duplicado.get('Ruta 1', 'N/A')}")
                     st.write(f"**Tamaño 1:** {duplicado.get('Tamaño 1 (GB)', 'N/A')} GB")
+                    # Mostrar información de carpeta
+                    self._render_folder_info_for_loaded_data(duplicado, 1)
                 with col2:
                     st.write(f"**Archivo 2:** {duplicado.get('Peli 2', 'N/A')}")
                     st.write(f"**Ruta 2:** {duplicado.get('Ruta 2', 'N/A')}")
                     st.write(f"**Tamaño 2:** {duplicado.get('Tamaño 2 (GB)', 'N/A')} GB")
+                    # Mostrar información de carpeta
+                    self._render_folder_info_for_loaded_data(duplicado, 2)
         
         if len(pairs_data) > 5:
             st.info(f"📋 Mostrando 5 de {len(pairs_data)} duplicados. Usa la navegación para ver más.")
+    
+    def _render_folder_info_for_loaded_data(self, duplicado: Dict[str, Any], video_num: int):
+        """Renderiza la información de carpeta para datos cargados"""
+        try:
+            # Obtener rutas de ambos archivos
+            ruta1 = duplicado.get('Ruta 1', '')
+            ruta2 = duplicado.get('Ruta 2', '')
+            
+            if not ruta1 or not ruta2:
+                return
+            
+            # Extraer carpetas de las rutas
+            from pathlib import Path
+            carpeta1 = Path(ruta1).parent.name
+            carpeta2 = Path(ruta2).parent.name
+            
+            # Mostrar información de carpeta
+            if video_num == 1:
+                st.write(f"📁 **Carpeta:** `{carpeta1}`")
+            else:
+                st.write(f"📁 **Carpeta:** `{carpeta2}`")
+            
+            # Comparar carpetas (solo mostrar una vez, en el primer video)
+            if video_num == 1:
+                if carpeta1 != carpeta2:
+                    st.warning("⚠️ **Carpetas diferentes**")
+                    st.info(f"📂 Izquierda: `{carpeta1}` | Derecha: `{carpeta2}`")
+                else:
+                    st.info("👁️ **Ojo que están en la misma carpeta**")
+                    st.info(f"📂 Ambas en: `{carpeta1}`")
+                    
+        except Exception as e:
+            logging.error(f"Error en comparación de carpetas para datos cargados: {e}")
     
     def _show_saved_scans(self):
         """Muestra la lista de escaneos guardados"""

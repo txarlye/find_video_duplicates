@@ -72,7 +72,7 @@
         "hash_calculation_warning": "⚠️ El cálculo de hash puede tardar 5+ minutos para archivos grandes"
     },
     "runtime": {
-        "total_pairs": 277,
+        "total_pairs": 302,
         "pairs_deleted": 0
     }
 }
