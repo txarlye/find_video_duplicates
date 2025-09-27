@@ -5,7 +5,7 @@
         "debug": false
     },
     "paths": {
-        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\",
+        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug",
         "last_output_path": "",
         "default_scan_path": ""
     },
@@ -72,7 +72,7 @@
         "hash_calculation_warning": "⚠️ El cálculo de hash puede tardar 5+ minutos para archivos grandes"
     },
     "runtime": {
-        "total_pairs": 302,
+        "total_pairs": 0,
         "pairs_deleted": 0
     }
 }

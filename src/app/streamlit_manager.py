@@ -38,6 +38,8 @@ from src.services.Plex.plex_title_extractor import PlexTitleExtractor
 from src.services.Plex.plex_editions_manager import PlexEditionsManager
 from src.services.scan_data_manager import ScanDataManager
 from src.services.telegram_service import TelegramService
+from src.services.Telegram.telegram_manager import TelegramManager
+from src.services.Telegram.telegram_uploader import TelegramUploader
 
 
 class StreamlitAppManager:
@@ -59,6 +61,8 @@ class StreamlitAppManager:
         self.pairs_manager = DuplicatePairsManager()
         self.scan_data_manager = ScanDataManager()
         self.telegram_service = TelegramService()
+        self.telegram_manager = TelegramManager()
+        self.telegram_uploader = TelegramUploader()
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -2694,8 +2698,107 @@ class StreamlitAppManager:
         
         st.markdown("---")
         
-        # Mostrar la pestaña de Telegram como contenido principal
-        self._render_telegram_tab()
+        # Mostrar solo la funcionalidad de subida de videos
+        self._render_telegram_upload_interface()
+    
+    def _render_telegram_upload_interface(self):
+        """Renderiza la interfaz de subida de videos de Telegram"""
+        # Verificar si Telegram está configurado
+        if not self.telegram_service.is_configured():
+            st.warning("⚠️ Telegram no está configurado")
+            st.info("💡 Configura el bot token y channel ID en la barra lateral")
+            return
+        
+        st.success("✅ Telegram configurado correctamente")
+        
+        # Funcionalidad: Subir videos desde carpeta
+        st.subheader("📁 Subir Videos desde Carpeta")
+        
+        # Seleccionar carpeta de videos
+        folder_path = st.text_input(
+            "Ruta de la carpeta:",
+            value=st.session_state.get('telegram_folder_path', ''),
+            help="Introduce la ruta de la carpeta que contiene los videos que quieres subir"
+        )
+        
+        if folder_path:
+            st.session_state.telegram_folder_path = folder_path
+            
+            if st.button("🔍 Escanear Carpeta", type="primary"):
+                with st.spinner("Escaneando carpeta..."):
+                    videos = self._scan_telegram_folder(folder_path)
+                    if videos:
+                        st.session_state.telegram_videos = videos
+                        st.session_state.telegram_selected_videos = []
+                        st.success(f"✅ Encontrados {len(videos)} videos")
+                    else:
+                        st.warning("⚠️ No se encontraron videos en la carpeta")
+        
+        # Mostrar videos si están cargados
+        if 'telegram_videos' in st.session_state and st.session_state.telegram_videos:
+            st.markdown("---")
+            st.subheader("🎬 Videos Encontrados")
+            
+            # Opciones de selección
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("✅ Seleccionar Todos"):
+                    st.session_state.telegram_selected_videos = list(range(len(st.session_state.telegram_videos)))
+                    st.rerun()
+            with col2:
+                if st.button("❌ Deseleccionar Todos"):
+                    st.session_state.telegram_selected_videos = []
+                    st.rerun()
+            with col3:
+                if st.button("🔄 Actualizar Lista"):
+                    videos = self._scan_telegram_folder(st.session_state.telegram_folder_path)
+                    if videos:
+                        st.session_state.telegram_videos = videos
+                        st.rerun()
+            
+            # Lista de videos con checkboxes
+            if 'telegram_selected_videos' not in st.session_state:
+                st.session_state.telegram_selected_videos = []
+            
+            for i, video in enumerate(st.session_state.telegram_videos):
+                col1, col2, col3, col4 = st.columns([1, 3, 1, 1])
+                
+                with col1:
+                    selected = st.checkbox(
+                        f"Seleccionar {video['name']}",
+                        value=i in st.session_state.telegram_selected_videos,
+                        key=f"telegram_video_{i}",
+                        label_visibility="collapsed"
+                    )
+                    if selected and i not in st.session_state.telegram_selected_videos:
+                        st.session_state.telegram_selected_videos.append(i)
+                    elif not selected and i in st.session_state.telegram_selected_videos:
+                        st.session_state.telegram_selected_videos.remove(i)
+                
+                with col2:
+                    st.write(f"**{video['name']}**")
+                    st.caption(f"📁 {video['path']}")
+                
+                with col3:
+                    st.write(f"{video['size']:.2f} MB")
+                
+                with col4:
+                    if video['size'] > 1500:  # 1.5GB
+                        st.warning("⚠️ Grande")
+                    else:
+                        st.success("✅ OK")
+                
+                st.markdown("---")
+            
+            # Botón de subida
+            if st.session_state.telegram_selected_videos:
+                st.subheader("📤 Subir Videos Seleccionados")
+                st.info(f"📊 {len(st.session_state.telegram_selected_videos)} videos seleccionados")
+                
+                if st.button("🚀 Subir a Telegram", type="primary", use_container_width=True):
+                    self._upload_selected_videos_to_telegram()
+            else:
+                st.info("💡 Selecciona videos para subir")
     
     def run(self):
         """Ejecuta la aplicación completa"""
@@ -2721,3 +2824,110 @@ class StreamlitAppManager:
             # Mostrar interfaz principal por defecto
             self.render_scan_section()
             self.render_results()
+    
+    def _scan_telegram_folder(self, folder_path: str) -> list:
+        """Escanea una carpeta en busca de videos para Telegram usando TelegramManager"""
+        try:
+            # Usar el método del TelegramManager para escanear
+            videos = []
+            folder = Path(folder_path)
+            
+            if not folder.exists():
+                return []
+            
+            # Extensiones de video soportadas
+            video_extensions = {'.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v'}
+            
+            # Buscar archivos de video
+            for file_path in folder.rglob('*'):
+                if file_path.is_file() and file_path.suffix.lower() in video_extensions:
+                    try:
+                        # Obtener información del archivo
+                        file_size = file_path.stat().st_size
+                        size_mb = file_size / (1024 * 1024)
+                        
+                        # Crear entrada de video
+                        video_info = {
+                            'name': file_path.name,
+                            'path': str(file_path),
+                            'size': size_mb,
+                            'extension': file_path.suffix.lower()
+                        }
+                        
+                        videos.append(video_info)
+                        
+                    except Exception as e:
+                        self.logger.warning(f"Error procesando archivo {file_path}: {e}")
+                        continue
+            
+            # Ordenar por nombre
+            videos.sort(key=lambda x: x['name'])
+            
+            return videos
+            
+        except Exception as e:
+            self.logger.error(f"Error escaneando carpeta {folder_path}: {e}")
+            return []
+    
+    def _upload_selected_videos_to_telegram(self):
+        """Sube los videos seleccionados a Telegram usando el mismo sistema que el test"""
+        if not st.session_state.telegram_selected_videos:
+            st.warning("⚠️ No hay videos seleccionados")
+            return
+        
+        selected_videos = [st.session_state.telegram_videos[i] for i in st.session_state.telegram_selected_videos]
+        
+        # Filtrar videos que son demasiado grandes
+        valid_videos = []
+        oversized_videos = []
+        
+        for video in selected_videos:
+            if video['size'] > 1500:  # 1.5GB límite de Telethon
+                oversized_videos.append(video)
+            else:
+                valid_videos.append(video)
+        
+        if oversized_videos:
+            st.warning(f"⚠️ {len(oversized_videos)} videos son demasiado grandes (>1.5GB) y se omitirán:")
+            for video in oversized_videos:
+                st.write(f"  • {video['name']} ({video['size']:.2f} MB)")
+        
+        if not valid_videos:
+            st.error("❌ No hay videos válidos para subir (todos son demasiado grandes)")
+            return
+        
+        # Configurar callback de progreso
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        def progress_callback(message: str, progress: float):
+            progress_bar.progress(progress / 100)
+            status_text.text(f"📤 {message}")
+        
+        st.info(f"📤 Subiendo {len(valid_videos)} videos...")
+        
+        # Usar TelegramUploader (mismo sistema que el test que funcionó)
+        results = self.telegram_uploader.upload_multiple_videos(
+            videos=valid_videos,
+            progress_callback=progress_callback
+        )
+        
+        # Mostrar resultados individuales
+        for i, (video, success) in enumerate(zip(valid_videos, results)):
+            if success:
+                st.success(f"✅ {video['name']} subido correctamente")
+            else:
+                st.error(f"❌ {video['name']} falló")
+        
+        # Mostrar resultados finales
+        success_count = sum(results)
+        error_count = len(results) - success_count
+        
+        if success_count > 0:
+            st.success(f"✅ {success_count} videos subidos correctamente")
+        if error_count > 0:
+            st.error(f"❌ {error_count} videos fallaron")
+        
+        # Limpiar UI de progreso
+        progress_bar.empty()
+        status_text.empty()
