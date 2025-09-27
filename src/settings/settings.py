@@ -8,7 +8,7 @@ Implementa patrón Singleton para acceso global
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
 
 
@@ -348,6 +348,29 @@ class Settings:
     def get_hash_calculation_warning(self) -> str:
         """Obtiene el mensaje de advertencia para el cálculo de hash"""
         return self.get("plex.hash_calculation_warning", "⚠️ El cálculo de hash puede tardar 5+ minutos para archivos grandes")
+    
+    # Métodos para directorios excluidos
+    def get_excluded_directories(self) -> List[str]:
+        """Obtiene la lista de directorios excluidos del escaneo"""
+        return self.get("detection.excluded_directories", ["debug", "00-borrar", "temp", "temporary", "backup", "backups"])
+    
+    def set_excluded_directories(self, value: List[str]):
+        """Establece la lista de directorios excluidos del escaneo"""
+        self.set("detection.excluded_directories", value)
+    
+    def add_excluded_directory(self, directory: str):
+        """Agrega un directorio a la lista de excluidos"""
+        excluded = self.get_excluded_directories()
+        if directory not in excluded:
+            excluded.append(directory)
+            self.set_excluded_directories(excluded)
+    
+    def remove_excluded_directory(self, directory: str):
+        """Remueve un directorio de la lista de excluidos"""
+        excluded = self.get_excluded_directories()
+        if directory in excluded:
+            excluded.remove(directory)
+            self.set_excluded_directories(excluded)
 
 
 # Instancia global del singleton

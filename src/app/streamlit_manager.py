@@ -117,6 +117,35 @@ class StreamlitAppManager:
         st.write(f"Umbral configurado: {umbral}")
         st.markdown("---")
         
+        # Directorios excluidos
+        st.subheader("🚫 Directorios Excluidos")
+        st.info("💡 Estos directorios se excluirán automáticamente del escaneo")
+        
+        excluded_dirs = settings.get_excluded_directories()
+        st.write("**Directorios actualmente excluidos:**")
+        for dir_name in excluded_dirs:
+            st.write(f"• {dir_name}")
+        
+        # Permitir agregar/quitar directorios
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            new_dir = st.text_input("Agregar directorio a excluir:", placeholder="ej: test")
+            if st.button("➕ Agregar") and new_dir:
+                settings.add_excluded_directory(new_dir)
+                st.success(f"✅ Directorio '{new_dir}' agregado a la exclusión")
+                st.rerun()
+        
+        with col2:
+            if excluded_dirs:
+                dir_to_remove = st.selectbox("Remover directorio:", options=excluded_dirs, key="remove_dir")
+                if st.button("➖ Remover") and dir_to_remove:
+                    settings.remove_excluded_directory(dir_to_remove)
+                    st.success(f"✅ Directorio '{dir_to_remove}' removido de la exclusión")
+                    st.rerun()
+        
+        st.markdown("---")
+        
         # Filtro por duración
         st.subheader("🎬 Filtro por Duración")
         
@@ -409,7 +438,7 @@ class StreamlitAppManager:
         st.markdown("---")
         st.subheader("💾 Gestión de Datos de Escaneo")
         
-        col_save, col_load, col_list = st.columns(3)
+        col_save, col_load = st.columns(2)
         
         with col_save:
             if st.button("💾 Guardar Escaneo", disabled=not hasattr(st.session_state, 'detector') or not st.session_state.detector):
@@ -417,11 +446,14 @@ class StreamlitAppManager:
         
         with col_load:
             if st.button("📂 Cargar Escaneo"):
-                self._show_load_scan_interface()
+                # Activar modo de carga
+                st.session_state.show_load_interface = True
+                st.rerun()
         
-        with col_list:
-            if st.button("📋 Ver Escaneos Guardados"):
-                self._show_saved_scans()
+        # Mostrar interfaz de carga si está activada
+        if getattr(st.session_state, 'show_load_interface', False):
+            st.markdown("---")
+            self._show_load_scan_interface()
         
         # Procesar escaneo
         if scan_button and carpeta:
@@ -499,14 +531,32 @@ class StreamlitAppManager:
     def render_results(self):
         """Renderiza los resultados del escaneo"""
         # Debug: verificar estado de la sesión
-        logging.info(f"🔍 render_results - duplicados: {len(st.session_state.duplicados) if st.session_state.duplicados else 0}")
-        logging.info(f"🔍 render_results - peliculas: {len(st.session_state.peliculas) if st.session_state.peliculas else 0}")
+        duplicados_count = len(st.session_state.duplicados) if st.session_state.duplicados else 0
+        peliculas_count = len(st.session_state.peliculas) if st.session_state.peliculas else 0
+        
+        logging.info(f"🔍 render_results - duplicados: {duplicados_count}")
+        logging.info(f"🔍 render_results - peliculas: {peliculas_count}")
+        
+        # Mostrar información de debug en la interfaz
+        with st.expander("🔍 Debug - Estado de la sesión", expanded=False):
+            st.write(f"**Duplicados en session_state:** {duplicados_count}")
+            st.write(f"**Películas en session_state:** {peliculas_count}")
+            st.write(f"**Tipo de duplicados:** {type(st.session_state.duplicados)}")
+            st.write(f"**Scan cargado:** {getattr(st.session_state, 'scan_loaded', False)}")
+            if st.session_state.duplicados and len(st.session_state.duplicados) > 0:
+                st.write(f"**Primer elemento:** {type(st.session_state.duplicados[0])}")
         
         # Verificar si hay duplicados
-        if not st.session_state.duplicados:
+        if not st.session_state.duplicados or len(st.session_state.duplicados) == 0:
             logging.info("⚠️ render_results - No hay duplicados, saliendo")
             # Mostrar mensaje de debug en la interfaz
-            st.info("💡 No hay datos de duplicados para mostrar. Escanea una carpeta o carga un escaneo guardado.")
+            if getattr(st.session_state, 'scan_loaded', False):
+                st.warning("⚠️ Se cargó un escaneo pero no se encontraron duplicados. Esto puede indicar un problema con el formato de datos.")
+                # Intentar recargar los datos
+                st.info("🔄 Intentando recargar los datos...")
+                st.rerun()
+            else:
+                st.info("💡 No hay datos de duplicados para mostrar. Escanea una carpeta o carga un escaneo guardado.")
             return
         
         # Verificar que los datos están en el formato correcto
@@ -2047,8 +2097,18 @@ class StreamlitAppManager:
                 key="load_scan_select"
             )
             
-            if st.button("📂 Cargar Escaneo Seleccionado"):
-                self._load_scan_data(scans[selected_scan]['file_path'])
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📂 Cargar Escaneo Seleccionado"):
+                    # Cargar directamente el escaneo
+                    self._load_scan_data(scans[selected_scan]['file_path'])
+                    # Desactivar la interfaz de carga
+                    st.session_state.show_load_interface = False
+            with col2:
+                if st.button("❌ Cancelar"):
+                    # Desactivar la interfaz de carga
+                    st.session_state.show_load_interface = False
+                    st.rerun()
                 
         except Exception as e:
             st.error(f"❌ Error mostrando escaneos: {e}")
@@ -2057,6 +2117,7 @@ class StreamlitAppManager:
         """Carga los datos de un escaneo"""
         try:
             logging.info(f"📂 Cargando escaneo desde: {file_path}")
+            logging.info(f"🔍 _load_scan_data llamado con archivo: {file_path}")
             scan_data = self.scan_data_manager.load_scan_data(file_path)
             
             # Actualizar estado de sesión
@@ -2080,24 +2141,53 @@ class StreamlitAppManager:
             logging.info(f"🔍 Después de cargar - st.session_state.duplicados: {len(st.session_state.duplicados) if st.session_state.duplicados else 0}")
             logging.info(f"🔍 Después de cargar - pairs_manager tiene: {len(self.pairs_manager.get_pairs_list()) if hasattr(self.pairs_manager, 'get_pairs_list') else 'N/A'}")
             
-            st.success(f"✅ Escaneo cargado: {len(pairs_data)} pares")
-            
-            # Mostrar información de debug
-            st.info(f"🔍 Debug: st.session_state.duplicados tiene {len(st.session_state.duplicados)} pares")
-            st.info(f"🔍 Debug: pairs_manager tiene {len(self.pairs_manager.get_pairs_list())} pares")
-            
             # Verificar que los datos se cargaron correctamente
             if len(pairs_data) > 0:
                 st.success(f"✅ Escaneo cargado exitosamente: {len(pairs_data)} pares")
-                st.info("🔄 La interfaz se actualizará automáticamente...")
+                st.info("🔄 Los datos se han cargado correctamente.")
+                
+                # Marcar que se ha cargado un escaneo
+                st.session_state.scan_loaded = True
+                
+                # Mostrar los datos inmediatamente
+                self._render_loaded_data(pairs_data)
             else:
                 st.warning("⚠️ El archivo de escaneo está vacío")
             
-            # Forzar actualización del estado
-            st.rerun()
-            
         except Exception as e:
             st.error(f"❌ Error cargando escaneo: {e}")
+            logging.error(f"❌ Error cargando escaneo: {e}")
+    
+    def _render_loaded_data(self, pairs_data):
+        """Renderiza los datos cargados inmediatamente"""
+        st.subheader("📊 Datos Cargados")
+        
+        # Métricas
+        total_duplicados = len(pairs_data)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🔍 Duplicados Encontrados", total_duplicados)
+        with col2:
+            st.metric("📁 Total Películas", total_duplicados * 2)
+        with col3:
+            st.metric("💾 Espacio Ahorrable", "Calculando...")
+        
+        # Mostrar algunos ejemplos
+        st.subheader("🔍 Ejemplos de Duplicados")
+        for i, duplicado in enumerate(pairs_data[:5]):  # Mostrar solo los primeros 5
+            with st.expander(f"Par {i+1}: {duplicado.get('Peli 1', 'N/A')}", expanded=False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"**Archivo 1:** {duplicado.get('Peli 1', 'N/A')}")
+                    st.write(f"**Ruta 1:** {duplicado.get('Ruta 1', 'N/A')}")
+                    st.write(f"**Tamaño 1:** {duplicado.get('Tamaño 1 (GB)', 'N/A')} GB")
+                with col2:
+                    st.write(f"**Archivo 2:** {duplicado.get('Peli 2', 'N/A')}")
+                    st.write(f"**Ruta 2:** {duplicado.get('Ruta 2', 'N/A')}")
+                    st.write(f"**Tamaño 2:** {duplicado.get('Tamaño 2 (GB)', 'N/A')} GB")
+        
+        if len(pairs_data) > 5:
+            st.info(f"📋 Mostrando 5 de {len(pairs_data)} duplicados. Usa la navegación para ver más.")
     
     def _show_saved_scans(self):
         """Muestra la lista de escaneos guardados"""
@@ -2124,7 +2214,12 @@ class StreamlitAppManager:
                     
                     with col3:
                         if st.button(f"📂 Cargar", key=f"load_{i}"):
-                            self._load_scan_data(scan['file_path'])
+                            logging.info(f"🔍 Botón Cargar presionado para escaneo {i}: {scan['filename']}")
+                            # Usar session_state para pasar el archivo a cargar
+                            st.session_state.load_from_list_file = scan['file_path']
+                            st.session_state.load_from_list_filename = scan['filename']
+                            logging.info(f"📝 Archivo guardado en session_state: {scan['file_path']}")
+                            st.rerun()
                         
                         if st.button(f"🗑️ Eliminar", key=f"delete_{i}"):
                             if self.scan_data_manager.delete_scan_data(scan['file_path']):
@@ -2403,6 +2498,15 @@ class StreamlitAppManager:
     
     def run(self):
         """Ejecuta la aplicación completa"""
+        # Verificar si hay un archivo pendiente de cargar desde la lista
+        if hasattr(st.session_state, 'load_from_list_file') and st.session_state.load_from_list_file:
+            logging.info(f"📂 Cargando escaneo desde lista: {st.session_state.load_from_list_file}")
+            self._load_scan_data(st.session_state.load_from_list_file)
+            # Limpiar el archivo pendiente
+            del st.session_state.load_from_list_file
+            if hasattr(st.session_state, 'load_from_list_filename'):
+                del st.session_state.load_from_list_filename
+        
         self.render_header()
         self.render_sidebar()
         self.render_scan_section()

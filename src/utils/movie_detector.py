@@ -63,6 +63,31 @@ class MovieDetector:
         self.peliculas = []
         self.duplicados = []
     
+    def _is_in_excluded_directory(self, archivo: Path, excluded_dirs: List[str]) -> bool:
+        """
+        Verifica si un archivo está en un directorio excluido
+        
+        Args:
+            archivo: Ruta del archivo
+            excluded_dirs: Lista de nombres de directorios a excluir
+            
+        Returns:
+            True si el archivo está en un directorio excluido
+        """
+        try:
+            # Obtener todas las partes del path
+            path_parts = archivo.parts
+            
+            # Verificar si alguna parte del path coincide con los directorios excluidos
+            for part in path_parts:
+                if part.lower() in [dir_name.lower() for dir_name in excluded_dirs]:
+                    return True
+            
+            return False
+        except Exception as e:
+            self.logger.warning(f"Error verificando directorio excluido: {e}")
+            return False
+    
     def es_archivo_video(self, archivo: Path) -> bool:
         """Verifica si un archivo es de video"""
         return archivo.suffix.lower() in self.extensiones_video
@@ -266,8 +291,17 @@ class MovieDetector:
             self.logger.error(f"La carpeta {self.carpeta_raiz} no existe")
             return peliculas
         
+        # Obtener directorios excluidos de la configuración
+        excluded_dirs = settings.get_excluded_directories()
+        self.logger.info(f"Directorios excluidos: {excluded_dirs}")
+        
         # Recorrer recursivamente
         for archivo in self.carpeta_raiz.rglob('*'):
+            # Verificar si el archivo está en un directorio excluido
+            if self._is_in_excluded_directory(archivo, excluded_dirs):
+                self.logger.debug(f"Excluyendo archivo en directorio excluido: {archivo}")
+                continue
+                
             if archivo.is_file() and self.es_archivo_video(archivo):
                 # Mostrar archivo en miniterminal si hay callback
                 if hasattr(self, 'mostrar_archivo'):
