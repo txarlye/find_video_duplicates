@@ -37,6 +37,7 @@ from src.services.plex_refresh_service import PlexRefreshService
 from src.services.Plex.plex_title_extractor import PlexTitleExtractor
 from src.services.Plex.plex_editions_manager import PlexEditionsManager
 from src.services.scan_data_manager import ScanDataManager
+from src.services.telegram_service import TelegramService
 
 
 class StreamlitAppManager:
@@ -57,6 +58,7 @@ class StreamlitAppManager:
         self.plex_editions_manager = PlexEditionsManager(settings.get_plex_database_path())
         self.pairs_manager = DuplicatePairsManager()
         self.scan_data_manager = ScanDataManager()
+        self.telegram_service = TelegramService()
         
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -78,7 +80,21 @@ class StreamlitAppManager:
     
     def render_header(self):
         """Renderiza el encabezado de la aplicación"""
-        st.title("🎬 Detector de Películas Duplicadas")
+        st.title("🎬 Utilidades de gestión de video con Plex y Telegram")
+        st.markdown("---")
+        
+        # Botones principales
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 Escanear Carpeta", type="primary", use_container_width=True):
+                st.session_state.show_scan_interface = True
+                st.rerun()
+        
+        with col2:
+            if st.button("📱 Telegram", use_container_width=True):
+                st.session_state.show_telegram_interface = True
+                st.rerun()
+        
         st.markdown("---")
         
         # Aclaración importante
@@ -91,7 +107,7 @@ class StreamlitAppManager:
             st.header("⚙️ Configuración")
             
             # Pestañas en el sidebar
-            tab1, tab2, tab3 = st.tabs(["🔍 Detección", "⚙️ Configuración", "🎬 Plex"])
+            tab1, tab2, tab3, tab4 = st.tabs(["🔍 Detección", "⚙️ Configuración", "🎬 Plex", "📱 Telegram"])
             
             with tab1:
                 self._render_detection_tab()
@@ -101,6 +117,9 @@ class StreamlitAppManager:
             
             with tab3:
                 self._render_plex_tab()
+            
+            with tab4:
+                self._render_telegram_tab()
     
     def _render_detection_tab(self):
         """Renderiza la pestaña de detección"""
@@ -2569,6 +2588,115 @@ class StreamlitAppManager:
         except Exception as e:
             st.error(f"❌ Error aplicando edición: {e}")
     
+    def _render_telegram_tab(self):
+        """Renderiza la pestaña de configuración de Telegram"""
+        st.subheader("📱 Configuración de Telegram")
+        
+        # Verificar si Telegram está configurado
+        telegram_service = self.telegram_service
+        is_configured = telegram_service.is_configured()
+        
+        if is_configured:
+            st.success("✅ Telegram configurado correctamente")
+            
+            # Probar conexión
+            if st.button("🔍 Probar Conexión"):
+                with st.spinner("Probando conexión..."):
+                    if telegram_service.test_connection():
+                        st.success("✅ Conexión exitosa con Telegram")
+                    else:
+                        st.error("❌ Error de conexión con Telegram")
+        else:
+            st.warning("⚠️ Telegram no está configurado")
+            st.info("💡 Configura el bot token y channel ID en la configuración")
+        
+        # Configuración básica
+        st.subheader("⚙️ Configuración")
+        
+        # Bot Token
+        bot_token = st.text_input(
+            "Bot Token",
+            value=settings.get_telegram_bot_token() or "",
+            type="password",
+            help="Token del bot de Telegram"
+        )
+        
+        # Channel ID
+        channel_id = st.text_input(
+            "Channel ID",
+            value=settings.get_telegram_channel_id() or "",
+            help="ID del canal de Telegram"
+        )
+        
+        # Guardar configuración
+        if st.button("💾 Guardar Configuración"):
+            try:
+                settings.set_telegram_bot_token(bot_token)
+                settings.set_telegram_channel_id(channel_id)
+                st.success("✅ Configuración guardada")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error guardando configuración: {e}")
+        
+        # Funcionalidades de Telegram
+        if is_configured:
+            st.subheader("🚀 Funcionalidades")
+            
+            # Enviar mensaje de prueba
+            if st.button("📤 Enviar Mensaje de Prueba"):
+                with st.spinner("Enviando mensaje..."):
+                    try:
+                        result = telegram_service.send_message("🧪 Mensaje de prueba desde la aplicación")
+                        if result:
+                            st.success("✅ Mensaje enviado correctamente")
+                        else:
+                            st.error("❌ Error enviando mensaje")
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+            
+            # Enviar duplicados actuales
+            if hasattr(st.session_state, 'duplicados') and st.session_state.duplicados:
+                if st.button("📊 Enviar Reporte de Duplicados"):
+                    with st.spinner("Enviando reporte..."):
+                        try:
+                            # Crear reporte
+                            total_duplicados = len(st.session_state.duplicados)
+                            mensaje = f"🔍 **Reporte de Duplicados**\n\n"
+                            mensaje += f"📊 Total de duplicados encontrados: {total_duplicados}\n"
+                            mensaje += f"📁 Total de películas: {total_duplicados * 2}\n\n"
+                            mensaje += "📋 **Ejemplos de duplicados:**\n"
+                            
+                            # Agregar algunos ejemplos
+                            for i, duplicado in enumerate(st.session_state.duplicados[:3]):
+                                mensaje += f"{i+1}. {duplicado.get('Peli 1', 'N/A')}\n"
+                            
+                            if total_duplicados > 3:
+                                mensaje += f"... y {total_duplicados - 3} más\n"
+                            
+                            result = telegram_service.send_message(mensaje)
+                            if result:
+                                st.success("✅ Reporte enviado correctamente")
+                            else:
+                                st.error("❌ Error enviando reporte")
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+            else:
+                st.info("💡 No hay duplicados para enviar. Escanea una carpeta primero.")
+    
+    def _render_telegram_interface(self):
+        """Renderiza la interfaz principal de Telegram"""
+        st.header("📱 Interfaz de Telegram")
+        
+        # Botón para volver
+        if st.button("← Volver al Inicio"):
+            st.session_state.show_telegram_interface = False
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # Mostrar la pestaña de Telegram como contenido principal
+        self._render_telegram_tab()
+    
     def run(self):
         """Ejecuta la aplicación completa"""
         # Verificar si hay un archivo pendiente de cargar desde la lista
@@ -2582,5 +2710,14 @@ class StreamlitAppManager:
         
         self.render_header()
         self.render_sidebar()
-        self.render_scan_section()
-        self.render_results()
+        
+        # Manejar interfaces especiales
+        if getattr(st.session_state, 'show_scan_interface', False):
+            self.render_scan_section()
+            self.render_results()
+        elif getattr(st.session_state, 'show_telegram_interface', False):
+            self._render_telegram_interface()
+        else:
+            # Mostrar interfaz principal por defecto
+            self.render_scan_section()
+            self.render_results()
