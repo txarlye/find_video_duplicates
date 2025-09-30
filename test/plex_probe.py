@@ -9,7 +9,10 @@ from pathlib import Path
 from datetime import timedelta
 from typing import Optional, List, Dict
 
-PLEX_DB_DIR = r"\\DiskStation\docker\plex2\db\Library\Application Support\Plex Media Server\Plug-in Support\Databases"
+# Obtener ruta desde settings
+from src.settings.settings import Settings
+settings = Settings()
+PLEX_DB_DIR = settings.get_plex_database_path()
 
 def find_plex_db(base_dir: Path) -> Path:
     # 1) Preferido: com.plexapp.plugins.library.db

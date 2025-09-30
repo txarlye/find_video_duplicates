@@ -76,7 +76,27 @@ python setup/install_dependencies.py
 python main.py
 ```
 
-> **📋 Nota**: Después de la instalación automática, necesitarás configurar las variables de entorno y APIs. Ver sección [Configuración Completa](#-configuración-completa) más abajo.
+> **📋 Nota**: Después de la instalación automática, necesitarás configurar las variables de entorno, APIs y rutas. Ver sección [Configuración Completa](#-configuración-completa) más abajo.
+
+## ⚙️ Configuración Inicial Requerida
+
+### **📁 Configuración de Rutas (OBLIGATORIO)**
+Antes de usar la aplicación, **DEBES** editar `src/settings/config.json` y configurar las rutas de tu sistema:
+
+```json
+{
+  "paths": {
+    "last_scan_path": "C:\\ruta\\a\\tus\\peliculas",
+    "debug_folder": "C:\\ruta\\para\\debug", 
+    "selected_movies_folder": "C:\\ruta\\para\\peliculas\\seleccionadas"
+  },
+  "plex": {
+    "database_path": "C:\\ruta\\a\\plex\\database.db"
+  }
+}
+```
+
+**⚠️ Sin estas rutas configuradas, la aplicación NO funcionará correctamente.**
 
 ## 🚀 Instalación Manual
 
@@ -244,7 +264,23 @@ La aplicación se conecta a la base de datos de Plex en **modo de solo lectura**
 - **macOS**: `~/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library.db`
 - **Linux**: `~/.local/share/plexmediaserver/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library.db`
 
-**Configurar en `.env`:**
+**⚠️ IMPORTANTE: Configurar rutas en `config.json`**
+Antes de usar la aplicación, debes editar `src/settings/config.json` y configurar las siguientes rutas:
+
+```json
+{
+  "paths": {
+    "last_scan_path": "C:\\ruta\\a\\tus\\peliculas",
+    "debug_folder": "C:\\ruta\\para\\debug",
+    "selected_movies_folder": "C:\\ruta\\para\\peliculas\\seleccionadas"
+  },
+  "plex": {
+    "database_path": "C:\\ruta\\a\\plex\\database.db"
+  }
+}
+```
+
+**Configurar en `.env` (opcional):**
 ```bash
 PLEX_DATABASE_PATH=C:\Users\Usuario\AppData\Local\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db
 ```
@@ -431,8 +467,28 @@ TMDB_API_KEY=tu_api_key_correcta
 
 #### **"No se encuentra la base de datos de Plex"**
 ```bash
-# Verificar la ruta en .env
-PLEX_DATABASE_PATH=C:\ruta\correcta\com.plexapp.plugins.library.db
+# Verificar la ruta en config.json
+"plex": {
+  "database_path": "C:\\ruta\\correcta\\com.plexapp.plugins.library.db"
+}
+```
+
+#### **"Error: Rutas no configuradas"**
+```bash
+# Editar src/settings/config.json y configurar:
+{
+  "paths": {
+    "last_scan_path": "C:\\ruta\\a\\tus\\peliculas",
+    "debug_folder": "C:\\ruta\\para\\debug",
+    "selected_movies_folder": "C:\\ruta\\para\\peliculas\\seleccionadas"
+  }
+}
+```
+
+#### **"Carpeta de debug no encontrada"**
+```bash
+# Crear la carpeta manualmente o cambiar la ruta en config.json
+mkdir C:\ruta\para\debug
 ```
 
 #### **"Bot de Telegram no responde"**

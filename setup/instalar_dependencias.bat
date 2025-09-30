@@ -39,17 +39,9 @@ if "%choice%"=="1" (
     pause
 )
 
-REM Preguntar tipo de instalación
-echo ¿Qué tipo de instalación prefieres?
-echo 1. Completa (todas las dependencias)
-echo 2. Mínima (solo lo esencial)
-set /p install_choice="Selecciona (1/2): "
-
-if "%install_choice%"=="1" (
-    set requirements_file=requirements.txt
-) else (
-    set requirements_file=requirements-minimal.txt
-)
+REM Instalar dependencias
+echo 📦 Instalando dependencias...
+set requirements_file=requirements.txt
 
 echo.
 echo 📦 Instalando dependencias desde %requirements_file%...

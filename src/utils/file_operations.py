@@ -24,8 +24,11 @@ class FileOperations:
         
         try:
             self.debug_folder = settings.get_debug_folder()
+            if not self.debug_folder:
+                # Si no hay carpeta de debug configurada, usar una por defecto
+                self.debug_folder = ""
         except AttributeError:
-            self.debug_folder = "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug"
+            self.debug_folder = ""
     
     def move_files(self, file_paths: List[str], destination_folder: str) -> Tuple[int, int, List[str]]:
         """

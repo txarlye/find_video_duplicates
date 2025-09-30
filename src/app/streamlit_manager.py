@@ -800,7 +800,7 @@ class StreamlitAppManager:
             with col1:
                 carpeta_destino = st.text_input(
                     "Carpeta de destino",
-                    value="C:\\Movies\\Seleccionadas\\",
+                    value=self.settings.get_selected_movies_folder(),
                     help="Ruta donde se moverán los archivos seleccionados"
                 )
             

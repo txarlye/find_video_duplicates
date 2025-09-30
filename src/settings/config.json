@@ -7,7 +7,10 @@
     "paths": {
         "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-PELIS DE LOS 70",
         "last_output_path": "",
-        "default_scan_path": ""
+        "default_scan_path": "",
+        "debug_folder": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug",
+        "movies_folder": "",
+        "selected_movies_folder": "C:\\Movies\\Seleccionadas\\"
     },
     "detection": {
         "similarity_threshold": 0.8,
@@ -56,8 +59,7 @@
         "video_start_time_seconds": 900
     },
     "debug": {
-        "enabled": true,
-        "debug_folder": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug"
+        "enabled": true
     },
     "plex": {
         "database_path": "\\\\DiskStation\\docker\\plex2\\db\\Library\\Application Support\\Plex Media Server\\Plug-in Support\\Databases\\com.plexapp.plugins.library.db",

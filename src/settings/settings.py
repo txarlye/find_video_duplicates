@@ -250,11 +250,35 @@ class Settings:
     
     def get_debug_folder(self) -> str:
         """Obtiene la carpeta de debug"""
-        return self.get("debug.debug_folder", "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug")
+        return self.get("paths.debug_folder", "")
     
     def set_debug_folder(self, value: str):
         """Establece la carpeta de debug"""
-        self.set("debug.debug_folder", value)
+        self.set("paths.debug_folder", value)
+    
+    def get_plex_database_path(self) -> str:
+        """Obtiene la ruta de la base de datos de Plex"""
+        return self.get("plex.database_path", "")
+    
+    def set_plex_database_path(self, value: str):
+        """Establece la ruta de la base de datos de Plex"""
+        self.set("plex.database_path", value)
+    
+    def get_movies_folder(self) -> str:
+        """Obtiene la carpeta de películas"""
+        return self.get("paths.movies_folder", "")
+    
+    def set_movies_folder(self, value: str):
+        """Establece la carpeta de películas"""
+        self.set("paths.movies_folder", value)
+    
+    def get_selected_movies_folder(self) -> str:
+        """Obtiene la carpeta de películas seleccionadas"""
+        return self.get("paths.selected_movies_folder", "")
+    
+    def set_selected_movies_folder(self, value: str):
+        """Establece la carpeta de películas seleccionadas"""
+        self.set("paths.selected_movies_folder", value)
     
     def get_last_scan_path(self) -> str:
         """Obtiene la última ruta de escaneo"""
@@ -264,14 +288,7 @@ class Settings:
         """Establece la última ruta de escaneo"""
         self.set("paths.last_scan_path", value)
     
-    # Métodos para configuración de Plex
-    def get_plex_database_path(self) -> str:
-        """Obtiene la ruta de la base de datos de Plex"""
-        return self.get("plex.database_path", "")
-    
-    def set_plex_database_path(self, value: str):
-        """Establece la ruta de la base de datos de Plex"""
-        self.set("plex.database_path", value)
+    # Métodos para configuración de Plex (ya definidos arriba)
     
     def get_plex_movies_library(self) -> str:
         """Obtiene el nombre de la biblioteca de películas en Plex"""
