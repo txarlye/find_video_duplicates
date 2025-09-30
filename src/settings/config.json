@@ -1,0 +1,78 @@
+{
+    "app": {
+        "name": "Detector de Películas Duplicadas",
+        "version": "1.0.0",
+        "debug": false
+    },
+    "paths": {
+        "last_scan_path": "\\\\DiskStation\\data\\media\\movies\\00-PELIS DE LOS 70",
+        "last_output_path": "",
+        "default_scan_path": ""
+    },
+    "detection": {
+        "similarity_threshold": 0.8,
+        "duration_filter_enabled": true,
+        "duration_tolerance_minutes": 1,
+        "excluded_directories": [
+            "debug",
+            "00-borrar",
+            "temp",
+            "temporary",
+            "backup",
+            "backups"
+        ],
+        "supported_extensions": [
+            ".mp4",
+            ".avi",
+            ".mkv",
+            ".mov",
+            ".wmv",
+            ".flv",
+            ".m4v",
+            ".mpg",
+            ".mpeg",
+            ".3gp",
+            ".webm"
+        ]
+    },
+    "imdb": {
+        "api_key": "",
+        "base_url": "https://imdb-api.com",
+        "language": "es"
+    },
+    "telegram": {
+        "bot_token": "",
+        "channel_id": "",
+        "max_file_size": 2000000000,
+        "upload_delay": 1
+    },
+    "ui": {
+        "theme": "light",
+        "page_size": 20,
+        "show_advanced_options": false,
+        "show_video_players": true,
+        "video_player_size": "medium",
+        "show_embedded_players": false,
+        "video_start_time_seconds": 900
+    },
+    "debug": {
+        "enabled": true,
+        "debug_folder": "\\\\DiskStation\\data\\media\\movies\\00-borrar\\debug"
+    },
+    "plex": {
+        "database_path": "\\\\DiskStation\\docker\\plex2\\db\\Library\\Application Support\\Plex Media Server\\Plug-in Support\\Databases\\com.plexapp.plugins.library.db",
+        "libraries": {
+            "movies": "Películas",
+            "tv_shows": "Series"
+        },
+        "fetch_metadata": true,
+        "duration_filter_enabled": true,
+        "duration_tolerance_minutes": 3,
+        "hash_calculation_enabled": false,
+        "hash_calculation_warning": "⚠️ El cálculo de hash puede tardar 5+ minutos para archivos grandes"
+    },
+    "runtime": {
+        "total_pairs": 0,
+        "pairs_deleted": 0
+    }
+}
