@@ -1,0 +1,99 @@
+# ========================================
+# DETECTOR DE PELÍCULAS DUPLICADAS
+# ========================================
+# Instalar con: pip install -r requirements.txt
+# 
+# Para entornos virtuales:
+# python -m venv venv
+# venv\Scripts\activate (Windows) / source venv/bin/activate (Linux/Mac)
+# pip install -r requirements.txt
+
+# ========================================
+# DEPENDENCIAS PRINCIPALES
+# ========================================
+
+# Interfaz de usuario Streamlit
+streamlit>=1.28.0
+streamlit-option-menu>=0.3.6
+streamlit-aggrid>=0.3.4
+
+# Análisis de datos y manipulación
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Peticiones HTTP y APIs
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Variables de entorno y configuración
+python-dotenv>=1.0.0
+
+# Procesamiento de archivos y rutas
+pathlib2>=2.3.7
+
+# ========================================
+# DEPENDENCIAS OPCIONALES (RECOMENDADAS)
+# ========================================
+
+# Para mejor rendimiento
+lxml>=4.9.0
+openpyxl>=3.1.0
+
+# Para manejo de imágenes (pósters)
+Pillow>=10.0.0
+
+# Para logging avanzado
+colorlog>=6.7.0
+
+# Para validación de datos
+pydantic>=2.0.0
+
+# Para extracción de metadatos de video
+mutagen>=1.47.0
+
+# ========================================
+# DEPENDENCIAS DE DESARROLLO (OPCIONALES)
+# ========================================
+
+# Para testing (opcional)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+
+# Para linting (opcional)
+# flake8>=6.0.0
+# black>=23.0.0
+
+# ========================================
+# NOTAS DE INSTALACIÓN
+# ========================================
+# 
+# 1. INSTALACIÓN BÁSICA:
+#    pip install -r requirements.txt
+#
+# 2. INSTALACIÓN CON ENTORNO VIRTUAL:
+#    python -m venv venv
+#    venv\Scripts\activate
+#    pip install -r requirements.txt
+#
+# 3. INSTALACIÓN DESARROLLADOR:
+#    pip install -r requirements.txt
+#    pip install pytest flake8 black
+#
+# 4. VERIFICAR INSTALACIÓN:
+#    python -c "import streamlit, pandas, requests; print('✅ Dependencias instaladas')"
+#
+# ========================================
+# LIBRERÍAS ESTÁNDAR (NO REQUIEREN INSTALACIÓN)
+# ========================================
+# - pathlib: Manejo de rutas
+# - os: Operaciones del sistema
+# - re: Expresiones regulares
+# - difflib: Comparación de secuencias
+# - collections: Estructuras de datos
+# - typing: Anotaciones de tipo
+# - logging: Sistema de logs
+# - json: Manejo de JSON
+# - time: Delays y timestamps
+# - threading: Hilos
+# - webbrowser: Apertura de navegador
+# - subprocess: Ejecución de procesos
