@@ -1,9 +1,0 @@
-# Dependencias principales
-streamlit>=1.28.0
-pandas>=1.5.0
-pathlib
-typing-extensions
-
-# Dependencias opcionales para reproductor avanzado
-# streamlit-player>=1.0.0  # Descomenta si quieres usar streamlit-player
-# react-player>=2.0.0     # Dependencia de streamlit-player

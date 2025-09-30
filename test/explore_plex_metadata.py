@@ -8,7 +8,10 @@ from pathlib import Path
 def explore_metadata():
     """Explora las tablas de metadatos"""
     
-    db_path = r"\\DiskStation\docker\plex2\db\Library\Application Support\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db"
+    # Obtener ruta desde settings
+    from src.settings.settings import Settings
+    settings = Settings()
+    db_path = settings.get_plex_database_path()
     
     try:
         conn = sqlite3.connect(db_path)
