@@ -8,7 +8,10 @@ from pathlib import Path
 def explore_schema():
     """Explora el esquema de la base de datos"""
     
-    db_path = r"\\DiskStation\docker\plex2\db\Library\Application Support\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db"
+    # Obtener ruta desde settings
+    from src.settings.settings import Settings
+    settings = Settings()
+    db_path = settings.get_plex_database_path()
     
     if not Path(db_path).exists():
         print("❌ Base de datos no encontrada")

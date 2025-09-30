@@ -111,17 +111,9 @@ def main():
             print("   Linux/Mac: source venv/bin/activate")
             input("Presiona Enter después de activar el entorno virtual...")
     
-    # Preguntar tipo de instalación
-    print("\n¿Qué tipo de instalación prefieres?")
-    print("1. Completa (todas las dependencias)")
-    print("2. Mínima (solo lo esencial)")
-    
-    install_choice = input("Selecciona (1/2): ").strip()
-    
-    if install_choice == "1":
-        requirements_file = "requirements.txt"
-    else:
-        requirements_file = "requirements-minimal.txt"
+    # Instalar dependencias (solo tenemos un archivo de dependencias)
+    print("\n📦 Instalando dependencias...")
+    requirements_file = "requirements.txt"
     
     # Instalar dependencias
     if install_requirements(requirements_file):
