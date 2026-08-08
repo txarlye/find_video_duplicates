@@ -260,3 +260,10 @@ test_*.py
 
 # Documentation (keep README.md)
 docs/
+
+# Machine-specific configuration (contains real NAS paths / hostnames)
+# A safe template lives in src/settings/config.example.json
+src/settings/config.json
+
+# Local Docker deployment files (contain real secrets, huge tar image)
+docker/
