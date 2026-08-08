@@ -545,17 +545,23 @@ class StreamlitAppManager:
                 nombre_archivo = Path(archivo).name
                 terminal_content.append(f"🎬 {nombre_archivo}")
                 terminal_placeholder.code("\n".join(terminal_content[-15:]), language="text")
-            
+                status_text.text(f"📁 Escaneando archivos... ({len(terminal_content)} encontrados)")
+
             detector.mostrar_archivo = mostrar_archivo
-            
+
+            def mostrar_progreso_duplicados(nombre1, nombre2):
+                status_text.text(f"🔎 Comparando duración: {nombre1}  vs  {nombre2}")
+
+            detector.mostrar_progreso_duplicados = mostrar_progreso_duplicados
+
             st.write("🔍 Iniciando escaneo de archivos...")
             peliculas = detector.escanear_carpeta()
             st.write(f"✅ Escaneo completado. Encontradas {len(peliculas)} películas")
             st.session_state.peliculas = peliculas
-            
+
             progress_bar.progress(60)
             status_text.text("🔍 Buscando duplicados...")
-            
+
             duplicados = detector.encontrar_duplicados()
             st.session_state.duplicados = duplicados
             

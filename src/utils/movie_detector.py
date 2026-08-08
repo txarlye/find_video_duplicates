@@ -253,8 +253,7 @@ class MovieDetector:
         titulo = self.extraer_titulo_pelicula(nombre_archivo)
         año = self.extraer_año(nombre_archivo)
         calidad = self.extraer_calidad(nombre_archivo)
-        duracion = self.obtener_duracion_video(archivo)
-        
+
         return {
             'archivo': str(archivo),
             'nombre': nombre_archivo,
@@ -263,8 +262,23 @@ class MovieDetector:
             'calidad': calidad,
             'tamaño': archivo.stat().st_size if archivo.exists() else 0,
             'carpeta': str(archivo.parent),
-            'duracion': duracion
+            # 0.0 = "todavía no calculada". Leer la duración implica abrir
+            # el archivo (con mutagen), que sobre una carpeta en red puede
+            # ser lento. Por eso NO se calcula aquí para todos los archivos
+            # del escaneo, solo bajo demanda para candidatos a duplicado
+            # (ver _obtener_duracion_cacheada / encontrar_duplicados).
+            'duracion': 0.0
         }
+
+    def _obtener_duracion_cacheada(self, pelicula: Dict) -> float:
+        """
+        Devuelve la duración de una película, calculándola (y cacheándola
+        en el propio dict) solo la primera vez que hace falta compararla
+        con otra candidata a duplicado.
+        """
+        if pelicula.get('duracion', 0) <= 0:
+            pelicula['duracion'] = self.obtener_duracion_video(Path(pelicula['archivo']))
+        return pelicula['duracion']
     
     def escanear_carpeta(self, carpeta_raiz: str = None) -> List[Dict]:
         """
@@ -384,11 +398,17 @@ class MovieDetector:
                     abs(pelicula1['año'] - pelicula2['año']) <= 1
                 )
 
-                # Verificar duración si el filtro está activado
+                # La duración solo se lee (y solo aquí, no durante el
+                # escaneo inicial) cuando el título y el año YA coinciden:
+                # es la comprobación más cara (abre el archivo) y así solo
+                # se paga para los pares que de verdad parecen duplicados.
                 duracion_compatible = True
-                if settings.get_duration_filter_enabled():
-                    duracion1 = pelicula1.get('duracion', 0)
-                    duracion2 = pelicula2.get('duracion', 0)
+                if similitud >= umbral_similitud and años_compatibles and settings.get_duration_filter_enabled():
+                    if hasattr(self, 'mostrar_progreso_duplicados'):
+                        self.mostrar_progreso_duplicados(pelicula1['nombre'], pelicula2['nombre'])
+
+                    duracion1 = self._obtener_duracion_cacheada(pelicula1)
+                    duracion2 = self._obtener_duracion_cacheada(pelicula2)
 
                     if duracion1 > 0 and duracion2 > 0:
                         # Calcular diferencia en minutos
