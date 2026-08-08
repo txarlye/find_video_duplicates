@@ -9,26 +9,10 @@ import shutil
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
-from src.settings.settings import settings
 
 
 class FileOperations:
     """Clase para operaciones de archivos"""
-    
-    def __init__(self):
-        # Usar valores por defecto si los métodos no existen (compatibilidad)
-        try:
-            self.debug_mode = settings.get_debug_enabled()
-        except AttributeError:
-            self.debug_mode = True  # Modo debug por defecto
-        
-        try:
-            self.debug_folder = settings.get_debug_folder()
-            if not self.debug_folder:
-                # Si no hay carpeta de debug configurada, usar una por defecto
-                self.debug_folder = ""
-        except AttributeError:
-            self.debug_folder = ""
     
     def move_files(self, file_paths: List[str], destination_folder: str) -> Tuple[int, int, List[str]]:
         """
@@ -73,71 +57,6 @@ class FileOperations:
                 error_count += 1
         
         return moved_count, error_count, not_found
-    
-    def delete_files(self, file_paths: List[str]) -> Tuple[int, int, List[str]]:
-        """
-        Elimina archivos (o los mueve a debug si está habilitado)
-        
-        Args:
-            file_paths: Lista de rutas de archivos a eliminar
-            
-        Returns:
-            Tuple[int, int, List[str]]: (archivos_procesados, errores, archivos_no_encontrados)
-        """
-        processed_count = 0
-        error_count = 0
-        not_found = []
-        
-        for file_path in file_paths:
-            try:
-                origen = Path(file_path)
-                if not origen.exists():
-                    not_found.append(file_path)
-                    continue
-                
-                if self.debug_mode:
-                    # Modo debug: mover a carpeta debug
-                    self._move_to_debug(origen)
-                else:
-                    # Modo normal: eliminar
-                    origen.unlink()
-                
-                processed_count += 1
-                
-            except Exception as e:
-                st.error(f"❌ Error procesando {file_path}: {e}")
-                error_count += 1
-        
-        return processed_count, error_count, not_found
-    
-    def _move_to_debug(self, file_path: Path) -> None:
-        """
-        Mueve un archivo a la carpeta de debug
-        
-        Args:
-            file_path: Ruta del archivo a mover
-        """
-        try:
-            # Crear carpeta debug si no existe
-            debug_path = Path(self.debug_folder)
-            debug_path.mkdir(parents=True, exist_ok=True)
-            
-            # Mover archivo a debug
-            destino = debug_path / file_path.name
-            
-            # Si el archivo ya existe en debug, agregar sufijo
-            counter = 1
-            while destino.exists():
-                stem = file_path.stem
-                suffix = file_path.suffix
-                destino = debug_path / f"{stem}_debug_{counter}{suffix}"
-                counter += 1
-            
-            shutil.move(str(file_path), str(destino))
-            
-        except Exception as e:
-            st.error(f"❌ Error moviendo a debug {file_path}: {e}")
-            raise
     
     def get_file_info(self, file_path: str) -> Dict[str, Any]:
         """
@@ -262,18 +181,6 @@ class FileBatchProcessor:
                 "success": True,
                 "message": f"Operación completada",
                 "moved": moved,
-                "errors": errors,
-                "not_found": len(not_found) + len(non_existing)
-            }
-        
-        elif operation == 'delete':
-            # Eliminar archivos
-            processed, errors, not_found = self.file_ops.delete_files(existing_files)
-            
-            return {
-                "success": True,
-                "message": f"Operación completada",
-                "processed": processed,
                 "errors": errors,
                 "not_found": len(not_found) + len(non_existing)
             }

@@ -253,8 +253,7 @@ class MovieDetector:
         titulo = self.extraer_titulo_pelicula(nombre_archivo)
         año = self.extraer_año(nombre_archivo)
         calidad = self.extraer_calidad(nombre_archivo)
-        # Deshabilitar duración temporalmente para evitar bloqueos
-        duracion = 0.0  # self.obtener_duracion_video(archivo)
+        duracion = self.obtener_duracion_video(archivo)
         
         return {
             'archivo': str(archivo),
@@ -340,62 +339,76 @@ class MovieDetector:
             umbral_similitud = self.umbral_similitud
         
         self.logger.info(f"Buscando duplicados con umbral de similitud: {umbral_similitud}")
-        
-        # Agrupar por año para optimizar búsqueda
+
+        # Agrupar por año para acotar los candidatos a comparar
         peliculas_por_año = defaultdict(list)
         for pelicula in self.peliculas:
             año = pelicula['año'] if pelicula['año'] > 0 else 'Sin año'
             peliculas_por_año[año].append(pelicula)
-        
+
         duplicados = []
         procesadas = set()
-        
-        for año, peliculas_año in peliculas_por_año.items():
-            for i, pelicula1 in enumerate(peliculas_año):
-                if pelicula1['archivo'] in procesadas:
+
+        for pelicula1 in self.peliculas:
+            if pelicula1['archivo'] in procesadas:
+                continue
+
+            # Candidatas: mismo año, año±1 y "Sin año" (que siempre es
+            # compatible). Si la propia película no tiene año, hay que
+            # compararla contra todas para no perder coincidencias.
+            if pelicula1['año'] == 0:
+                candidatas = self.peliculas
+            else:
+                candidatas = (
+                    peliculas_por_año.get(pelicula1['año'] - 1, []) +
+                    peliculas_por_año.get(pelicula1['año'], []) +
+                    peliculas_por_año.get(pelicula1['año'] + 1, []) +
+                    peliculas_por_año.get('Sin año', [])
+                )
+
+            grupo_duplicados = [pelicula1]
+            procesadas.add(pelicula1['archivo'])
+
+            for pelicula2 in candidatas:
+                if pelicula2['archivo'] == pelicula1['archivo']:
                     continue
-                
-                grupo_duplicados = [pelicula1]
-                procesadas.add(pelicula1['archivo'])
-                
-                for j, pelicula2 in enumerate(peliculas_año[i+1:], i+1):
-                    if pelicula2['archivo'] in procesadas:
-                        continue
-                    
-                    # Calcular similitud
-                    similitud = self.similitud_titulos(pelicula1['titulo'], pelicula2['titulo'])
-                    
-                    # Verificar si son del mismo año o años cercanos
-                    años_compatibles = (
-                        pelicula1['año'] == 0 or pelicula2['año'] == 0 or
-                        abs(pelicula1['año'] - pelicula2['año']) <= 1
-                    )
-                    
-                    # Verificar duración si el filtro está activado
-                    duracion_compatible = True
-                    if settings.get_duration_filter_enabled():
-                        duracion1 = pelicula1.get('duracion', 0)
-                        duracion2 = pelicula2.get('duracion', 0)
-                        
-                        if duracion1 > 0 and duracion2 > 0:
-                            # Calcular diferencia en minutos
-                            diferencia_segundos = abs(duracion1 - duracion2)
-                            diferencia_minutos = diferencia_segundos / 60
-                            
-                            tolerancia_minutos = settings.get_duration_tolerance_minutes()
-                            duracion_compatible = diferencia_minutos <= tolerancia_minutos
-                            
-                            if not duracion_compatible:
-                                self.logger.debug(f"Descartado por duración: {pelicula1['nombre']} ({duracion1/60:.1f}min) vs {pelicula2['nombre']} ({duracion2/60:.1f}min) - Diferencia: {diferencia_minutos:.1f}min")
-                    
-                    if similitud >= umbral_similitud and años_compatibles and duracion_compatible:
-                        grupo_duplicados.append(pelicula2)
-                        procesadas.add(pelicula2['archivo'])
-                
-                # Si hay más de una película en el grupo, es un duplicado
-                if len(grupo_duplicados) > 1:
-                    duplicados.append(grupo_duplicados)
-        
+                if pelicula2['archivo'] in procesadas:
+                    continue
+
+                # Calcular similitud
+                similitud = self.similitud_titulos(pelicula1['titulo'], pelicula2['titulo'])
+
+                # Verificar si son del mismo año o años cercanos
+                años_compatibles = (
+                    pelicula1['año'] == 0 or pelicula2['año'] == 0 or
+                    abs(pelicula1['año'] - pelicula2['año']) <= 1
+                )
+
+                # Verificar duración si el filtro está activado
+                duracion_compatible = True
+                if settings.get_duration_filter_enabled():
+                    duracion1 = pelicula1.get('duracion', 0)
+                    duracion2 = pelicula2.get('duracion', 0)
+
+                    if duracion1 > 0 and duracion2 > 0:
+                        # Calcular diferencia en minutos
+                        diferencia_segundos = abs(duracion1 - duracion2)
+                        diferencia_minutos = diferencia_segundos / 60
+
+                        tolerancia_minutos = settings.get_duration_tolerance_minutes()
+                        duracion_compatible = diferencia_minutos <= tolerancia_minutos
+
+                        if not duracion_compatible:
+                            self.logger.debug(f"Descartado por duración: {pelicula1['nombre']} ({duracion1/60:.1f}min) vs {pelicula2['nombre']} ({duracion2/60:.1f}min) - Diferencia: {diferencia_minutos:.1f}min")
+
+                if similitud >= umbral_similitud and años_compatibles and duracion_compatible:
+                    grupo_duplicados.append(pelicula2)
+                    procesadas.add(pelicula2['archivo'])
+
+            # Si hay más de una película en el grupo, es un duplicado
+            if len(grupo_duplicados) > 1:
+                duplicados.append(grupo_duplicados)
+
         self.duplicados = duplicados
         self.logger.info(f"Encontrados {len(duplicados)} grupos de duplicados")
         return duplicados
