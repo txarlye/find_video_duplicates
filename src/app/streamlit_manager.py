@@ -1121,7 +1121,7 @@ class StreamlitAppManager:
         st.markdown("---")
 
     def _process_pair_deletion(self, pair_key: str, row: Dict[str, Any]):
-        """Procesa la eliminación de un par"""
+        """Procesa la eliminación de un par y, si se movió/borró algo, pasa al siguiente par"""
         try:
             # Agregar la clave del par al row para que esté disponible
             row['pair_key'] = pair_key
@@ -1132,10 +1132,14 @@ class StreamlitAppManager:
 
             if debug_enabled:
                 # Modo debug: mover a carpeta de debug
-                self._move_to_debug_folder(row, debug_folder)
+                procesado = self._move_to_debug_folder(row, debug_folder)
             else:
                 # Modo normal: eliminar archivos
-                self._delete_selected_files(row)
+                procesado = self._delete_selected_files(row)
+
+            if procesado:
+                # Quita este par de la lista y avanza al siguiente automáticamente
+                self.pairs_manager.navigation._delete_current_pair()
 
         except Exception as e:
             st.error(f"❌ Error procesando eliminación: {str(e)}")
@@ -1195,6 +1199,8 @@ class StreamlitAppManager:
             st.info(f"📁 Ubicación: {debug_folder}")
         else:
             st.warning("⚠️ No se encontraron archivos para mover")
+
+        return bool(moved_files)
     
     def _delete_selected_files(self, row: Dict[str, Any]):
         """Elimina archivos seleccionados (modo normal)"""
@@ -1221,6 +1227,8 @@ class StreamlitAppManager:
             st.success(f"✅ Archivos eliminados: {', '.join(deleted_files)}")
         else:
             st.warning("⚠️ No se encontraron archivos para eliminar")
+
+        return bool(deleted_files)
     
     def _get_plex_metadata_for_pair(self, row: Dict[str, Any]) -> Optional[Dict]:
         """Obtiene metadatos de Plex para un par de películas"""
