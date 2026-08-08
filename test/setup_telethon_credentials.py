@@ -11,15 +11,16 @@ def setup_telethon_credentials():
     """Configura las credenciales de Telethon"""
     print("🔧 Configurador de Credenciales de Telethon")
     print("=" * 50)
-    
-    # Credenciales que me proporcionaste
-    api_id = "REDACTED_TELEGRAM_API_ID"
-    api_hash = "REDACTED_TELEGRAM_API_HASH"
-    phone = "REDACTED_PHONE"
-    
-    print(f"📋 Credenciales detectadas:")
+
+    # Pide las credenciales de forma interactiva (nunca las hardcodees aquí)
+    # Consíguelas en https://my.telegram.org -> API development tools
+    api_id = os.environ.get("TELEGRAM_API_ID") or input("API ID: ").strip()
+    api_hash = os.environ.get("TELEGRAM_API_HASH") or input("API Hash: ").strip()
+    phone = os.environ.get("TELEGRAM_PHONE") or input("Teléfono (+34...): ").strip()
+
+    print(f"📋 Credenciales a configurar:")
     print(f"   API ID: {api_id}")
-    print(f"   API Hash: {api_hash}")
+    print(f"   API Hash: {'*' * len(api_hash) if api_hash else ''}")
     print(f"   Phone: {phone}")
     
     # Verificar si existe .env
