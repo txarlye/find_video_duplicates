@@ -8,6 +8,7 @@ import streamlit as st
 import sys
 import time
 import os
+import subprocess
 import hashlib
 import logging
 from pathlib import Path
@@ -261,18 +262,33 @@ class StreamlitAppManager:
             value=settings.get_debug_enabled(),
             help="En modo debug, los archivos se mueven a una carpeta en lugar de borrarse"
         )
-        
+
+        confirm_permanent_delete = True
+        if not debug_enabled:
+            st.warning(
+                "⚠️ **Vas a desactivar el modo debug.** A partir de ese momento, cada "
+                "'Eliminar Seleccionadas' borrará el archivo directamente del disco, "
+                "sin pasar por la carpeta de debug y SIN POSIBILIDAD DE RECUPERARLO."
+            )
+            confirm_permanent_delete = st.checkbox(
+                "Entiendo que esto borra archivos de forma permanente, sin posibilidad de recuperación",
+                key="confirm_disable_debug_mode"
+            )
+
         # Carpeta de debug
         debug_folder = st.text_input(
             "📁 Carpeta de Debug",
             value=settings.get_debug_folder(),
             help="Carpeta donde se moverán los archivos en modo debug"
         )
-        
+
         if st.button("💾 Guardar configuración debug", key="save_debug_config"):
-            settings.set_debug_enabled(debug_enabled)
-            settings.set_debug_folder(debug_folder)
-            st.success("✅ Configuración de debug guardada")
+            if not debug_enabled and not confirm_permanent_delete:
+                st.error("❌ Debes marcar la casilla de confirmación para desactivar el modo debug.")
+            else:
+                settings.set_debug_enabled(debug_enabled)
+                settings.set_debug_folder(debug_folder)
+                st.success("✅ Configuración de debug guardada")
     
     def _render_plex_tab(self):
         """Renderiza la pestaña de configuración de Plex"""
@@ -1019,7 +1035,8 @@ class StreamlitAppManager:
                 if os.name == 'nt':  # Windows
                     os.startfile(file_path)
                 elif os.name == 'posix':  # macOS y Linux
-                    os.system(f'open "{file_path}"' if sys.platform == 'darwin' else f'xdg-open "{file_path}"')
+                    opener = "open" if sys.platform == 'darwin' else "xdg-open"
+                    subprocess.run([opener, file_path], check=False)
                 else:
                     st.warning("⚠️ Sistema operativo no soportado para apertura automática")
                     st.info(f"📁 Ruta del archivo: {file_path}")
@@ -1033,97 +1050,106 @@ class StreamlitAppManager:
         
         st.markdown("---")
     
+    def _pair_key(self, row: Dict[str, Any]) -> str:
+        """
+        Genera una clave estable para un par de duplicados, a partir de sus
+        rutas de archivo. Un índice numérico no sirve como clave: cuando un
+        par se quita de la lista, los índices posteriores se desplazan y
+        podían arrastrar el estado de selección de otro par (ver bug de
+        borrado incorrecto). La ruta del archivo no cambia aunque la lista
+        se reordene.
+        """
+        ruta1 = row.get('Ruta 1', '')
+        ruta2 = row.get('Ruta 2', '')
+        return hashlib.md5(f"{ruta1}|{ruta2}".encode('utf-8')).hexdigest()
+
     def _render_movie_controls(self, row: Dict[str, Any], index: int):
         """Renderiza los controles de películas"""
         st.subheader("📋 Información y Controles")
-        
+
+        pair_key = self._pair_key(row)
         col1, col2, col3 = st.columns([1, 1, 1])
-        
+
         with col1:
             st.write("**Película 1:**")
             st.markdown(f"<h4 style='color: #1f77b4'>{row.get('Peli 1', 'N/A')}</h4>", unsafe_allow_html=True)
             st.write(f"Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
             st.write(f"Duración: {row.get('Duración 1', 'N/A')}")
             st.write(f"Ruta: {row.get('Ruta 1', 'N/A')}")
-            
+
             # Checkbox para película 1
-            select1_key = f"select1_{index}"
+            select1_key = f"select1_{pair_key}"
             if st.checkbox(f"Seleccionar Película 1", key=select1_key):
-                st.session_state[f"selected_{index}_1"] = True
-                st.session_state[f"selected_{index}_2"] = False  # Deseleccionar la otra
+                st.session_state[f"selected_{pair_key}_1"] = True
+                st.session_state[f"selected_{pair_key}_2"] = False  # Deseleccionar la otra
             else:
-                st.session_state[f"selected_{index}_1"] = False
-        
+                st.session_state[f"selected_{pair_key}_1"] = False
+
         with col2:
             st.write("**Película 2:**")
             st.markdown(f"<h4 style='color: #ff7f0e'>{row.get('Peli 2', 'N/A')}</h4>", unsafe_allow_html=True)
             st.write(f"Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
             st.write(f"Duración: {row.get('Duración 2', 'N/A')}")
             st.write(f"Ruta: {row.get('Ruta 2', 'N/A')}")
-            
+
             # Checkbox para película 2
-            select2_key = f"select2_{index}"
+            select2_key = f"select2_{pair_key}"
             if st.checkbox(f"Seleccionar Película 2", key=select2_key):
-                st.session_state[f"selected_{index}_2"] = True
-                st.session_state[f"selected_{index}_1"] = False  # Deseleccionar la otra
+                st.session_state[f"selected_{pair_key}_2"] = True
+                st.session_state[f"selected_{pair_key}_1"] = False  # Deseleccionar la otra
             else:
-                st.session_state[f"selected_{index}_2"] = False
-        
+                st.session_state[f"selected_{pair_key}_2"] = False
+
         with col3:
             st.write("**Acciones:**")
-            
+
             # Verificar si alguna película del par está seleccionada
             par_seleccionado = (
-                st.session_state.get(f"selected_{index}_1", False) or 
-                st.session_state.get(f"selected_{index}_2", False)
+                st.session_state.get(f"selected_{pair_key}_1", False) or
+                st.session_state.get(f"selected_{pair_key}_2", False)
             )
-            
-            if st.button("🗑️ Eliminar Seleccionadas", disabled=not par_seleccionado, key=f"delete_{index}"):
-                self._process_pair_deletion(index, row)
-        
+
+            if st.button("🗑️ Eliminar Seleccionadas", disabled=not par_seleccionado, key=f"delete_{pair_key}"):
+                self._process_pair_deletion(pair_key, row)
+
         st.markdown("---")
-    
-    def _process_pair_deletion(self, index: int, row: Dict[str, Any]):
+
+    def _process_pair_deletion(self, pair_key: str, row: Dict[str, Any]):
         """Procesa la eliminación de un par"""
         try:
-            # Agregar el index al row para que esté disponible
-            row['index'] = index
-            
+            # Agregar la clave del par al row para que esté disponible
+            row['pair_key'] = pair_key
+
             # Verificar si está en modo debug
             debug_enabled = settings.get_debug_enabled()
             debug_folder = settings.get_debug_folder()
-            
+
             if debug_enabled:
                 # Modo debug: mover a carpeta de debug
                 self._move_to_debug_folder(row, debug_folder)
             else:
                 # Modo normal: eliminar archivos
                 self._delete_selected_files(row)
-                
+
         except Exception as e:
             st.error(f"❌ Error procesando eliminación: {str(e)}")
-    
+
     def _move_to_debug_folder(self, row: Dict[str, Any], debug_folder: str):
         """Mueve archivos seleccionados a la carpeta de debug"""
         import shutil
         from pathlib import Path
-        
+
         # Crear carpeta de debug si no existe
         debug_path = Path(debug_folder)
         debug_path.mkdir(parents=True, exist_ok=True)
-        
+
         moved_files = []
-        
+
         # Verificar qué archivos están seleccionados
-        index = row.get('index', 0)
-        pelicula1_selected = st.session_state.get(f"selected_{index}_1", False)
-        pelicula2_selected = st.session_state.get(f"selected_{index}_2", False)
-        
-        # Debug: mostrar estado de selección
-        st.write(f"🔍 Debug - Index: {index}")
-        st.write(f"🔍 Debug - Película 1 seleccionada: {pelicula1_selected}")
-        st.write(f"🔍 Debug - Película 2 seleccionada: {pelicula2_selected}")
-        
+        pair_key = row.get('pair_key', '')
+        pelicula1_selected = st.session_state.get(f"selected_{pair_key}_1", False)
+        pelicula2_selected = st.session_state.get(f"selected_{pair_key}_2", False)
+
         if pelicula1_selected:
             ruta1 = row.get('Ruta 1', '')
             if ruta1 and os.path.exists(ruta1):
@@ -1167,11 +1193,11 @@ class StreamlitAppManager:
     def _delete_selected_files(self, row: Dict[str, Any]):
         """Elimina archivos seleccionados (modo normal)"""
         deleted_files = []
-        
+
         # Verificar qué archivos están seleccionados
-        index = row.get('index', 0)
-        pelicula1_selected = st.session_state.get(f"selected_{index}_1", False)
-        pelicula2_selected = st.session_state.get(f"selected_{index}_2", False)
+        pair_key = row.get('pair_key', '')
+        pelicula1_selected = st.session_state.get(f"selected_{pair_key}_1", False)
+        pelicula2_selected = st.session_state.get(f"selected_{pair_key}_2", False)
         
         if pelicula1_selected:
             ruta1 = row.get('Ruta 1', '')
