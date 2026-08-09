@@ -434,11 +434,77 @@ class PairNavigationManager:
             if st.button("🔄 Reiniciar", key="nav_reset"):
                 self.logger.info("🔄 Navegación: Reiniciando a Par 1")
                 self.go_to_pair(0)
-        
+
+        self._render_bulk_remove_table(pairs_list)
+
         # Botón para eliminar par de la lista
         if st.button("🗑️ Eliminar Par de la Lista", key="delete_pair"):
             self._delete_current_pair()
-    
+
+    def _render_bulk_remove_table(self, pairs_list: List[Dict[str, Any]]) -> None:
+        """
+        Tabla con checkbox para quitar varios pares de la lista de golpe.
+        Solo saca el par de esta cola de revisión — no mueve ni borra
+        ningún archivo (eso es "Eliminar Película 1/2" en cada par, más
+        abajo). Útil cuando ya sabes de un vistazo, por el nombre, qué
+        pares no son duplicados reales de verdad.
+        """
+        with st.expander(f"☑️ Quitar varios pares de la lista de golpe ({len(pairs_list)} en total)", expanded=False):
+            st.caption(
+                "Esto solo saca el par de esta lista de revisión, no toca "
+                "ningún archivo en disco. Para borrar/mover archivos usa "
+                "'Eliminar Película 1/2' en cada par."
+            )
+
+            tabla = []
+            for i, pair in enumerate(pairs_list):
+                file1_name = Path(pair.get('Ruta 1', '')).name if pair.get('Ruta 1') else 'N/A'
+                file2_name = Path(pair.get('Ruta 2', '')).name if pair.get('Ruta 2') else 'N/A'
+                tabla.append({
+                    'Quitar': False,
+                    'Par': i + 1,
+                    'Película 1': file1_name,
+                    'Película 2': file2_name,
+                })
+
+            edited = st.data_editor(
+                tabla,
+                column_order=['Quitar', 'Par', 'Película 1', 'Película 2'],
+                disabled=['Par', 'Película 1', 'Película 2'],
+                hide_index=True,
+                use_container_width=True,
+                key="pairs_bulk_remove_editor",
+            )
+
+            seleccionados = [i for i, fila in enumerate(edited) if fila['Quitar']]
+            if seleccionados:
+                if st.button(f"🗑️ Quitar {len(seleccionados)} par(es) de la lista", key="pairs_bulk_remove_btn"):
+                    self._remove_pairs_from_list(seleccionados)
+
+    def _remove_pairs_from_list(self, indices: List[int]) -> None:
+        """Quita de golpe varios pares (por índice) de la lista de revisión — sin tocar archivos"""
+        pairs_list = st.session_state[self.session_key]['pairs_list']
+        a_quitar = set(indices)
+
+        nueva_lista = [p for i, p in enumerate(pairs_list) if i not in a_quitar]
+        quitados = len(pairs_list) - len(nueva_lista)
+
+        st.session_state[self.session_key]['pairs_list'] = nueva_lista
+        st.session_state[self.session_key]['total_pairs'] = len(nueva_lista)
+        st.session_state.duplicados = nueva_lista
+
+        settings.set_total_pairs(len(nueva_lista))
+
+        current_index = st.session_state[self.session_key]['current_pair']
+        if current_index >= len(nueva_lista) and len(nueva_lista) > 0:
+            st.session_state[self.session_key]['current_pair'] = len(nueva_lista) - 1
+        elif len(nueva_lista) == 0:
+            st.session_state[self.session_key]['current_pair'] = 0
+
+        self.logger.info(f"🗑️ Navegación: Quitados {quitados} pares de golpe - Quedan {len(nueva_lista)} pares")
+        st.success(f"✅ {quitados} par(es) quitado(s) de la lista — quedan {len(nueva_lista)}")
+        st.rerun()
+
     def _delete_current_pair(self) -> None:
         """Elimina el par actual de la lista"""
         current_index = self.get_current_index()
