@@ -50,12 +50,18 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 - Guardado/carga de progreso, igual que en duplicados y huérfanos
 
 ### 🗑️ Basura / Purgatorio
-- La app **nunca borra nada directamente**: todo lo eliminado o renombrado
-  se mueve a una carpeta de debug configurable
+- La app **nunca borra nada directamente** — modo debug siempre activo,
+  no se puede desactivar desde la interfaz: todo lo eliminado o
+  renombrado se mueve primero a una carpeta de debug configurable
 - Vista dedicada con el contenido de esa carpeta (separado en películas /
   capítulos de serie), tamaño total ocupado y, si indicas el tamaño
   aproximado de tu biblioteca, qué porcentaje llevas ya "purgado"
-- Vaciarla de verdad es una acción manual tuya en el NAS, nunca automática
+- **Restaurar** archivos a su carpeta original con un checkbox, sin tener
+  que ir a buscarlos a mano por el NAS
+- Vaciarla de verdad (borrado real) es una acción manual tuya en el NAS,
+  la app nunca lo hace por ti ni automática ni manualmente
+
+![Papelera/Purgatorio: nada se borra de verdad, solo se mueve aquí — y desde la app solo se puede restaurar, no vaciar](.img/basura.png)
 
 ### 🎬 IMDB / TMDB / OMDb
 - Sinopsis, pósteres y datos (rating, director, actores, género)
@@ -171,7 +177,8 @@ pestaña ⚙️ Configuración de la propia app. Ambos ficheros están en
 ## 🔒 Seguridad
 
 - La app **nunca borra archivos directamente**: todo pasa primero por la
-  carpeta de debug/papelera configurada.
+  carpeta de debug/papelera configurada. El modo debug está siempre
+  activo y, de momento, no se puede desactivar desde la interfaz.
 - La conexión a Plex es **de solo lectura**.
 - Las claves de API y tokens viven solo en `.env` / `config.json`, ambos
   excluidos de git — nunca se hardcodean en el código.

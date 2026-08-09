@@ -295,40 +295,25 @@ class StreamlitAppManager:
         
         # Configuración de Debug
         st.subheader("🐛 Modo Debug")
-        
-        # Modo debug
-        debug_enabled = st.checkbox(
-            "🐛 Activar Modo Debug",
-            value=settings.get_debug_enabled(),
-            help="En modo debug, los archivos se mueven a una carpeta en lugar de borrarse"
-        )
 
-        confirm_permanent_delete = True
-        if not debug_enabled:
-            st.warning(
-                "⚠️ **Vas a desactivar el modo debug.** A partir de ese momento, cada "
-                "'Eliminar Seleccionadas' borrará el archivo directamente del disco, "
-                "sin pasar por la carpeta de debug y SIN POSIBILIDAD DE RECUPERARLO."
-            )
-            confirm_permanent_delete = st.checkbox(
-                "Entiendo que esto borra archivos de forma permanente, sin posibilidad de recuperación",
-                key="confirm_disable_debug_mode"
-            )
+        st.info(
+            "🐛 **Modo debug siempre activo** (de momento no se puede "
+            "desactivar desde aquí, mientras la app está en desarrollo): "
+            "nada se borra nunca directamente, todo lo eliminado o "
+            "renombrado se mueve primero a la carpeta de debug de abajo. "
+            "Bórralo de verdad tú a mano desde el NAS cuando quieras."
+        )
 
         # Carpeta de debug
         debug_folder = st.text_input(
             "📁 Carpeta de Debug",
             value=settings.get_debug_folder(),
-            help="Carpeta donde se moverán los archivos en modo debug"
+            help="Carpeta donde se mueven los archivos en vez de borrarse"
         )
 
         if st.button("💾 Guardar configuración debug", key="save_debug_config"):
-            if not debug_enabled and not confirm_permanent_delete:
-                st.error("❌ Debes marcar la casilla de confirmación para desactivar el modo debug.")
-            else:
-                settings.set_debug_enabled(debug_enabled)
-                settings.set_debug_folder(debug_folder)
-                st.success("✅ Configuración de debug guardada")
+            settings.set_debug_folder(debug_folder)
+            st.success("✅ Configuración de debug guardada")
     
     def _render_plex_tab(self):
         """Renderiza la pestaña de configuración de Plex"""
