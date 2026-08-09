@@ -663,8 +663,109 @@ class StreamlitAppManager:
             "refresca antes la biblioteca de Plex para evitar falsos positivos."
         )
 
+        st.markdown("---")
+        col_save, col_load = st.columns(2)
+        with col_save:
+            if st.button("💾 Guardar Huérfanos", disabled=not st.session_state.get('huerfanos')):
+                self._save_huerfanos_data(carpeta)
+        with col_load:
+            if st.button("📂 Cargar Huérfanos Guardados"):
+                st.session_state.show_load_huerfanos_interface = not st.session_state.get('show_load_huerfanos_interface', False)
+                st.rerun()
+
+        if st.session_state.get('show_load_huerfanos_interface'):
+            self._show_load_huerfanos_interface()
+
         if st.session_state.get('huerfanos') is not None:
             self._render_orphans_results()
+
+    def _save_huerfanos_data(self, carpeta: str):
+        """Guarda la lista actual de huérfanos para continuar el renombrado otro día"""
+        try:
+            huerfanos = st.session_state.get('huerfanos') or []
+            if not huerfanos:
+                st.warning("⚠️ No hay huérfanos para guardar")
+                return
+
+            file_path = self.scan_data_manager.save_scan_data(
+                pairs_data=huerfanos,
+                scan_path=carpeta,
+                kind="huerfanos"
+            )
+            st.success(f"✅ Huérfanos guardados: {Path(file_path).name}")
+
+        except Exception as e:
+            st.error(f"❌ Error guardando huérfanos: {e}")
+
+    def _show_load_huerfanos_interface(self):
+        """Muestra la interfaz para cargar huérfanos guardados"""
+        try:
+            scans = self.scan_data_manager.get_available_scans(kind="huerfanos")
+
+            if not scans:
+                st.info("📋 No hay huérfanos guardados")
+                return
+
+            st.subheader("📂 Cargar Huérfanos Guardados")
+            scan_options = [
+                f"{s.get('scan_date', 'N/A')[:19]} - {s.get('scan_path', 'N/A')} ({s.get('total_pairs', 0)} archivos)"
+                for s in scans
+            ]
+            selected = st.selectbox(
+                "Seleccionar guardado:",
+                options=range(len(scans)),
+                format_func=lambda x: scan_options[x],
+                key="load_huerfanos_select"
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📂 Cargar Seleccionado", key="load_huerfanos_confirm"):
+                    self._load_huerfanos_data(scans[selected]['file_path'])
+                    st.session_state.show_load_huerfanos_interface = False
+            with col2:
+                if st.button("❌ Cancelar", key="load_huerfanos_cancel"):
+                    st.session_state.show_load_huerfanos_interface = False
+                    st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Error mostrando huérfanos guardados: {e}")
+
+    def _load_huerfanos_data(self, file_path: str):
+        """
+        Carga una lista de huérfanos guardada previamente. Como puede
+        haber pasado tiempo desde que se guardó, algunos archivos ya
+        podrían estar renombrados (si quedó reflejado en el guardado, se
+        mantiene tal cual y sigue en verde) o ya no existir en la ruta
+        guardada (renombrados a mano, movidos o borrados desde entonces
+        fuera de la app) — se comprueba cada uno y se avisa en vez de
+        dejar la lista con rutas muertas.
+        """
+        try:
+            scan_data = self.scan_data_manager.load_scan_data(file_path)
+            huerfanos_guardados = scan_data.get('pairs_data', [])
+
+            existentes = [h for h in huerfanos_guardados if h.get('archivo') and Path(h['archivo']).exists()]
+            no_existentes = len(huerfanos_guardados) - len(existentes)
+            ya_renombrados = sum(1 for h in existentes if h.get('renombrado'))
+
+            st.session_state.huerfanos = existentes
+
+            st.success(f"✅ Cargados {len(existentes)} de {len(huerfanos_guardados)} huérfanos guardados")
+            if no_existentes:
+                st.warning(
+                    f"⚠️ {no_existentes} archivo(s) del guardado ya no existen en su ruta original — "
+                    "probablemente ya los renombraste, moviste o borraste desde que se guardó este "
+                    "escaneo. Se han quitado de la lista; vuelve a escanear la carpeta si quieres "
+                    "verlos con su estado actual."
+                )
+            if ya_renombrados:
+                st.info(f"ℹ️ {ya_renombrados} de los cargados ya estaban marcados como renombrados (siguen en verde).")
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Error cargando huérfanos guardados: {e}")
 
     def _render_ai_naming_config(self):
         """Renderiza la configuración de sugerencia de nombres con IA"""

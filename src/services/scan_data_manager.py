@@ -25,37 +25,43 @@ class ScanDataManager:
         self.data_dir.mkdir(exist_ok=True)
         self.logger = logging.getLogger(__name__)
     
-    def save_scan_data(self, pairs_data: List[Dict[str, Any]], scan_path: str, 
-                      scan_date: Optional[datetime] = None) -> str:
+    def save_scan_data(self, pairs_data: List[Dict[str, Any]], scan_path: str,
+                      scan_date: Optional[datetime] = None, kind: str = "scan") -> str:
         """
         Guarda los datos del escaneo
-        
+
         Args:
-            pairs_data: Lista de pares de duplicados
+            pairs_data: Lista de pares de duplicados (o de cualquier otro
+                dato serializable en JSON, ver `kind`)
             scan_path: Ruta que se escaneó
             scan_date: Fecha del escaneo (por defecto ahora)
-            
+            kind: Prefijo/espacio de nombres del guardado (por defecto
+                "scan", para los duplicados de siempre). Otras
+                funcionalidades (p.ej. "huerfanos") usan su propio
+                prefijo para no mezclarse en el mismo listado.
+
         Returns:
             Ruta del archivo guardado
         """
         if scan_date is None:
             scan_date = datetime.now()
-        
+
         # Crear estructura de datos
         scan_data = {
             'metadata': {
                 'scan_path': scan_path,
                 'scan_date': scan_date.isoformat(),
                 'total_pairs': len(pairs_data),
+                'kind': kind,
                 'version': '1.0'
             },
             'pairs_data': pairs_data
         }
-        
+
         # Generar nombre de archivo
         timestamp = scan_date.strftime("%Y%m%d_%H%M%S")
         safe_path = scan_path.replace('\\', '_').replace('/', '_').replace(':', '_')
-        filename = f"scan_{timestamp}_{safe_path[:50]}.json"
+        filename = f"{kind}_{timestamp}_{safe_path[:50]}.json"
         file_path = self.data_dir / filename
         
         # Guardar archivo
@@ -91,16 +97,20 @@ class ScanDataManager:
             self.logger.error(f"❌ Error cargando datos: {e}")
             raise
     
-    def get_available_scans(self) -> List[Dict[str, Any]]:
+    def get_available_scans(self, kind: str = "scan") -> List[Dict[str, Any]]:
         """
         Obtiene lista de escaneos disponibles
-        
+
+        Args:
+            kind: Mismo espacio de nombres que en save_scan_data — solo
+                lista los guardados de ese tipo (por defecto "scan").
+
         Returns:
             Lista de diccionarios con información de escaneos
         """
         scans = []
-        
-        for file_path in self.data_dir.glob("scan_*.json"):
+
+        for file_path in self.data_dir.glob(f"{kind}_*.json"):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
