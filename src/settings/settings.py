@@ -397,6 +397,30 @@ class Settings:
             excluded.remove(directory)
             self.set_excluded_directories(excluded)
 
+    # Métodos para series ignoradas en "series sin indexar" (el usuario
+    # sabe que esa serie está bien aunque el nombre no case con Plex)
+    def get_ignored_series(self) -> List[str]:
+        """Obtiene la lista de series (normalizadas) marcadas como ignoradas"""
+        return self.get("series.ignored_shows", [])
+
+    def set_ignored_series(self, value: List[str]):
+        """Establece la lista de series ignoradas"""
+        self.set("series.ignored_shows", value)
+
+    def add_ignored_series(self, serie_normalizada: str):
+        """Añade una serie a la lista de ignoradas"""
+        ignoradas = self.get_ignored_series()
+        if serie_normalizada not in ignoradas:
+            ignoradas.append(serie_normalizada)
+            self.set_ignored_series(ignoradas)
+
+    def remove_ignored_series(self, serie_normalizada: str):
+        """Quita una serie de la lista de ignoradas"""
+        ignoradas = self.get_ignored_series()
+        if serie_normalizada in ignoradas:
+            ignoradas.remove(serie_normalizada)
+            self.set_ignored_series(ignoradas)
+
     # Métodos para sugerencia de nombres con IA (detector de huérfanos)
     def get_ai_enabled(self) -> bool:
         """Obtiene si la sugerencia de nombres con IA está activada"""
