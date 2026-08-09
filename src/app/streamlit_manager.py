@@ -491,26 +491,43 @@ class StreamlitAppManager:
                 st.success("✅ Configuración de Plex guardada")
                 st.rerun()
     
+    def _render_folder_path_input(self, label: str, category: str, key: str, help_text: str = "") -> str:
+        """
+        Campo de ruta de carpeta con un desplegable de hasta 5 rutas
+        usadas recientemente para esa categoría. Cada categoría
+        (duplicados/huérfanos/series) guarda su propio historial, ya que
+        normalmente son carpetas distintas (películas vs. series, y
+        varias rutas dentro de cada una).
+        """
+        recientes = settings.get_recent_paths(category)
+
+        if key not in st.session_state:
+            st.session_state[key] = recientes[0] if recientes else ""
+
+        if recientes:
+            placeholder = "— elegir de recientes —"
+            elegida = st.selectbox(
+                "📋 Rutas recientes",
+                options=[placeholder] + recientes,
+                key=f"{key}_recent_select",
+            )
+            if elegida != placeholder and elegida != st.session_state[key]:
+                st.session_state[key] = elegida
+                st.rerun()
+
+        return st.text_input(label, key=key, help=help_text)
+
     def render_scan_section(self):
         """Renderiza la sección de escaneo"""
         st.header("📁 Escanear Carpeta")
-        
-        # Input de carpeta
-        try:
-            last_path = settings.get_last_scan_path()
-        except AttributeError:
-            last_path = settings.get("paths.last_scan_path", "")
-        
-        carpeta = st.text_input(
+
+        carpeta = self._render_folder_path_input(
             "Ruta de la carpeta a analizar",
-            value=last_path,
-            help="Seleccione la carpeta que contiene las películas"
+            category="duplicados",
+            key="scan_folder_path",
+            help_text="Seleccione la carpeta que contiene las películas"
         )
-        
-        # Mostrar última ruta usada si existe
-        if last_path:
-            st.caption(f"📁 Última ruta escaneada: {last_path}")
-        
+
         col1, col2 = st.columns([1, 1])
         
         with col1:
@@ -556,7 +573,8 @@ class StreamlitAppManager:
         if not Path(carpeta).exists():
             st.error("❌ La carpeta especificada no existe")
             return
-        
+
+        settings.add_recent_path("duplicados", carpeta)
         st.session_state.scanning = True
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -641,16 +659,11 @@ class StreamlitAppManager:
 
         self._render_ai_naming_config()
 
-        try:
-            last_path = settings.get_last_scan_path()
-        except AttributeError:
-            last_path = settings.get("paths.last_scan_path", "")
-
-        carpeta = st.text_input(
+        carpeta = self._render_folder_path_input(
             "Ruta de la carpeta a analizar",
-            value=last_path,
+            category="huerfanos",
             key="orphans_scan_path",
-            help="Carpeta donde buscar películas que no están indexadas en Plex"
+            help_text="Carpeta donde buscar películas que no están indexadas en Plex"
         )
 
         if st.button("🔍 Buscar Huérfanos", type="primary", disabled=not carpeta):
@@ -856,6 +869,7 @@ class StreamlitAppManager:
             st.error("❌ La carpeta especificada no existe")
             return
 
+        settings.add_recent_path("huerfanos", carpeta)
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -1054,16 +1068,11 @@ class StreamlitAppManager:
             )
             return
 
-        try:
-            last_path = settings.get_last_scan_path()
-        except AttributeError:
-            last_path = settings.get("paths.last_scan_path", "")
-
-        carpeta = st.text_input(
+        carpeta = self._render_folder_path_input(
             "Ruta de la carpeta de series a analizar",
-            value=last_path,
+            category="series",
             key="series_scan_path",
-            help="Carpeta donde buscar episodios de serie"
+            help_text="Carpeta donde buscar episodios de serie"
         )
 
         if st.button("🔍 Buscar", type="primary", disabled=not carpeta, key="series_scan_button"):
@@ -1095,6 +1104,7 @@ class StreamlitAppManager:
             st.error("❌ La carpeta especificada no existe")
             return
 
+        settings.add_recent_path("series", carpeta)
         progress_bar = st.progress(0)
         status_text = st.empty()
 
