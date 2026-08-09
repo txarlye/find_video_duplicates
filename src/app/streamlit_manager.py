@@ -697,6 +697,21 @@ class StreamlitAppManager:
                 if not settings.get_gemini_api_key():
                     st.warning("⚠️ Falta la variable de entorno GEMINI_API_KEY")
 
+            st.markdown("---")
+            if settings.get_omdb_api_key():
+                st.caption(
+                    "✅ **Contraste con OMDb activo**: la aproximación de la IA se "
+                    "busca en una base de datos real y se usa el año de ahí, no el "
+                    "que haya podido inventar el modelo."
+                )
+            else:
+                st.caption(
+                    "ℹ️ Sin **OMDB_API_KEY** configurada, la IA responde solo de "
+                    "memoria (puede acertar el título y fallar el año). Consigue "
+                    "una gratis en omdbapi.com/apikey.aspx y ponla como variable "
+                    "de entorno para contrastar las sugerencias contra datos reales."
+                )
+
             if st.button("💾 Guardar configuración IA", key="save_ai_config"):
                 settings.set_ai_enabled(ai_enabled)
                 settings.set_ai_provider(provider)
