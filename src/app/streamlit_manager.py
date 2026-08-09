@@ -817,18 +817,24 @@ class StreamlitAppManager:
                     st.warning("⚠️ Falta la variable de entorno GEMINI_API_KEY")
 
             st.markdown("---")
-            if settings.get_omdb_api_key():
+            tmdb_ok = bool(settings.get_tmdb_api_key())
+            omdb_ok = bool(settings.get_omdb_api_key())
+            if tmdb_ok or omdb_ok:
+                fuentes = " y ".join(filter(None, ["TMDB" if tmdb_ok else None, "OMDb" if omdb_ok else None]))
                 st.caption(
-                    "✅ **Contraste con OMDb activo**: la aproximación de la IA se "
-                    "busca en una base de datos real y se usa el año de ahí, no el "
-                    "que haya podido inventar el modelo."
+                    f"✅ **Contraste con {fuentes} activo**: la aproximación de la IA se "
+                    "busca en una base de datos real (TMDB primero si está disponible, "
+                    "OMDb como respaldo) y se usa el año de ahí, no el que haya podido "
+                    "inventar el modelo."
                 )
             else:
                 st.caption(
-                    "ℹ️ Sin **OMDB_API_KEY** configurada, la IA responde solo de "
-                    "memoria (puede acertar el título y fallar el año). Consigue "
-                    "una gratis en omdbapi.com/apikey.aspx y ponla como variable "
-                    "de entorno para contrastar las sugerencias contra datos reales."
+                    "ℹ️ Sin **TMDB_API_KEY** ni **OMDB_API_KEY** configuradas, la IA "
+                    "responde solo de memoria (puede acertar el título y fallar el "
+                    "año). Consigue una clave gratis en themoviedb.org/settings/api "
+                    "(mejor cobertura de títulos en español) y/o en omdbapi.com/apikey.aspx, "
+                    "y ponlas como variables de entorno para contrastar las sugerencias "
+                    "contra datos reales."
                 )
 
             if st.button("💾 Guardar configuración IA", key="save_ai_config"):
