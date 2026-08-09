@@ -11,30 +11,34 @@ from pathlib import Path
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 
+from ...settings.settings import settings
+
 
 class TelegramUploader:
     """Clase para subir videos a Telegram usando Telethon"""
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.client = None
-    
+
     def _get_telegram_credentials(self):
-        """Obtiene las credenciales del archivo .env"""
-        env_path = Path("src/settings/.env")
-        credentials = {}
-        
-        if env_path.exists():
-            with open(env_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#') and '=' in line:
-                        key, value = line.split('=', 1)
-                        if value not in ['tu_api_id', 'tu_api_hash', 'tu_telefono', 'tu_channel_id', 'tu_bot_token']:
-                            if key in ['TELEGRAM_API_ID', 'TELEGRAM_API_HASH', 'TELEGRAM_PHONE', 'TELEGRAM_CHANNEL_ID']:
-                                credentials[key] = value
-        
-        return credentials if len(credentials) == 4 else None
+        """
+        Obtiene las credenciales de Telethon vía settings.py. Antes leía
+        directamente src/settings/.env (un fichero que nunca ha existido:
+        el .env real vive en la raíz del proyecto), así que esto no
+        encontraba nunca las credenciales aunque estuvieran bien puestas.
+        """
+        credentials = {
+            'TELEGRAM_API_ID': settings.get_telegram_api_id(),
+            'TELEGRAM_API_HASH': settings.get_telegram_api_hash(),
+            'TELEGRAM_PHONE': settings.get_telegram_phone(),
+            'TELEGRAM_CHANNEL_ID': settings.get_telegram_channel_id(),
+        }
+
+        if not all(credentials.values()):
+            return None
+
+        return credentials
     
     async def _ensure_connected(self):
         """Asegura que el cliente esté conectado"""
@@ -80,12 +84,13 @@ class TelegramUploader:
             
             # Obtener credenciales para el channel ID
             creds = self._get_telegram_credentials()
-            
-            # Subir como documento (sin límites de tamaño)
-            # Usar el enlace del canal en lugar del ID numérico
-            channel_link = "https://t.me/+REDACTED_TELEGRAM_INVITE"
+            if not creds:
+                self.logger.error("❌ Faltan credenciales de Telethon (API ID/Hash/teléfono/canal)")
+                return False
+
+            # Subir como documento (sin el límite de 50MB del Bot API)
             await self.client.send_file(
-                entity=channel_link,
+                entity=creds['TELEGRAM_CHANNEL_ID'],
                 file=video_path,
                 caption=message,
                 force_document=True

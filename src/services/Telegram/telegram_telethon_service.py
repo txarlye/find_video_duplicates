@@ -17,34 +17,20 @@ class TelegramTelethonService:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        
-        # Credenciales - leer directamente del .env
-        self.api_id = self._get_env_value("TELEGRAM_API_ID")
-        self.api_hash = self._get_env_value("TELEGRAM_API_HASH")
-        self.phone = self._get_env_value("TELEGRAM_PHONE")
-        self.channel_id = self._get_env_value("TELEGRAM_CHANNEL_ID")
-        
+
+        # Credenciales - vía settings.py (antes leía directamente de
+        # src/settings/.env, un fichero que nunca existió; el .env real
+        # vive en la raíz del proyecto y settings.py ya sabe encontrarlo).
+        self.api_id = settings.get_telegram_api_id()
+        self.api_hash = settings.get_telegram_api_hash()
+        self.phone = settings.get_telegram_phone()
+        self.channel_id = settings.get_telegram_channel_id()
+
         # Cliente
         self.client: Optional[TelegramClient] = None
         self.connected = False
-    
-    def _get_env_value(self, key: str) -> str:
-        """Lee un valor del archivo .env directamente"""
-        try:
-            env_path = Path(__file__).parent.parent.parent / "settings" / ".env"
-            if env_path.exists():
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            k, v = line.split('=', 1)
-                            if k == key:
-                                return v
-            return None
-        except Exception as e:
-            self.logger.error(f"Error leyendo {key}: {e}")
-            return None
-        
+
+
     def is_configured(self) -> bool:
         """Verifica si el servicio está configurado"""
         return all([
