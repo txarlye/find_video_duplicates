@@ -2411,6 +2411,16 @@ class StreamlitAppManager:
             if st.button("🗑️ Eliminar Seleccionadas", disabled=not par_seleccionado, key=f"delete_{pair_key}"):
                 self._process_pair_deletion(pair_key, row)
 
+            st.caption("O directamente:")
+            if st.button("🗑️ Eliminar Película 1", key=f"delete1_{pair_key}"):
+                st.session_state[f"selected_{pair_key}_1"] = True
+                st.session_state[f"selected_{pair_key}_2"] = False
+                self._process_pair_deletion(pair_key, row)
+            if st.button("🗑️ Eliminar Película 2", key=f"delete2_{pair_key}"):
+                st.session_state[f"selected_{pair_key}_2"] = True
+                st.session_state[f"selected_{pair_key}_1"] = False
+                self._process_pair_deletion(pair_key, row)
+
         st.markdown("---")
 
     def _process_pair_deletion(self, pair_key: str, row: Dict[str, Any]):
