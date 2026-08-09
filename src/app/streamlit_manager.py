@@ -84,25 +84,34 @@ class StreamlitAppManager:
             st.session_state.par_actual = 0
         if 'plex_cache' not in st.session_state:
             st.session_state.plex_cache = {}
+        if 'huerfanos' not in st.session_state:
+            st.session_state.huerfanos = None
     
     def render_header(self):
         """Renderiza el encabezado de la aplicación"""
         st.title("🎬 Utilidades de gestión de video con Plex y Telegram")
         st.markdown("---")
-        
+
         # Botones principales
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             if st.button("🔍 Escanear Carpeta", type="primary", use_container_width=True):
                 st.session_state.show_scan_interface = True
+                st.session_state.show_orphans_interface = False
                 st.rerun()
-        
+
         with col2:
+            if st.button("🧩 Huérfanos", use_container_width=True):
+                st.session_state.show_orphans_interface = True
+                st.session_state.show_scan_interface = False
+                st.rerun()
+
+        with col3:
             if st.button("📱 Telegram", use_container_width=True):
                 st.session_state.show_telegram_interface = True
                 st.rerun()
-        
-        with col3:
+
+        with col4:
             if st.button("🎭 IMDB", use_container_width=True):
                 st.session_state.show_imdb_interface = True
                 st.rerun()
@@ -593,7 +602,122 @@ class StreamlitAppManager:
             st.error(f"❌ Error durante el escaneo: {e}")
         finally:
             st.session_state.scanning = False
-    
+
+    def _render_orphans_interface(self):
+        """Renderiza el detector de películas no indexadas en Plex (huérfanas)"""
+        st.header("🧩 Detector de Huérfanos")
+        st.caption(
+            "Películas que ocupan espacio en disco pero no aparecen en tu biblioteca "
+            "de Plex — no salen como duplicado porque solo hay 1 copia, así que nunca "
+            "las verías en el detector de duplicados."
+        )
+
+        if not self.plex_service.is_configured():
+            st.warning(
+                "⚠️ Plex no está configurado. Configura la ruta de la base de datos "
+                "en la pestaña **🎬 Plex** del menú lateral antes de buscar huérfanos."
+            )
+            return
+
+        try:
+            last_path = settings.get_last_scan_path()
+        except AttributeError:
+            last_path = settings.get("paths.last_scan_path", "")
+
+        carpeta = st.text_input(
+            "Ruta de la carpeta a analizar",
+            value=last_path,
+            key="orphans_scan_path",
+            help="Carpeta donde buscar películas que no están indexadas en Plex"
+        )
+
+        if st.button("🔍 Buscar Huérfanos", type="primary", disabled=not carpeta):
+            self._process_orphans_scan(carpeta)
+
+        st.caption(
+            "💡 La comprobación es por nombre exacto de archivo contra lo que Plex "
+            "tiene indexado ahora mismo. Si acabas de mover o añadir archivos, "
+            "refresca antes la biblioteca de Plex para evitar falsos positivos."
+        )
+
+        if st.session_state.get('huerfanos') is not None:
+            self._render_orphans_results()
+
+    def _process_orphans_scan(self, carpeta: str):
+        """Escanea una carpeta y cruza los archivos contra la biblioteca de Plex"""
+        if not Path(carpeta).exists():
+            st.error("❌ La carpeta especificada no existe")
+            return
+
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        try:
+            status_text.text("📁 Escaneando archivos...")
+            progress_bar.progress(20)
+
+            detector = MovieDetector(carpeta)
+            peliculas = detector.escanear_carpeta()
+
+            status_text.text(f"🔎 Comprobando {len(peliculas)} archivos contra Plex...")
+            progress_bar.progress(70)
+
+            plex_filenames = self.plex_service.get_all_movie_filenames()
+            huerfanos = [p for p in peliculas if p['nombre'].lower() not in plex_filenames]
+
+            st.session_state.huerfanos = huerfanos
+            progress_bar.progress(100)
+            status_text.text("✅ Búsqueda completada")
+
+            if huerfanos:
+                espacio = sum(p.get('tamaño', 0) for p in huerfanos)
+                st.warning(
+                    f"🧩 {len(huerfanos)} de {len(peliculas)} archivos no están "
+                    f"indexados en Plex ({detector.formatear_tamaño(espacio)})"
+                )
+            else:
+                st.success(f"✅ Los {len(peliculas)} archivos escaneados están indexados en Plex")
+
+        except Exception as e:
+            st.error(f"❌ Error buscando huérfanos: {e}")
+
+    def _render_orphans_results(self):
+        """Renderiza la lista de películas huérfanas con opción de renombrar/refrescar"""
+        huerfanos = st.session_state.get('huerfanos', [])
+
+        if not huerfanos:
+            return
+
+        st.markdown("---")
+        st.subheader(f"🧩 {len(huerfanos)} película(s) sin indexar en Plex")
+
+        for i, pelicula in enumerate(huerfanos):
+            with st.container():
+                col1, col2 = st.columns([3, 2])
+
+                with col1:
+                    st.write(f"**{pelicula['nombre']}**")
+                    st.caption(pelicula['archivo'])
+                    tamaño_gb = pelicula.get('tamaño', 0) / (1024 ** 3)
+                    st.write(f"📊 {tamaño_gb:.2f} GB")
+
+                with col2:
+                    nuevo_nombre = st.text_input(
+                        "Nuevo nombre (sin extensión)",
+                        value=Path(pelicula['nombre']).stem,
+                        key=f"orphan_rename_input_{i}"
+                    )
+                    col_btn1, col_btn2 = st.columns(2)
+                    with col_btn1:
+                        if st.button("✏️ Renombrar", key=f"orphan_rename_btn_{i}"):
+                            self._rename_file(pelicula['archivo'], nuevo_nombre)
+                    with col_btn2:
+                        if st.button("🔄 Refrescar Plex", key=f"orphan_refresh_btn_{i}"):
+                            self._refresh_plex_after_rename()
+                            st.rerun()
+
+                st.markdown("---")
+
     def render_results(self):
         """Renderiza los resultados del escaneo"""
         # Debug: verificar estado de la sesión
@@ -2886,7 +3010,9 @@ class StreamlitAppManager:
         self.render_sidebar()
         
         # Manejar interfaces especiales
-        if getattr(st.session_state, 'show_scan_interface', False):
+        if getattr(st.session_state, 'show_orphans_interface', False):
+            self._render_orphans_interface()
+        elif getattr(st.session_state, 'show_scan_interface', False):
             self.render_scan_section()
             self.render_results()
         elif getattr(st.session_state, 'show_telegram_interface', False):

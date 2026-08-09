@@ -8,7 +8,7 @@ import os
 import sqlite3
 from pathlib import Path
 from datetime import timedelta
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Set
 import logging
 
 from src.settings.settings import settings
@@ -216,13 +216,65 @@ class PlexService:
             Diccionario {filename: metadata} para archivos encontrados
         """
         results = {}
-        
+
         for filename in filenames:
             metadata = self.get_movie_metadata_by_filename(filename)
             if metadata:
                 results[filename] = metadata
-        
+
         return results
+
+    def get_all_movie_filenames(self) -> Set[str]:
+        """
+        Obtiene los nombres de archivo (basename, en minúsculas) de todas
+        las películas indexadas en la biblioteca de Plex configurada.
+
+        A diferencia de get_movie_metadata_by_filename/get_multiple_movies_metadata
+        (una consulta por archivo), esto hace UNA sola consulta y devuelve un
+        set para comprobar pertenencia en bloque — pensado para cruzar contra
+        un escaneo completo de carpeta sin abrir cientos de conexiones.
+
+        Returns:
+            Set de nombres de archivo en minúsculas. Vacío si Plex no está
+            configurado o si ocurre un error.
+        """
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+
+            movies_library = settings.get_plex_movies_library()
+
+            sql = """
+            SELECT mp.file AS file_path
+            FROM metadata_items mi
+            JOIN media_items m        ON m.metadata_item_id = mi.id
+            JOIN media_parts mp       ON mp.media_item_id   = m.id
+            LEFT JOIN library_sections ls ON ls.id = mi.library_section_id
+            WHERE mi.metadata_type = 1
+              AND (
+                    LOWER(ls.name) = LOWER(?)
+                 OR  ls.name LIKE ?
+                 OR  ls.name LIKE ?
+              )
+            """
+
+            cur.execute(sql, (
+                movies_library,
+                f"{movies_library}%",
+                f"%{movies_library}%",
+            ))
+
+            rows = cur.fetchall()
+            conn.close()
+
+            return {
+                os.path.basename(r["file_path"]).lower()
+                for r in rows if r["file_path"]
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error obteniendo lista de archivos de Plex: {e}")
+            return set()
     
     def check_duration_compatibility(self, metadata1: Dict, metadata2: Dict) -> Tuple[bool, str]:
         """
