@@ -2156,6 +2156,49 @@ class StreamlitAppManager:
                 st.session_state[offset_key] = current_time + 10
                 st.rerun()
 
+        col_minuto, col_ir = st.columns([2, 1])
+        with col_minuto:
+            tiempo_texto = st.text_input(
+                "Ir a (mm:ss)",
+                value=f"{minutes}:{seconds:02d}",
+                key=f"{key}_frame_goto_input",
+            )
+        with col_ir:
+            st.write("")  # alinea el botón con la altura del text_input
+            if st.button("⏩ Ir a minuto", key=f"{key}_frame_goto_btn"):
+                nuevo_tiempo = self._parse_tiempo_a_segundos(tiempo_texto)
+                if nuevo_tiempo is None:
+                    st.error("⚠️ Formato no válido. Usa mm:ss (p.ej. 1:30) o hh:mm:ss")
+                else:
+                    st.session_state[offset_key] = nuevo_tiempo
+                    st.rerun()
+
+    @staticmethod
+    def _parse_tiempo_a_segundos(texto: str) -> Optional[int]:
+        """
+        Convierte un tiempo escrito a mano ("1:30", "01:02:03", o solo
+        segundos "90") a segundos totales. None si el formato no se
+        reconoce, para no reventar con un ffmpeg -ss inválido.
+        """
+        texto = (texto or "").strip()
+        if not texto:
+            return None
+
+        if texto.isdigit():
+            return int(texto)
+
+        partes = texto.split(":")
+        if not (2 <= len(partes) <= 3) or not all(p.isdigit() for p in partes):
+            return None
+
+        partes = [int(p) for p in partes]
+        horas, minutos, segundos = (0, *partes) if len(partes) == 2 else partes
+
+        if minutos >= 60 or segundos >= 60:
+            return None
+
+        return horas * 3600 + minutos * 60 + segundos
+
     def _render_full_player(self, file_path: str, file_size_gb: float, file_ext: str, wrap_in_expander: bool = True):
         """
         Reproductor de video completo (más lento que el fotograma, pero
