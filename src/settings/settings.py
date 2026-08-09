@@ -287,7 +287,24 @@ class Settings:
     def set_last_scan_path(self, value: str):
         """Establece la última ruta de escaneo"""
         self.set("paths.last_scan_path", value)
-    
+
+    # Rutas recientes por categoría (duplicados/huérfanos/series usan
+    # carpetas distintas — no tiene sentido compartir una única "última
+    # ruta" entre todas, como pasaba antes)
+    def get_recent_paths(self, category: str) -> List[str]:
+        """Obtiene hasta 5 rutas usadas recientemente para una categoría (p.ej. 'duplicados', 'huerfanos', 'series')"""
+        return self.get(f"paths.recent.{category}", [])
+
+    def add_recent_path(self, category: str, path: str):
+        """Añade una ruta al principio del historial de esa categoría (máx. 5, sin duplicados)"""
+        if not path:
+            return
+        recientes = self.get_recent_paths(category)
+        if path in recientes:
+            recientes.remove(path)
+        recientes.insert(0, path)
+        self.set(f"paths.recent.{category}", recientes[:5])
+
     # Métodos para configuración de Plex (ya definidos arriba)
     
     def get_plex_movies_library(self) -> str:
