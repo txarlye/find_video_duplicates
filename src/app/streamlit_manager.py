@@ -2158,6 +2158,27 @@ class StreamlitAppManager:
         except Exception as e:
             logging.error(f"Error en comparación de carpetas: {e}")
     
+    def _extract_frame_cached(self, file_path: str, time_seconds: int) -> Optional[bytes]:
+        """
+        Fotograma (ffmpeg) cacheado en session_state por archivo+instante
+        +mtime. Streamlit relanza TODO el script ante cualquier
+        interacción de la página (p.ej. marcar el checkbox de
+        "Seleccionar Película 1", que no tiene nada que ver con el
+        fotograma) — sin esta caché, cada clic en cualquier sitio volvía
+        a invocar ffmpeg para los dos fotogramas visibles aunque el
+        instante no hubiera cambiado.
+        """
+        try:
+            mtime = os.path.getmtime(file_path)
+        except OSError:
+            mtime = None
+
+        cache = st.session_state.setdefault('_frame_cache', {})
+        cache_key = f"{file_path}::{time_seconds}::{mtime}"
+        if cache_key not in cache:
+            cache[cache_key] = VideoFrameExtractor.extract_frame(file_path, time_seconds)
+        return cache[cache_key]
+
     def _render_frame_preview(self, file_path: str, key: str):
         """
         Extrae y muestra un fotograma de comparación, con botones ◀/▶
@@ -2182,7 +2203,7 @@ class StreamlitAppManager:
         seconds = current_time % 60
 
         with st.spinner(f"Extrayendo fotograma en {minutes}:{seconds:02d}..."):
-            frame_bytes = VideoFrameExtractor.extract_frame(file_path, current_time)
+            frame_bytes = self._extract_frame_cached(file_path, current_time)
 
         if frame_bytes:
             st.image(frame_bytes, caption=f"⏱️ Fotograma en {minutes}:{seconds:02d}", width=300)
@@ -2840,8 +2861,9 @@ class StreamlitAppManager:
     def _render_local_video_info(self, file_path: str, key: str):
         """Renderiza información de video local"""
         try:
-            # Obtener información del video
-            video_info = self.video_info_service.get_summary_info(file_path)
+            # Obtener información del video (cacheada: _duracion_resolucion_en_vivo
+            # ya pudo pedir esto mismo más arriba en la misma página)
+            video_info = self._get_video_summary_cached(file_path)
             
             if video_info:
                 st.write("🎬 **Información Local:**")
