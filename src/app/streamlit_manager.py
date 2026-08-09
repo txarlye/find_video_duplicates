@@ -1614,23 +1614,15 @@ class StreamlitAppManager:
                         size1 = archivo1.get('tamaño', 0) / (1024**3) if isinstance(archivo1, dict) else 0
                         size2 = archivo2.get('tamaño', 0) / (1024**3) if isinstance(archivo2, dict) else 0
                     elif isinstance(duplicado, dict):
-                        # Formato nuevo: {'Tamaño 1': '1.5 GB', 'Tamaño 2': '1.4 GB', ...}
-                        size1_str = duplicado.get('Tamaño 1', '0 GB')
-                        size2_str = duplicado.get('Tamaño 2', '0 GB')
-                        
-                        # Convertir a GB
-                        if isinstance(size1_str, str) and 'GB' in size1_str:
-                            size1 = float(size1_str.replace(' GB', ''))
-                        elif isinstance(size1_str, str) and 'MB' in size1_str:
-                            size1 = float(size1_str.replace(' MB', '')) / 1024
-                        else:
+                        # Formato de fila final: {'Tamaño 1 (GB)': '1.50', 'Tamaño 2 (GB)': '1.40', ...}
+                        # (el valor se guarda como número plano, sin el sufijo "GB")
+                        try:
+                            size1 = float(duplicado.get('Tamaño 1 (GB)', 0))
+                        except (TypeError, ValueError):
                             size1 = 0
-                            
-                        if isinstance(size2_str, str) and 'GB' in size2_str:
-                            size2 = float(size2_str.replace(' GB', ''))
-                        elif isinstance(size2_str, str) and 'MB' in size2_str:
-                            size2 = float(size2_str.replace(' MB', '')) / 1024
-                        else:
+                        try:
+                            size2 = float(duplicado.get('Tamaño 2 (GB)', 0))
+                        except (TypeError, ValueError):
                             size2 = 0
                     
                     # Sumar el menor de los dos tamaños
@@ -1684,45 +1676,36 @@ class StreamlitAppManager:
         
         # Información y controles
         self._render_movie_controls(pair_data, index)
-    
-    def _parse_size_to_bytes(self, size_str: str) -> int:
-        """Convierte una cadena de tamaño a bytes"""
-        if not size_str or not isinstance(size_str, str):
-            return 0
-        
-        try:
-            if 'GB' in size_str:
-                return int(float(size_str.replace(' GB', '')) * (1024**3))
-            elif 'MB' in size_str:
-                return int(float(size_str.replace(' MB', '')) * (1024**2))
-            elif 'KB' in size_str:
-                return int(float(size_str.replace(' KB', '')) * 1024)
-            else:
-                return 0
-        except (ValueError, TypeError):
-            return 0
-    
+
     def _create_dataframe_data(self) -> List[Dict[str, Any]]:
         """Crea los datos para el DataFrame"""
         df_data = []
         
         for i, duplicado in enumerate(st.session_state.duplicados):
-            # Verificar si es una lista o un diccionario
+            if isinstance(duplicado, dict):
+                # Ya viene en el formato de fila final (p.ej. después de
+                # borrar un par: _delete_current_pair guarda de vuelta la
+                # lista ya procesada en st.session_state.duplicados). Usar
+                # los campos tal cual: reconstruirlos desde cero aquí leía
+                # la clave 'Tamaño 1' (no existe, es 'Tamaño 1 (GB)') y no
+                # conservaba la duración, así que a partir del primer
+                # borrado el resto de la lista se quedaba con "0.00 GB" /
+                # "N/A" aunque los datos reales ya se habían calculado bien.
+                df_data.append({
+                    'Peli 1': duplicado.get('Peli 1', 'N/A'),
+                    'Tamaño 1 (GB)': duplicado.get('Tamaño 1 (GB)', 'N/A'),
+                    'Duración 1': duplicado.get('Duración 1', 'N/A'),
+                    'Ruta 1': duplicado.get('Ruta 1', ''),
+                    'Peli 2': duplicado.get('Peli 2', 'N/A'),
+                    'Tamaño 2 (GB)': duplicado.get('Tamaño 2 (GB)', 'N/A'),
+                    'Duración 2': duplicado.get('Duración 2', 'N/A'),
+                    'Ruta 2': duplicado.get('Ruta 2', ''),
+                })
+                continue
+
+            # Verificar si es una lista (formato original del escaneo)
             if isinstance(duplicado, list) and len(duplicado) >= 2:
                 archivo1, archivo2 = duplicado[0], duplicado[1]
-            elif isinstance(duplicado, dict):
-                # Si ya es un diccionario, usar directamente
-                # Los datos vienen en formato: {'Peli 1': ..., 'Ruta 1': ..., 'Tamaño 1': ..., etc.}
-                archivo1 = {
-                    'archivo': duplicado.get('Ruta 1', ''),
-                    'nombre': duplicado.get('Peli 1', 'N/A'),
-                    'tamaño': self._parse_size_to_bytes(duplicado.get('Tamaño 1', '0 GB'))
-                }
-                archivo2 = {
-                    'archivo': duplicado.get('Ruta 2', ''),
-                    'nombre': duplicado.get('Peli 2', 'N/A'),
-                    'tamaño': self._parse_size_to_bytes(duplicado.get('Tamaño 2', '0 GB'))
-                }
             else:
                 continue
             
