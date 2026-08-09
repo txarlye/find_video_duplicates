@@ -98,47 +98,46 @@ class StreamlitAppManager:
             st.session_state.episodios_huerfanos = None
         if 'series_sin_indexar' not in st.session_state:
             st.session_state.series_sin_indexar = None
-    
+        if 'active_view' not in st.session_state:
+            st.session_state.active_view = 'scan'
+
+    def _nav_button(self, label: str, view: str, container) -> None:
+        """
+        Botón de navegación que refleja si es la sección activa (estilo
+        'primary'/resaltado) o no ('secondary'), en vez de tener el
+        resaltado fijo en un botón sin relación con qué se está viendo.
+        """
+        with container:
+            es_activa = st.session_state.active_view == view
+            if st.button(
+                label,
+                type="primary" if es_activa else "secondary",
+                use_container_width=True,
+                key=f"nav_{view}"
+            ):
+                st.session_state.active_view = view
+                st.rerun()
+
     def render_header(self):
         """Renderiza el encabezado de la aplicación"""
         st.title("🎬 Utilidades de gestión de video con Plex y Telegram")
         st.markdown("---")
 
-        # Botones principales
-        col1, col2, col3, col4, col5 = st.columns(5)
-        with col1:
-            if st.button("🔍 Escanear Carpeta", type="primary", use_container_width=True):
-                st.session_state.show_scan_interface = True
-                st.session_state.show_orphans_interface = False
-                st.session_state.show_series_interface = False
-                st.rerun()
+        # Grupo 1: contenido de vídeo (escaneo, huérfanos, series)
+        st.caption("🎬 Vídeo")
+        col1, col2, col3 = st.columns(3)
+        self._nav_button("🔍 Escanear Carpeta", "scan", col1)
+        self._nav_button("🧩 Huérfanos", "orphans", col2)
+        self._nav_button("📺 Series", "series", col3)
 
-        with col2:
-            if st.button("🧩 Huérfanos", use_container_width=True):
-                st.session_state.show_orphans_interface = True
-                st.session_state.show_scan_interface = False
-                st.session_state.show_series_interface = False
-                st.rerun()
+        # Grupo 2: utilidades ajenas al escaneo de vídeo
+        st.caption("🛠️ Utilidades")
+        col4, col5 = st.columns(2)
+        self._nav_button("📱 Telegram", "telegram", col4)
+        self._nav_button("🎭 IMDB", "imdb", col5)
 
-        with col3:
-            if st.button("📺 Series", use_container_width=True):
-                st.session_state.show_series_interface = True
-                st.session_state.show_scan_interface = False
-                st.session_state.show_orphans_interface = False
-                st.rerun()
-
-        with col4:
-            if st.button("📱 Telegram", use_container_width=True):
-                st.session_state.show_telegram_interface = True
-                st.rerun()
-
-        with col5:
-            if st.button("🎭 IMDB", use_container_width=True):
-                st.session_state.show_imdb_interface = True
-                st.rerun()
-        
         st.markdown("---")
-        
+
         # Aclaración importante
         st.info("⚠️ **IMPORTANTE:** Esta aplicación NUNCA borra archivos. Solo detecta y muestra duplicados para que puedas decidir qué hacer con ellos.")
         st.markdown("---")
@@ -3546,7 +3545,7 @@ class StreamlitAppManager:
         
         # Botón para volver
         if st.button("← Volver al Inicio"):
-            st.session_state.show_telegram_interface = False
+            st.session_state.active_view = 'scan'
             st.rerun()
         
         st.markdown("---")
@@ -3667,20 +3666,18 @@ class StreamlitAppManager:
         self.render_header()
         self.render_sidebar()
         
-        # Manejar interfaces especiales
-        if getattr(st.session_state, 'show_orphans_interface', False):
+        # Manejar interfaces especiales según la sección activa del menú
+        active_view = getattr(st.session_state, 'active_view', 'scan')
+        if active_view == 'orphans':
             self._render_orphans_interface()
-        elif getattr(st.session_state, 'show_series_interface', False):
+        elif active_view == 'series':
             self._render_series_interface()
-        elif getattr(st.session_state, 'show_scan_interface', False):
-            self.render_scan_section()
-            self.render_results()
-        elif getattr(st.session_state, 'show_telegram_interface', False):
+        elif active_view == 'telegram':
             self._render_telegram_interface()
-        elif getattr(st.session_state, 'show_imdb_interface', False):
+        elif active_view == 'imdb':
             self._render_imdb_interface()
         else:
-            # Mostrar interfaz principal por defecto
+            # 'scan' (por defecto)
             self.render_scan_section()
             self.render_results()
     
@@ -3884,7 +3881,7 @@ class StreamlitAppManager:
         
         # Botón para volver
         if st.button("← Volver al Inicio"):
-            st.session_state.show_imdb_interface = False
+            st.session_state.active_view = 'scan'
             st.rerun()
         
         st.markdown("---")
