@@ -934,6 +934,21 @@ class StreamlitAppManager:
         st.markdown("---")
         st.subheader(f"🧩 {len(huerfanos)} película(s) sin indexar en Plex")
 
+        if settings.get_ai_enabled() and settings.get_ai_mode() == "suggest" and self.ai_naming_service.is_configured():
+            col_sug, col_apl = st.columns(2)
+            with col_sug:
+                if st.button("🤖 Sugerir nombre con IA para todos", key="orphans_suggest_all_btn"):
+                    self._suggest_all_orphans_ai()
+            with col_apl:
+                if st.button("✅ Aplicar todas las propuestas", key="orphans_apply_all_btn"):
+                    self._apply_all_orphan_renames()
+            st.caption(
+                "💡 \"Sugerir para todos\" solo rellena el campo de nombre de cada fila — "
+                "revísalo o reescríbelo antes de aplicar. \"Aplicar todas\" renombra en "
+                "disco cualquier fila cuyo campo ya no coincida con el nombre original "
+                "(propuesto por la IA o escrito a mano), y no toca las que dejes igual."
+            )
+
         # Paginado: con listas largas, renderizar cientos de filas de golpe
         # (varios widgets por fila) deja la app "corriendo" un buen rato y
         # sin responder a otros clics mientras tanto.
@@ -1012,6 +1027,83 @@ class StreamlitAppManager:
                         st.warning("⚠️ El archivo ya no existe en esa ruta")
 
                 st.markdown("---")
+
+    def _suggest_all_orphans_ai(self):
+        """
+        Pide a la IA un nombre para cada huérfano pendiente (no
+        renombrado todavía) y precarga el campo de texto de cada fila —
+        igual que el botón individual, pero para todos de una vez. No
+        renombra nada por sí sola: solo rellena la propuesta para que la
+        revises (o la reescribas) antes de "Aplicar todas las propuestas".
+        Los que la IA no reconozca simplemente se quedan sin propuesta,
+        no bloquean al resto.
+        """
+        huerfanos = st.session_state.get('huerfanos', [])
+        pendientes = [(i, p) for i, p in enumerate(huerfanos) if not p.get('renombrado')]
+
+        if not pendientes:
+            st.info("💡 No hay huérfanos pendientes de renombrar")
+            return
+
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        sugeridos, sin_sugerencia = 0, 0
+
+        for n, (i, pelicula) in enumerate(pendientes):
+            status_text.text(f"🤖 Consultando IA: {pelicula['nombre']} ({n + 1}/{len(pendientes)})")
+            progress_bar.progress((n + 1) / len(pendientes))
+
+            sugerido = self.ai_naming_service.suggest_name(pelicula['nombre'])
+            if sugerido:
+                st.session_state[f"orphan_rename_input_{i}"] = sugerido
+                sugeridos += 1
+            else:
+                sin_sugerencia += 1
+
+        progress_bar.empty()
+        status_text.empty()
+
+        st.success(f"🤖 IA propuso nombre para {sugeridos} de {len(pendientes)} huérfano(s)")
+        if sin_sugerencia:
+            st.caption(f"ℹ️ {sin_sugerencia} sin propuesta — revísalos o escríbeles un nombre a mano si quieres")
+        st.rerun()
+
+    def _apply_all_orphan_renames(self):
+        """
+        Aplica de una vez el nombre que haya ahora mismo en el campo de
+        texto de cada huérfano pendiente — venga de una sugerencia de la
+        IA o de que lo hayas reescrito tú a mano. Se salta los que no
+        tengan ningún cambio respecto al nombre original (nada que
+        aplicar) y los ya renombrados.
+        """
+        huerfanos = st.session_state.get('huerfanos', [])
+        pendientes = [(i, p) for i, p in enumerate(huerfanos) if not p.get('renombrado')]
+
+        if not pendientes:
+            st.info("💡 No hay huérfanos pendientes de renombrar")
+            return
+
+        renombrados, sin_cambios = 0, 0
+
+        for i, pelicula in pendientes:
+            nombre_original = Path(pelicula['nombre']).stem
+            propuesta = st.session_state.get(f"orphan_rename_input_{i}", nombre_original)
+
+            if not propuesta or propuesta == nombre_original:
+                sin_cambios += 1
+                continue
+
+            if self._apply_orphan_rename(i, pelicula, propuesta):
+                renombrados += 1
+
+        if renombrados:
+            st.success(f"✅ {renombrados} archivo(s) renombrado(s)")
+            self._refresh_plex_after_rename()
+        if sin_cambios:
+            st.caption(f"ℹ️ {sin_cambios} sin ningún nombre nuevo propuesto — sin cambios")
+
+        if renombrados:
+            st.rerun()
 
     def _suggest_orphan_name_ai(self, index: int, pelicula: Dict[str, Any]):
         """Pide a la IA un nombre sugerido y precarga el campo de renombrado (no renombra solo)"""
