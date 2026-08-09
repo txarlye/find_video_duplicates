@@ -20,6 +20,7 @@ import re
 import logging
 import difflib
 import requests
+from pathlib import Path
 from typing import Optional, List, Dict
 
 from src.settings.settings import settings
@@ -97,7 +98,14 @@ class AINamingService:
 
         aproximacion = self._validar_respuesta(respuesta)
         if not aproximacion:
-            return None
+            # La IA no se ha atrevido a dar un título+año (respondió
+            # DESCONOCIDO, lo cual es intencional: preferimos que no
+            # arriesgue un año antes que se lo invente). Pero eso no
+            # significa que la película no se pueda encontrar: TMDB/OMDb
+            # hacen su propia búsqueda difusa y a veces localizan el
+            # título real con solo el nombre de archivo limpiado, sin
+            # necesitar que la IA lo haya "reconocido" antes.
+            return self._buscar_directo_por_nombre_archivo(filename)
 
         tmdb_key = settings.get_tmdb_api_key()
         omdb_key = settings.get_omdb_api_key()
@@ -133,6 +141,54 @@ class AINamingService:
     def _año_estaba_en_archivo(self, filename: str, año: str) -> bool:
         """Comprueba si el año ya aparecía explícito en el nombre de archivo original"""
         return bool(re.search(rf'\b{re.escape(año)}\b', filename))
+
+    def _buscar_directo_por_nombre_archivo(self, filename: str) -> Optional[str]:
+        """
+        Fallback para cuando la IA no reconoce la película (DESCONOCIDO
+        o respuesta con formato inesperado): busca directamente en
+        TMDB/OMDb usando el propio nombre de archivo, limpiado de
+        separadores típicos de "nombre de escena". Sin TMDB/OMDb
+        configurados no hay nada que consultar, así que se rinde igual
+        que antes.
+        """
+        tmdb_key = settings.get_tmdb_api_key()
+        omdb_key = settings.get_omdb_api_key()
+        if not (tmdb_key or omdb_key):
+            return None
+
+        titulo, año_pista = self._limpiar_nombre_para_busqueda(filename)
+        if not titulo:
+            return None
+
+        if tmdb_key:
+            confirmado = self._buscar_en_tmdb(titulo, año_pista)
+            if confirmado:
+                return confirmado
+
+        if omdb_key:
+            confirmado = self._buscar_en_omdb(titulo, año_pista)
+            if confirmado:
+                return confirmado
+
+        return None
+
+    def _limpiar_nombre_para_busqueda(self, filename: str) -> tuple:
+        """
+        Convierte un nombre de archivo tosco en un término de búsqueda
+        razonable: quita la extensión, cambia puntos/guiones bajos por
+        espacios, y si encuentra un año de 4 dígitos lo usa como pista
+        y corta el título ahí mismo (lo que sigue a un año en un nombre
+        de escena suele ser calidad/formato/grupo, no parte del
+        título — dejarlo metido en la búsqueda solo mete ruido).
+        """
+        nombre = re.sub(r'[._]+', ' ', Path(filename).stem)
+
+        match_año = re.search(r'\b(19\d{2}|20\d{2})\b', nombre)
+        año_pista = match_año.group(1) if match_año else None
+        titulo = nombre[:match_año.start()] if match_año else nombre
+
+        titulo = re.sub(r'\s+', ' ', titulo).strip(' -_')
+        return titulo, año_pista
 
     def _validar_respuesta(self, respuesta: Optional[str]) -> Optional[str]:
         """Acepta solo respuestas con forma 'Algo (AAAA)'; descarta el resto"""
