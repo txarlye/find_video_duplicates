@@ -1525,6 +1525,41 @@ class StreamlitAppManager:
             st.error(f"❌ Error moviendo '{ruta}': {e}")
             return False
 
+    def _mover_episodios_duplicados_seleccionados(self):
+        """
+        Mueve a debug todos los episodios duplicados marcados con el
+        checkbox, de cualquier grupo, de una vez. Un grupo que se queda
+        con 1 solo archivo tras el movimiento deja de ser "duplicado" y
+        se retira de la lista — mismo criterio que el botón individual,
+        solo que aplicado a todos los seleccionados en una pasada.
+        """
+        seleccionados = set(st.session_state.get('series_dup_selected', set()))
+        if not seleccionados:
+            st.info("💡 No hay ningún episodio seleccionado")
+            return
+
+        movidos, fallidos = 0, 0
+        for archivo in seleccionados:
+            if self._mover_archivo_a_debug(archivo):
+                movidos += 1
+            else:
+                fallidos += 1
+
+        duplicados = st.session_state.get('episodios_duplicados') or []
+        nuevos_duplicados = []
+        for grupo in duplicados:
+            nuevo_grupo = [ep for ep in grupo if ep['archivo'] not in seleccionados]
+            if len(nuevo_grupo) > 1:
+                nuevos_duplicados.append(nuevo_grupo)
+        st.session_state.episodios_duplicados = nuevos_duplicados
+        st.session_state.series_dup_selected = set()
+
+        if movidos:
+            st.success(f"✅ {movidos} episodio(s) movido(s) a debug")
+        if fallidos:
+            st.error(f"❌ {fallidos} episodio(s) no se pudieron mover")
+        st.rerun()
+
     def _render_series_results(self):
         """Renderiza los 3 resultados: episodios duplicados, huérfanos y series sin indexar"""
         duplicados = st.session_state.get('episodios_duplicados') or []
@@ -1537,13 +1572,35 @@ class StreamlitAppManager:
         st.subheader(f"🔁 {len(duplicados)} episodio(s) duplicado(s)")
         if not duplicados:
             st.caption("Ninguno detectado.")
+        else:
+            if 'series_dup_selected' not in st.session_state:
+                st.session_state.series_dup_selected = set()
+
+            seleccionados = st.session_state.series_dup_selected
+            if st.button(
+                f"🗑️ Mover {len(seleccionados)} seleccionado(s) a debug",
+                key="series_dup_bulk_move",
+                disabled=not seleccionados,
+            ):
+                self._mover_episodios_duplicados_seleccionados()
+            st.caption("💡 Marca uno o varios episodios (de cualquier grupo) y muévelos todos de golpe con el botón de arriba.")
+
         for gi, grupo in enumerate(duplicados):
             serie = grupo[0]['serie']
             temporada = grupo[0]['temporada']
             episodio_num = grupo[0]['episodio']
             with st.expander(f"{serie} — T{temporada:02d}E{episodio_num:02d} ({len(grupo)} copias)", expanded=False):
                 for fi, ep in enumerate(grupo):
-                    col1, col2 = st.columns([4, 1])
+                    col_check, col1, col2 = st.columns([0.4, 3.6, 1])
+                    with col_check:
+                        marcado = st.checkbox(
+                            "Seleccionar", value=ep['archivo'] in st.session_state.series_dup_selected,
+                            key=f"serie_dup_check_{gi}_{fi}", label_visibility="collapsed"
+                        )
+                        if marcado:
+                            st.session_state.series_dup_selected.add(ep['archivo'])
+                        else:
+                            st.session_state.series_dup_selected.discard(ep['archivo'])
                     with col1:
                         st.write(f"📄 {ep['nombre']}")
                         tamaño_gb = ep.get('tamaño', 0) / (1024 ** 3)
@@ -1551,6 +1608,7 @@ class StreamlitAppManager:
                     with col2:
                         if st.button("🗑️ Mover a debug", key=f"serie_dup_{gi}_{fi}"):
                             if self._mover_archivo_a_debug(ep['archivo']):
+                                st.session_state.series_dup_selected.discard(ep['archivo'])
                                 nuevo_grupo = [x for x in grupo if x['archivo'] != ep['archivo']]
                                 if len(nuevo_grupo) > 1:
                                     st.session_state.episodios_duplicados[gi] = nuevo_grupo
