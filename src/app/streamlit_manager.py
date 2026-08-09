@@ -915,7 +915,27 @@ class StreamlitAppManager:
         st.markdown("---")
         st.subheader(f"🧩 {len(huerfanos)} película(s) sin indexar en Plex")
 
-        for i, pelicula in enumerate(huerfanos):
+        # Paginado: con listas largas, renderizar cientos de filas de golpe
+        # (varios widgets por fila) deja la app "corriendo" un buen rato y
+        # sin responder a otros clics mientras tanto.
+        page_size = settings.get("ui.page_size", 20)
+        total_paginas = max(1, (len(huerfanos) - 1) // page_size + 1)
+
+        if total_paginas > 1:
+            pagina = st.number_input(
+                f"Página (1-{total_paginas})",
+                min_value=1, max_value=total_paginas, value=1, step=1,
+                key="huerfanos_pagina"
+            ) - 1
+        else:
+            pagina = 0
+
+        inicio = pagina * page_size
+        fin = inicio + page_size
+        if total_paginas > 1:
+            st.caption(f"Mostrando {inicio + 1}–{min(fin, len(huerfanos))} de {len(huerfanos)}")
+
+        for i, pelicula in enumerate(huerfanos[inicio:fin], start=inicio):
             with st.container():
                 col1, col2 = st.columns([3, 2])
 
@@ -1216,7 +1236,24 @@ class StreamlitAppManager:
         st.subheader(f"🧩 {len(huerfanos)} capítulo(s) sin indexar en Plex")
         if not huerfanos:
             st.caption("Ninguno detectado.")
-        for i, ep in enumerate(huerfanos):
+
+        page_size = settings.get("ui.page_size", 20)
+        total_paginas = max(1, (len(huerfanos) - 1) // page_size + 1) if huerfanos else 1
+
+        if total_paginas > 1:
+            pagina = st.number_input(
+                f"Página (1-{total_paginas})",
+                min_value=1, max_value=total_paginas, value=1, step=1,
+                key="series_huerfanos_pagina"
+            ) - 1
+            inicio = pagina * page_size
+            st.caption(f"Mostrando {inicio + 1}–{min(inicio + page_size, len(huerfanos))} de {len(huerfanos)}")
+        else:
+            inicio = 0
+
+        fin = inicio + page_size
+
+        for i, ep in enumerate(huerfanos[inicio:fin], start=inicio):
             col1, col2 = st.columns([3, 2])
             with col1:
                 st.write(f"**{ep['nombre']}**")
