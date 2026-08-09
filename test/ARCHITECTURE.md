@@ -18,16 +18,15 @@ scrapper-pelis/
 │
 ├── src/                            # Código fuente organizado
 │   ├── app/                        # Aplicación Streamlit
-│   │   ├── streamlit_app.py       # Aplicación original (legacy)
 │   │   └── streamlit_manager.py   # Gestor principal refactorizado
 │   │
 │   ├── services/                   # Servicios externos
-│   │   ├── imdb_service.py        # Integración IMDB
+│   │   ├── Imdb/                  # Integración IMDB/TMDB/OMDb
 │   │   └── telegram_service.py    # Integración Telegram
 │   │
 │   ├── settings/                   # Configuración
 │   │   ├── settings.py            # Patrón Singleton
-│   │   ├── config.json            # Configuración JSON
+│   │   ├── config.example.json    # Plantilla — cópiala a config.json
 │   │   └── env_template.txt       # Plantilla .env
 │   │
 │   └── utils/                      # Utilidades organizadas
