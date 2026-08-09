@@ -6,9 +6,69 @@ Utilidades para manejo de videos y reproductores
 
 import streamlit as st
 import os
+import subprocess
 from pathlib import Path
 from typing import Optional, Tuple
 from src.settings.settings import settings
+
+
+class VideoFrameExtractor:
+    """
+    Extrae un único fotograma de un video en un instante concreto usando
+    ffmpeg. Mucho más fiable que reproducir el video embebido: no depende
+    de que el navegador sepa decodificar/buscar el formato original, y
+    sobre una carpeta en red solo lee lo necesario para llegar al
+    fotograma (con "-ss" antes de "-i" busca por keyframe, sin decodificar
+    todo lo anterior).
+    """
+
+    _ffmpeg_available: Optional[bool] = None
+
+    @classmethod
+    def is_available(cls) -> bool:
+        """Comprueba (y cachea) si hay un ffmpeg utilizable en el PATH"""
+        if cls._ffmpeg_available is None:
+            try:
+                result = subprocess.run(
+                    ["ffmpeg", "-version"],
+                    capture_output=True, timeout=5
+                )
+                cls._ffmpeg_available = result.returncode == 0
+            except Exception:
+                cls._ffmpeg_available = False
+        return cls._ffmpeg_available
+
+    @staticmethod
+    def extract_frame(file_path: str, time_seconds: int) -> Optional[bytes]:
+        """
+        Extrae un fotograma en JPEG en el segundo indicado.
+
+        Args:
+            file_path: Ruta del archivo de video
+            time_seconds: Instante (en segundos) del que extraer el fotograma
+
+        Returns:
+            Bytes de la imagen JPEG, o None si no se pudo extraer
+            (por ejemplo, si el video dura menos que ese instante)
+        """
+        try:
+            cmd = [
+                "ffmpeg",
+                "-ss", str(max(0, time_seconds)),  # antes de -i: busca rápido por keyframe
+                "-i", file_path,
+                "-frames:v", "1",
+                "-q:v", "2",
+                "-f", "image2pipe",
+                "-vcodec", "mjpeg",
+                "-loglevel", "error",
+                "-"
+            ]
+            result = subprocess.run(cmd, capture_output=True, timeout=30)
+            if result.returncode != 0 or not result.stdout:
+                return None
+            return result.stdout
+        except Exception:
+            return None
 
 
 class VideoPlayer:
