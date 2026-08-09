@@ -502,14 +502,16 @@ class PairNavigationManager:
             if 'Ruta 1' in pair_data:
                 filename1 = Path(pair_data['Ruta 1']).name
                 st.write(f"📁 {filename1}")
-                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 1', 'N/A')}")
-        
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 1 (GB)', 'N/A')} GB")
+                st.write(f"⏱️ Duración: {pair_data.get('Duración 1', 'N/A')}")
+
         with col2:
             st.write("**Película 2:**")
             if 'Ruta 2' in pair_data:
                 filename2 = Path(pair_data['Ruta 2']).name
                 st.write(f"📁 {filename2}")
-                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 2', 'N/A')}")
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 2 (GB)', 'N/A')} GB")
+                st.write(f"⏱️ Duración: {pair_data.get('Duración 2', 'N/A')}")
 
 
 class PairListManager:
@@ -585,10 +587,16 @@ class PairListManager:
             st.metric("Pares eliminados", original_total - remaining_pairs)
         
         # Calcular pares con diferentes tamaños
+        def _tamaño_gb(pair: Dict[str, Any], num: int) -> float:
+            try:
+                return float(pair.get(f'Tamaño {num} (GB)', 0))
+            except (TypeError, ValueError):
+                return 0.0
+
         different_sizes = 0
         for pair in pairs_list:
-            size1 = pair.get('Tamaño 1', 0)
-            size2 = pair.get('Tamaño 2', 0)
+            size1 = _tamaño_gb(pair, 1)
+            size2 = _tamaño_gb(pair, 2)
             if size1 and size2 and size1 != size2:
                 different_sizes += 1
         
@@ -613,14 +621,14 @@ class PairListManager:
                 with col1:
                     st.write("**Película 1:**")
                     st.write(f"📁 {Path(pair.get('Ruta 1', '')).name}")
-                    st.write(f"📊 Tamaño: {pair.get('Tamaño 1', 'N/A')}")
-                    st.write(f"📏 Similitud: {pair.get('Similitud', 'N/A')}")
-                
+                    st.write(f"📊 Tamaño: {pair.get('Tamaño 1 (GB)', 'N/A')} GB")
+                    st.write(f"⏱️ Duración: {pair.get('Duración 1', 'N/A')}")
+
                 with col2:
                     st.write("**Película 2:**")
                     st.write(f"📁 {Path(pair.get('Ruta 2', '')).name}")
-                    st.write(f"📊 Tamaño: {pair.get('Tamaño 2', 'N/A')}")
-                    st.write(f"📏 Similitud: {pair.get('Similitud', 'N/A')}")
+                    st.write(f"📊 Tamaño: {pair.get('Tamaño 2 (GB)', 'N/A')} GB")
+                    st.write(f"⏱️ Duración: {pair.get('Duración 2', 'N/A')}")
                 
                 # Botón para ir a este par
                 if st.button(f"🎯 Ir a Par {i+1}", key=f"go_to_pair_{i}"):
@@ -694,16 +702,16 @@ class PairDetailViewer:
             if 'Ruta 1' in pair_data:
                 filename1 = Path(pair_data['Ruta 1']).name
                 st.write(f"📁 {filename1}")
-                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 1', 'N/A')}")
-                st.write(f"📏 Similitud: {pair_data.get('Similitud', 'N/A')}")
-        
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 1 (GB)', 'N/A')} GB")
+                st.write(f"⏱️ Duración: {pair_data.get('Duración 1', 'N/A')}")
+
         with col2:
             st.write("**Película 2:**")
             if 'Ruta 2' in pair_data:
                 filename2 = Path(pair_data['Ruta 2']).name
                 st.write(f"📁 {filename2}")
-                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 2', 'N/A')}")
-                st.write(f"📏 Similitud: {pair_data.get('Similitud', 'N/A')}")
+                st.write(f"📊 Tamaño: {pair_data.get('Tamaño 2 (GB)', 'N/A')} GB")
+                st.write(f"⏱️ Duración: {pair_data.get('Duración 2', 'N/A')}")
     
     def render_analysis_options(self) -> None:
         """Renderiza las opciones de análisis (simplificado)"""

@@ -175,9 +175,10 @@ class ScanDataManager:
                     f.write(f"Par {i}:\n")
                     f.write(f"  Película 1: {pair.get('Peli 1', 'N/A')}\n")
                     f.write(f"  Película 2: {pair.get('Peli 2', 'N/A')}\n")
-                    f.write(f"  Tamaño 1: {pair.get('Tamaño 1', 'N/A')} GB\n")
-                    f.write(f"  Tamaño 2: {pair.get('Tamaño 2', 'N/A')} GB\n")
-                    f.write(f"  Similitud: {pair.get('Similitud', 'N/A')}\n")
+                    f.write(f"  Tamaño 1: {pair.get('Tamaño 1 (GB)', 'N/A')} GB\n")
+                    f.write(f"  Tamaño 2: {pair.get('Tamaño 2 (GB)', 'N/A')} GB\n")
+                    f.write(f"  Duración 1: {pair.get('Duración 1', 'N/A')}\n")
+                    f.write(f"  Duración 2: {pair.get('Duración 2', 'N/A')}\n")
                     f.write("\n")
             
             self.logger.info(f"📄 Resumen exportado: {output_path}")
