@@ -183,7 +183,49 @@ class ScanDataManager:
             
             self.logger.info(f"📄 Resumen exportado: {output_path}")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"❌ Error exportando resumen: {e}")
             return False
+
+    def _trash_manifest_path(self) -> Path:
+        return self.data_dir / "trash_manifest.json"
+
+    def _load_trash_manifest(self) -> Dict[str, str]:
+        path = self._trash_manifest_path()
+        if not path.exists():
+            return {}
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            self.logger.error(f"❌ Error leyendo manifest de papelera: {e}")
+            return {}
+
+    def _save_trash_manifest(self, manifest: Dict[str, str]) -> None:
+        try:
+            with open(self._trash_manifest_path(), 'w', encoding='utf-8') as f:
+                json.dump(manifest, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            self.logger.error(f"❌ Error guardando manifest de papelera: {e}")
+
+    def record_trash_move(self, destino: str, origen: str) -> None:
+        """
+        Registra de dónde venía un archivo justo al moverlo a la carpeta
+        de debug/papelera, para poder restaurarlo a su sitio más tarde
+        desde la pestaña Basura.
+        """
+        manifest = self._load_trash_manifest()
+        manifest[str(destino)] = str(origen)
+        self._save_trash_manifest(manifest)
+
+    def get_trash_origins(self) -> Dict[str, str]:
+        """Devuelve {ruta_en_papelera: ruta_original} de todo lo registrado"""
+        return self._load_trash_manifest()
+
+    def forget_trash_move(self, destino: str) -> None:
+        """Quita del manifest una entrada ya restaurada (o descartada)"""
+        manifest = self._load_trash_manifest()
+        if str(destino) in manifest:
+            del manifest[str(destino)]
+            self._save_trash_manifest(manifest)

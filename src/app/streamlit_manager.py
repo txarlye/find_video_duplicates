@@ -1375,6 +1375,7 @@ class StreamlitAppManager:
                     destino = debug_path / f"{origen.stem}_{contador}{origen.suffix}"
                     contador += 1
                 shutil.move(str(origen), str(destino))
+                self.scan_data_manager.record_trash_move(str(destino), str(origen))
                 st.success(f"✅ Movido a debug: {origen.name}")
             else:
                 os.remove(str(origen))
@@ -2182,6 +2183,7 @@ class StreamlitAppManager:
                     contador += 1
                 
                 shutil.move(str(archivo_origen), str(archivo_destino))
+                self.scan_data_manager.record_trash_move(str(archivo_destino), str(archivo_origen))
                 moved_files.append(archivo_destino.name)
         
         if pelicula2_selected:
@@ -2199,6 +2201,7 @@ class StreamlitAppManager:
                     contador += 1
                 
                 shutil.move(str(archivo_origen), str(archivo_destino))
+                self.scan_data_manager.record_trash_move(str(archivo_destino), str(archivo_origen))
                 moved_files.append(archivo_destino.name)
         
         if moved_files:
@@ -3846,13 +3849,87 @@ class StreamlitAppManager:
 
         if peliculas:
             st.subheader(f"🎬 Películas ({len(peliculas)})")
-            tabla = [{k: v for k, v in p.items() if k != '_tamaño'} for p in sorted(peliculas, key=lambda x: x['_tamaño'], reverse=True)]
-            st.dataframe(tabla, use_container_width=True, hide_index=True)
+            self._render_trash_table(sorted(peliculas, key=lambda x: x['_tamaño'], reverse=True), key="trash_peliculas")
 
         if episodios:
             st.subheader(f"📺 Capítulos de serie ({len(episodios)})")
-            tabla = [{k: v for k, v in e.items() if k != '_tamaño'} for e in sorted(episodios, key=lambda x: x['_tamaño'], reverse=True)]
-            st.dataframe(tabla, use_container_width=True, hide_index=True)
+            self._render_trash_table(sorted(episodios, key=lambda x: x['_tamaño'], reverse=True), key="trash_episodios")
+
+    def _render_trash_table(self, items: List[Dict[str, Any]], key: str):
+        """
+        Tabla de la papelera con checkbox de restauración. Solo se puede
+        restaurar de un click lo que tiene origen conocido: se registra
+        automáticamente cada vez que la app mueve algo aquí, pero lo que
+        ya estaba en la carpeta antes de esta función (o si borraste el
+        manifest a mano) no tiene ese dato y hay que moverlo tú mismo.
+        """
+        origenes = self.scan_data_manager.get_trash_origins()
+
+        tabla = [
+            {
+                'Restaurar': False,
+                'Nombre': item['Nombre'],
+                'GB': item['GB'],
+                'Origen': origenes.get(item['Ruta'], '❓ Desconocido (movido antes de tener esta función)'),
+                '_ruta': item['Ruta'],
+                '_origen': origenes.get(item['Ruta']),
+            }
+            for item in items
+        ]
+
+        edited = st.data_editor(
+            tabla,
+            column_order=['Restaurar', 'Nombre', 'GB', 'Origen'],
+            column_config={
+                'Restaurar': st.column_config.CheckboxColumn('↩️'),
+            },
+            disabled=['Nombre', 'GB', 'Origen'],
+            hide_index=True,
+            use_container_width=True,
+            key=f"{key}_editor",
+        )
+
+        seleccionados = [row for row in edited if row['Restaurar']]
+        if seleccionados:
+            if st.button(f"↩️ Restaurar {len(seleccionados)} archivo(s) a su carpeta original", key=f"{key}_restore_btn"):
+                self._restore_from_trash(seleccionados)
+
+    def _restore_from_trash(self, seleccionados: List[Dict[str, Any]]):
+        """Devuelve archivos seleccionados de la papelera a su ruta original registrada"""
+        restaurados, sin_origen, fallidos = 0, [], []
+
+        for row in seleccionados:
+            ruta = row['_ruta']
+            origen = row['_origen']
+
+            if not origen:
+                sin_origen.append(row['Nombre'])
+                continue
+
+            try:
+                origen_path = Path(origen)
+                origen_path.parent.mkdir(parents=True, exist_ok=True)
+
+                destino_final = origen_path
+                contador = 1
+                while destino_final.exists():
+                    destino_final = origen_path.parent / f"{origen_path.stem}_restaurado_{contador}{origen_path.suffix}"
+                    contador += 1
+
+                shutil.move(ruta, str(destino_final))
+                self.scan_data_manager.forget_trash_move(ruta)
+                restaurados += 1
+            except Exception as e:
+                fallidos.append(f"{row['Nombre']}: {e}")
+
+        if restaurados:
+            st.success(f"✅ {restaurados} archivo(s) restaurado(s) a su carpeta original")
+        if sin_origen:
+            st.warning(f"⚠️ Sin origen conocido, no se han movido: {', '.join(sin_origen)}")
+        if fallidos:
+            st.error("❌ Error restaurando: " + "; ".join(fallidos))
+        if restaurados:
+            st.rerun()
 
     def _render_telegram_interface(self):
         """Renderiza la interfaz principal de Telegram"""
