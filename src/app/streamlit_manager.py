@@ -1020,6 +1020,12 @@ class StreamlitAppManager:
                 if st.session_state.get(f"orphan_show_player_{i}"):
                     archivo = pelicula['archivo']
                     if Path(archivo).exists():
+                        # Fotograma con navegación ◀/▶ primero: mucho más
+                        # rápido que el reproductor completo para "hojear"
+                        # el video en busca de una escena reconocible (o el
+                        # título) cuando el nombre de archivo no dice nada.
+                        self._render_frame_preview(archivo, f"orphan_frame_{i}")
+
                         file_ext = Path(archivo).suffix.lower()
                         file_size_gb = pelicula.get('tamaño', 0) / (1024 ** 3)
                         self._render_full_player(archivo, file_size_gb, file_ext, wrap_in_expander=False)
@@ -2055,24 +2061,45 @@ class StreamlitAppManager:
             logging.error(f"Error en comparación de carpetas: {e}")
     
     def _render_frame_preview(self, file_path: str, key: str):
-        """Extrae y muestra un fotograma de comparación. Rápido y fiable incluso
-        sobre carpetas en red, a diferencia del reproductor completo (que
-        necesita que el navegador decodifique/busque en el archivo real)."""
-        start_time = settings.get_video_start_time_seconds()
-        minutes = start_time // 60
-        seconds = start_time % 60
-
+        """
+        Extrae y muestra un fotograma de comparación, con botones ◀/▶
+        para moverlo 10s y así ir "hojeando" el video en busca de una
+        escena reconocible (a veces el propio título) — rápido y fiable
+        incluso sobre carpetas en red, a diferencia del reproductor
+        completo (que necesita que el navegador decodifique/busque en el
+        archivo real). El instante actual se guarda en session_state por
+        `key`, así que cada fotograma de cada fila navega de forma
+        independiente.
+        """
         if not VideoFrameExtractor.is_available():
             st.info("💡 Instala ffmpeg y añádelo al PATH para ver un fotograma de comparación")
             return
 
+        offset_key = f"frame_time_{key}"
+        if offset_key not in st.session_state:
+            st.session_state[offset_key] = settings.get_video_start_time_seconds()
+
+        current_time = st.session_state[offset_key]
+        minutes = current_time // 60
+        seconds = current_time % 60
+
         with st.spinner(f"Extrayendo fotograma en {minutes}:{seconds:02d}..."):
-            frame_bytes = VideoFrameExtractor.extract_frame(file_path, start_time)
+            frame_bytes = VideoFrameExtractor.extract_frame(file_path, current_time)
 
         if frame_bytes:
             st.image(frame_bytes, caption=f"⏱️ Fotograma en {minutes}:{seconds:02d}", width=300)
         else:
             st.warning(f"⚠️ No se pudo extraer el fotograma en {minutes}:{seconds:02d} (¿el video dura menos?)")
+
+        col_atras, col_adelante = st.columns(2)
+        with col_atras:
+            if st.button("◀ -10s", key=f"{key}_frame_back", disabled=current_time <= 0):
+                st.session_state[offset_key] = max(0, current_time - 10)
+                st.rerun()
+        with col_adelante:
+            if st.button("+10s ▶", key=f"{key}_frame_fwd"):
+                st.session_state[offset_key] = current_time + 10
+                st.rerun()
 
     def _render_full_player(self, file_path: str, file_size_gb: float, file_ext: str, wrap_in_expander: bool = True):
         """
