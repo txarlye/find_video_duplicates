@@ -275,7 +275,99 @@ class PlexService:
         except Exception as e:
             self.logger.error(f"Error obteniendo lista de archivos de Plex: {e}")
             return set()
-    
+
+    def get_all_episode_filenames(self) -> Set[str]:
+        """
+        Obtiene los nombres de archivo (basename, en minúsculas) de todos
+        los episodios de serie indexados en Plex. Mismo patrón que
+        get_all_movie_filenames() pero para metadata_type=4 (episodio).
+
+        Returns:
+            Set de nombres de archivo en minúsculas. Vacío si Plex no está
+            configurado o si ocurre un error.
+        """
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+
+            tv_library = settings.get_plex_tv_shows_library()
+
+            sql = """
+            SELECT mp.file AS file_path
+            FROM metadata_items ep
+            JOIN media_items m         ON m.metadata_item_id = ep.id
+            JOIN media_parts mp        ON mp.media_item_id   = m.id
+            LEFT JOIN library_sections ls ON ls.id = ep.library_section_id
+            WHERE ep.metadata_type = 4
+              AND (
+                    LOWER(ls.name) = LOWER(?)
+                 OR  ls.name LIKE ?
+                 OR  ls.name LIKE ?
+              )
+            """
+
+            cur.execute(sql, (
+                tv_library,
+                f"{tv_library}%",
+                f"%{tv_library}%",
+            ))
+
+            rows = cur.fetchall()
+            conn.close()
+
+            return {
+                os.path.basename(r["file_path"]).lower()
+                for r in rows if r["file_path"]
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error obteniendo lista de episodios de Plex: {e}")
+            return set()
+
+    def get_all_show_titles(self) -> Set[str]:
+        """
+        Obtiene los títulos (en minúsculas) de todas las series indexadas
+        en Plex (metadata_type=2, la serie en sí, no temporadas ni
+        episodios). Se usa para detectar series que no están en Plex en
+        absoluto, comparando contra el nombre de la carpeta de la serie.
+
+        Returns:
+            Set de títulos de serie en minúsculas. Vacío si Plex no está
+            configurado o si ocurre un error.
+        """
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+
+            tv_library = settings.get_plex_tv_shows_library()
+
+            sql = """
+            SELECT show.title AS title
+            FROM metadata_items show
+            LEFT JOIN library_sections ls ON ls.id = show.library_section_id
+            WHERE show.metadata_type = 2
+              AND (
+                    LOWER(ls.name) = LOWER(?)
+                 OR  ls.name LIKE ?
+                 OR  ls.name LIKE ?
+              )
+            """
+
+            cur.execute(sql, (
+                tv_library,
+                f"{tv_library}%",
+                f"%{tv_library}%",
+            ))
+
+            rows = cur.fetchall()
+            conn.close()
+
+            return {r["title"].lower() for r in rows if r["title"]}
+
+        except Exception as e:
+            self.logger.error(f"Error obteniendo lista de series de Plex: {e}")
+            return set()
+
     def check_duration_compatibility(self, metadata1: Dict, metadata2: Dict) -> Tuple[bool, str]:
         """
         Verifica si dos películas son compatibles por duración usando metadatos de Plex

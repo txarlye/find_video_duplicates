@@ -10,9 +10,12 @@ import time
 import os
 import subprocess
 import hashlib
+import shutil
+import difflib
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from collections import defaultdict
 
 # Configurar logging para mostrar en terminal
 logging.basicConfig(
@@ -29,6 +32,7 @@ sys.path.insert(0, str(current_dir))
 
 from src.settings.settings import settings
 from src.utils.movie_detector import MovieDetector
+from src.utils.series_detector import SeriesDetector
 from src.utils.video import VideoPlayer, VideoFormatter, VideoComparison, VideoFrameExtractor
 from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionManager, DuplicatePairsManager
 from src.utils.file_operations import FileBatchProcessor
@@ -88,6 +92,12 @@ class StreamlitAppManager:
             st.session_state.plex_cache = {}
         if 'huerfanos' not in st.session_state:
             st.session_state.huerfanos = None
+        if 'episodios_duplicados' not in st.session_state:
+            st.session_state.episodios_duplicados = None
+        if 'episodios_huerfanos' not in st.session_state:
+            st.session_state.episodios_huerfanos = None
+        if 'series_sin_indexar' not in st.session_state:
+            st.session_state.series_sin_indexar = None
     
     def render_header(self):
         """Renderiza el encabezado de la aplicación"""
@@ -95,25 +105,34 @@ class StreamlitAppManager:
         st.markdown("---")
 
         # Botones principales
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
             if st.button("🔍 Escanear Carpeta", type="primary", use_container_width=True):
                 st.session_state.show_scan_interface = True
                 st.session_state.show_orphans_interface = False
+                st.session_state.show_series_interface = False
                 st.rerun()
 
         with col2:
             if st.button("🧩 Huérfanos", use_container_width=True):
                 st.session_state.show_orphans_interface = True
                 st.session_state.show_scan_interface = False
+                st.session_state.show_series_interface = False
                 st.rerun()
 
         with col3:
+            if st.button("📺 Series", use_container_width=True):
+                st.session_state.show_series_interface = True
+                st.session_state.show_scan_interface = False
+                st.session_state.show_orphans_interface = False
+                st.rerun()
+
+        with col4:
             if st.button("📱 Telegram", use_container_width=True):
                 st.session_state.show_telegram_interface = True
                 st.rerun()
 
-        with col4:
+        with col5:
             if st.button("🎭 IMDB", use_container_width=True):
                 st.session_state.show_imdb_interface = True
                 st.rerun()
@@ -888,6 +907,265 @@ class StreamlitAppManager:
             st.success(f"✅ Archivo renombrado: {st.session_state.huerfanos[index]['nombre']}")
             self._refresh_plex_after_rename()
             st.rerun()
+
+    # ------------------------------------------------------------------
+    # Series: episodios duplicados, capítulos sueltos y series sin indexar
+    # ------------------------------------------------------------------
+
+    def _render_series_interface(self):
+        """Renderiza el detector de series: duplicados, huérfanos y series sin indexar"""
+        st.header("📺 Series")
+        st.caption(
+            "Detecta episodios duplicados (por temporada+número, no por título), "
+            "capítulos sueltos que no están indexados en Plex, y series enteras "
+            "de las que Plex no tiene ni el nombre."
+        )
+
+        if not self.plex_service.is_configured():
+            st.warning(
+                "⚠️ Plex no está configurado. Configura la ruta de la base de datos "
+                "en la pestaña **🎬 Plex** del menú lateral antes de buscar."
+            )
+            return
+
+        try:
+            last_path = settings.get_last_scan_path()
+        except AttributeError:
+            last_path = settings.get("paths.last_scan_path", "")
+
+        carpeta = st.text_input(
+            "Ruta de la carpeta de series a analizar",
+            value=last_path,
+            key="series_scan_path",
+            help="Carpeta donde buscar episodios de serie"
+        )
+
+        if st.button("🔍 Buscar", type="primary", disabled=not carpeta, key="series_scan_button"):
+            self._process_series_scan(carpeta)
+
+        if st.session_state.get('episodios_duplicados') is not None:
+            self._render_series_results()
+
+    def _serie_parece_indexada(self, serie_normalizada: str, plex_series: set, umbral: float = 0.6) -> bool:
+        """
+        Comprueba si una serie parece ya indexada en Plex, admitiendo que
+        el nombre del archivo y el título de Plex puedan no ser idénticos
+        (ej. el archivo trae "12 Monkeys" en inglés, pero Plex la indexó
+        como "12 monos" en español — comparar por igualdad exacta daría
+        un falso "sin indexar" para una serie que sí está). Se usa
+        similitud de texto, igual que ya hace MovieDetector para
+        películas, en vez de una comparación exacta.
+        """
+        if serie_normalizada in plex_series:
+            return True
+        return any(
+            difflib.SequenceMatcher(None, serie_normalizada, plex_serie).ratio() >= umbral
+            for plex_serie in plex_series
+        )
+
+    def _process_series_scan(self, carpeta: str):
+        """Escanea una carpeta de series: duplicados + cruce contra Plex (episodios y series)"""
+        if not Path(carpeta).exists():
+            st.error("❌ La carpeta especificada no existe")
+            return
+
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        try:
+            status_text.text("📁 Escaneando episodios...")
+            progress_bar.progress(20)
+
+            detector = SeriesDetector(carpeta)
+            episodios = detector.escanear_carpeta()
+
+            if not episodios:
+                progress_bar.progress(100)
+                status_text.text("✅ Búsqueda completada")
+                mensaje = "No se encontraron episodios reconocibles (patrón SxxExx o NxNN) en esa carpeta"
+                if detector.sin_reconocer:
+                    mensaje += f" ({detector.sin_reconocer} archivo(s) de video sin patrón de episodio detectable)"
+                st.info(mensaje)
+                st.session_state.episodios_duplicados = []
+                st.session_state.episodios_huerfanos = []
+                st.session_state.series_sin_indexar = []
+                return
+
+            status_text.text(f"🔎 Buscando episodios duplicados entre {len(episodios)}...")
+            progress_bar.progress(45)
+            duplicados = detector.encontrar_duplicados()
+
+            status_text.text("🔎 Comprobando episodios contra Plex...")
+            progress_bar.progress(65)
+            plex_episodios = self.plex_service.get_all_episode_filenames()
+            huerfanos = [e for e in episodios if e['nombre'].lower() not in plex_episodios]
+
+            status_text.text("🔎 Comprobando series contra Plex...")
+            progress_bar.progress(85)
+            plex_series = {detector.normalizar_serie(s) for s in self.plex_service.get_all_show_titles()}
+
+            series_locales = defaultdict(lambda: {'episodios': 0, 'tamaño': 0, 'nombre': ''})
+            for e in episodios:
+                clave = e['serie_normalizada']
+                series_locales[clave]['episodios'] += 1
+                series_locales[clave]['tamaño'] += e.get('tamaño', 0)
+                series_locales[clave]['nombre'] = e['serie']
+
+            series_sin_indexar = [
+                {'serie': datos['nombre'], 'episodios': datos['episodios'], 'tamaño': datos['tamaño']}
+                for clave, datos in series_locales.items()
+                if not self._serie_parece_indexada(clave, plex_series)
+            ]
+            series_sin_indexar.sort(key=lambda s: s['tamaño'], reverse=True)
+
+            st.session_state.episodios_duplicados = duplicados
+            st.session_state.episodios_huerfanos = huerfanos
+            st.session_state.series_sin_indexar = series_sin_indexar
+
+            progress_bar.progress(100)
+            status_text.text("✅ Búsqueda completada")
+
+            st.success(
+                f"✅ {len(episodios)} episodios escaneados — "
+                f"{len(duplicados)} duplicados, {len(huerfanos)} sin indexar, "
+                f"{len(series_sin_indexar)} serie(s) sin indexar en absoluto"
+            )
+            if detector.sin_reconocer:
+                st.caption(f"ℹ️ {detector.sin_reconocer} archivo(s) de video no tenían un patrón de episodio reconocible y se ignoraron")
+
+        except Exception as e:
+            st.error(f"❌ Error buscando episodios: {e}")
+
+    def _mover_archivo_a_debug(self, ruta: str) -> bool:
+        """
+        Mueve un único archivo a la carpeta de debug configurada (o lo
+        borra si el modo debug está desactivado) — misma garantía de
+        seguridad que el resto de la app, reutilizable fuera del flujo
+        de pares (aquí un grupo duplicado puede tener más de 2 archivos).
+        """
+        try:
+            origen = Path(ruta)
+            if not origen.exists():
+                st.warning(f"⚠️ El archivo ya no existe: {ruta}")
+                return False
+
+            if settings.get_debug_enabled():
+                debug_path = Path(settings.get_debug_folder())
+                debug_path.mkdir(parents=True, exist_ok=True)
+                destino = debug_path / origen.name
+                contador = 1
+                while destino.exists():
+                    destino = debug_path / f"{origen.stem}_{contador}{origen.suffix}"
+                    contador += 1
+                shutil.move(str(origen), str(destino))
+                st.success(f"✅ Movido a debug: {origen.name}")
+            else:
+                os.remove(str(origen))
+                st.success(f"✅ Eliminado: {origen.name}")
+
+            return True
+
+        except Exception as e:
+            st.error(f"❌ Error moviendo '{ruta}': {e}")
+            return False
+
+    def _render_series_results(self):
+        """Renderiza los 3 resultados: episodios duplicados, huérfanos y series sin indexar"""
+        duplicados = st.session_state.get('episodios_duplicados') or []
+        huerfanos = st.session_state.get('episodios_huerfanos') or []
+        series_sin_indexar = st.session_state.get('series_sin_indexar') or []
+
+        st.markdown("---")
+
+        # --- Episodios duplicados ---
+        st.subheader(f"🔁 {len(duplicados)} episodio(s) duplicado(s)")
+        if not duplicados:
+            st.caption("Ninguno detectado.")
+        for gi, grupo in enumerate(duplicados):
+            serie = grupo[0]['serie']
+            temporada = grupo[0]['temporada']
+            episodio_num = grupo[0]['episodio']
+            with st.expander(f"{serie} — T{temporada:02d}E{episodio_num:02d} ({len(grupo)} copias)", expanded=False):
+                for fi, ep in enumerate(grupo):
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(f"📄 {ep['nombre']}")
+                        tamaño_gb = ep.get('tamaño', 0) / (1024 ** 3)
+                        st.caption(f"{tamaño_gb:.2f} GB — {ep['carpeta']}")
+                    with col2:
+                        if st.button("🗑️ Mover a debug", key=f"serie_dup_{gi}_{fi}"):
+                            if self._mover_archivo_a_debug(ep['archivo']):
+                                nuevo_grupo = [x for x in grupo if x['archivo'] != ep['archivo']]
+                                if len(nuevo_grupo) > 1:
+                                    st.session_state.episodios_duplicados[gi] = nuevo_grupo
+                                else:
+                                    st.session_state.episodios_duplicados.pop(gi)
+                                st.rerun()
+
+        st.markdown("---")
+
+        # --- Capítulos sueltos sin indexar ---
+        st.subheader(f"🧩 {len(huerfanos)} capítulo(s) sin indexar en Plex")
+        if not huerfanos:
+            st.caption("Ninguno detectado.")
+        for i, ep in enumerate(huerfanos):
+            col1, col2 = st.columns([3, 2])
+            with col1:
+                st.write(f"**{ep['nombre']}**")
+                st.caption(f"{ep['serie']} — T{ep['temporada']:02d}E{ep['episodio']:02d}")
+                st.caption(ep['archivo'])
+                tamaño_gb = ep.get('tamaño', 0) / (1024 ** 3)
+                st.write(f"📊 {tamaño_gb:.2f} GB")
+            with col2:
+                nuevo_nombre = st.text_input(
+                    "Nuevo nombre (sin extensión)",
+                    value=Path(ep['nombre']).stem,
+                    key=f"serie_orphan_rename_{i}"
+                )
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button("✏️ Renombrar", key=f"serie_orphan_rename_btn_{i}"):
+                        self._rename_series_orphan(i, ep, nuevo_nombre)
+                with col_btn2:
+                    if st.button("🔄 Refrescar Plex", key=f"serie_orphan_refresh_btn_{i}"):
+                        self._refresh_plex_after_rename()
+                        st.rerun()
+            st.markdown("---")
+
+        # --- Series enteras sin indexar ---
+        st.subheader(f"📭 {len(series_sin_indexar)} serie(s) sin indexar en absoluto")
+        if not series_sin_indexar:
+            st.caption("Ninguna detectada.")
+        else:
+            st.caption("Plex no tiene ni el nombre de estas series — probablemente nunca se han escaneado en esa biblioteca.")
+            for s in series_sin_indexar:
+                tamaño_gb = s['tamaño'] / (1024 ** 3)
+                st.write(f"📁 **{s['serie']}** — {s['episodios']} episodio(s), {tamaño_gb:.2f} GB")
+            if st.button("🔄 Refrescar biblioteca de series en Plex", key="series_refresh_library"):
+                self._refresh_plex_after_rename()
+                st.rerun()
+
+    def _rename_series_orphan(self, index: int, episodio: Dict[str, Any], new_name: str):
+        """Renombra un capítulo suelto sin indexar (mismo criterio que _rename_orphan)"""
+        if not new_name:
+            st.error("❌ Nombre no puede estar vacío")
+            return
+
+        try:
+            old_path = Path(episodio['archivo'])
+            new_path = old_path.parent / f"{new_name}{old_path.suffix}"
+            os.rename(str(old_path), str(new_path))
+            st.success(f"✅ Archivo renombrado: {new_path.name}")
+
+            huerfanos = st.session_state.episodios_huerfanos
+            huerfanos[index] = {**episodio, 'nombre': new_path.name, 'archivo': str(new_path)}
+            st.session_state.episodios_huerfanos = huerfanos
+
+            self._refresh_plex_after_rename()
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Error renombrando archivo: {e}")
 
     def render_results(self):
         """Renderiza los resultados del escaneo"""
@@ -3220,6 +3498,8 @@ class StreamlitAppManager:
         # Manejar interfaces especiales
         if getattr(st.session_state, 'show_orphans_interface', False):
             self._render_orphans_interface()
+        elif getattr(st.session_state, 'show_series_interface', False):
+            self._render_series_interface()
         elif getattr(st.session_state, 'show_scan_interface', False):
             self.render_scan_section()
             self.render_results()
