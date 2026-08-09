@@ -935,19 +935,7 @@ class StreamlitAppManager:
         st.subheader(f"🧩 {len(huerfanos)} película(s) sin indexar en Plex")
 
         if settings.get_ai_enabled() and settings.get_ai_mode() == "suggest" and self.ai_naming_service.is_configured():
-            col_sug, col_apl = st.columns(2)
-            with col_sug:
-                if st.button("🤖 Sugerir nombre con IA para todos", key="orphans_suggest_all_btn"):
-                    self._suggest_all_orphans_ai()
-            with col_apl:
-                if st.button("✅ Aplicar todas las propuestas", key="orphans_apply_all_btn"):
-                    self._apply_all_orphan_renames()
-            st.caption(
-                "💡 \"Sugerir para todos\" solo rellena el campo de nombre de cada fila — "
-                "revísalo o reescríbelo antes de aplicar. \"Aplicar todas\" renombra en "
-                "disco cualquier fila cuyo campo ya no coincida con el nombre original "
-                "(propuesto por la IA o escrito a mano), y no toca las que dejes igual."
-            )
+            self._render_orphans_bulk_ai_controls(huerfanos)
 
         # Paginado: con listas largas, renderizar cientos de filas de golpe
         # (varios widgets por fila) deja la app "corriendo" un buen rato y
@@ -1034,45 +1022,112 @@ class StreamlitAppManager:
 
                 st.markdown("---")
 
-    def _suggest_all_orphans_ai(self):
+    def _render_orphans_bulk_ai_controls(self, huerfanos: List[Dict[str, Any]]):
         """
-        Pide a la IA un nombre para cada huérfano pendiente (no
-        renombrado todavía) y precarga el campo de texto de cada fila —
-        igual que el botón individual, pero para todos de una vez. No
-        renombra nada por sí sola: solo rellena la propuesta para que la
-        revises (o la reescribas) antes de "Aplicar todas las propuestas".
-        Los que la IA no reconozca simplemente se quedan sin propuesta,
-        no bloquean al resto.
+        Controles para pedir nombre a la IA en lote. Con miles de
+        huérfanos, consultar la IA uno a uno para todos puede tardar
+        horas (y salir caro en proveedores de pago) — por eso deja
+        elegir cuántos de golpe en vez de forzar "todos o nada", y el
+        trabajo se procesa en tandas pequeñas entre las que puede
+        reaccionar el botón "Detener": Streamlit no puede interrumpir un
+        bucle a media ejecución, solo entre una tanda y la siguiente.
         """
-        huerfanos = st.session_state.get('huerfanos', [])
-        pendientes = [(i, p) for i, p in enumerate(huerfanos) if not p.get('renombrado')]
-
-        if not pendientes:
-            st.info("💡 No hay huérfanos pendientes de renombrar")
+        job = st.session_state.get('orphans_ai_job')
+        if job:
+            self._process_orphans_ai_job_chunk(huerfanos, job)
             return
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        sugeridos, sin_sugerencia = 0, 0
+        col_alcance, col_sug, col_apl = st.columns([1, 1, 1])
+        with col_alcance:
+            alcance = st.selectbox(
+                "¿A cuántos?",
+                options=[20, 50, 100, 500, "Todos"],
+                key="orphans_ai_scope",
+            )
+        with col_sug:
+            if st.button("🤖 Sugerir nombre con IA", key="orphans_suggest_all_btn"):
+                self._start_orphans_ai_job(huerfanos, alcance)
+        with col_apl:
+            if st.button("✅ Aplicar todas las propuestas", key="orphans_apply_all_btn"):
+                self._apply_all_orphan_renames()
 
-        for n, (i, pelicula) in enumerate(pendientes):
-            status_text.text(f"🤖 Consultando IA: {pelicula['nombre']} ({n + 1}/{len(pendientes)})")
-            progress_bar.progress((n + 1) / len(pendientes))
+        st.caption(
+            "💡 \"Sugerir\" solo rellena el campo de nombre de cada fila que "
+            "todavía no tenga una propuesta (ni renombrada) — revísalo o "
+            "reescríbelo antes de aplicar. \"Aplicar todas\" renombra en "
+            "disco cualquier fila cuyo campo ya no coincida con el nombre "
+            "original (propuesto por la IA o escrito a mano), sin límite "
+            "de \"¿A cuántos?\" — esa lista aplica solo a \"Sugerir\"."
+        )
+
+    def _start_orphans_ai_job(self, huerfanos: List[Dict[str, Any]], alcance):
+        """Prepara el lote a procesar y lanza el primer trozo"""
+        pendientes = [
+            i for i, p in enumerate(huerfanos)
+            if not p.get('renombrado')
+            and st.session_state.get(f"orphan_rename_input_{i}", Path(p['nombre']).stem) == Path(p['nombre']).stem
+        ]
+
+        if not pendientes:
+            st.info("💡 No quedan huérfanos pendientes de proponer nombre (todos tienen ya una propuesta, o están renombrados)")
+            return
+
+        if alcance != "Todos":
+            pendientes = pendientes[:alcance]
+
+        st.session_state['orphans_ai_job'] = {
+            'indices': pendientes,
+            'cursor': 0,
+            'total': len(pendientes),
+            'sugeridos': 0,
+            'sin_sugerencia': 0,
+        }
+        st.rerun()
+
+    def _process_orphans_ai_job_chunk(self, huerfanos: List[Dict[str, Any]], job: Dict[str, Any]):
+        """
+        Procesa una tanda pequeña del lote en curso y se relanza sola
+        (st.rerun) hasta terminar, salvo que se pulse "Detener" entre
+        tandas. El tamaño de tanda es un compromiso: muy pequeño hace
+        muchos reruns de la página entera (parpadeo), muy grande deja el
+        botón de detener sin reaccionar durante más tiempo.
+        """
+        TAMAÑO_TANDA = 5
+
+        progress_bar = st.progress(job['cursor'] / job['total'] if job['total'] else 1.0)
+        status_text = st.empty()
+
+        if st.button("⏹ Detener", key="orphans_ai_job_stop"):
+            consultados = job['cursor']
+            sugeridos = job['sugeridos']
+            st.session_state.pop('orphans_ai_job', None)
+            st.warning(f"⏹ Detenido: {sugeridos} propuesta(s) de {consultados} consultado(s) antes de parar")
+            st.rerun()
+            return
+
+        indices = job['indices']
+        fin_tanda = min(job['cursor'] + TAMAÑO_TANDA, len(indices))
+
+        for n in range(job['cursor'], fin_tanda):
+            i = indices[n]
+            pelicula = huerfanos[i]
+            status_text.text(f"🤖 Consultando IA: {pelicula['nombre']} ({n + 1}/{job['total']})")
 
             sugerido = self.ai_naming_service.suggest_name(pelicula['nombre'])
             if sugerido:
                 st.session_state[f"orphan_rename_input_{i}"] = sugerido
-                sugeridos += 1
+                job['sugeridos'] += 1
             else:
-                sin_sugerencia += 1
+                job['sin_sugerencia'] += 1
 
-        progress_bar.empty()
-        status_text.empty()
+        job['cursor'] = fin_tanda
 
-        st.success(f"🤖 IA propuso nombre para {sugeridos} de {len(pendientes)} huérfano(s)")
-        if sin_sugerencia:
-            st.caption(f"ℹ️ {sin_sugerencia} sin propuesta — revísalos o escríbeles un nombre a mano si quieres")
-        st.rerun()
+        if job['cursor'] >= len(indices):
+            st.session_state.pop('orphans_ai_job', None)
+            st.success(f"🤖 Terminado: {job['sugeridos']} de {job['total']} con propuesta ({job['sin_sugerencia']} sin propuesta)")
+        else:
+            st.session_state['orphans_ai_job'] = job
+            st.rerun()
 
     def _apply_all_orphan_renames(self):
         """
