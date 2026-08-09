@@ -8,10 +8,12 @@ no requiere API key), OpenAI (ChatGPT) y Gemini.
 
 La IA sola tiende a acertar el título pero puede inventarse el año (es
 memoria del modelo, no una consulta real). Por eso, si hay una API key
-de OMDb configurada, la respuesta de la IA se usa solo como término de
-búsqueda: se contrasta contra los resultados reales de OMDb y se
+de TMDB y/o OMDb configurada, la respuesta de la IA se usa solo como
+término de búsqueda: se contrasta contra los resultados reales y se
 devuelve el candidato más parecido, con el año que diga la base de
-datos — no el que haya podido inventar el modelo.
+datos — no el que haya podido inventar el modelo. Se prueba TMDB
+primero (mejor cobertura de títulos traducidos/alternativos, ej.
+títulos en español) y OMDb como respaldo si TMDB no encuentra nada.
 """
 
 import re
@@ -97,22 +99,31 @@ class AINamingService:
         if not aproximacion:
             return None
 
-        if settings.get_omdb_api_key():
-            titulo_aprox, año_aprox = self._separar_titulo_año(aproximacion)
-            confirmado = self._buscar_en_omdb(titulo_aprox, año_aprox)
-            if confirmado:
-                return confirmado
+        tmdb_key = settings.get_tmdb_api_key()
+        omdb_key = settings.get_omdb_api_key()
 
-            # OMDb no encontró nada convincente — frecuente con títulos
-            # solo en español, que OMDb no suele indexar (p.ej. "La Cosa"
-            # de John Carpenter está como "The Thing"). Si el año que dio
-            # la IA ya estaba explícito en el propio nombre de archivo,
-            # lo más probable es que lo haya copiado de ahí, no inventado
-            # de memoria, así que nos podemos fiar igual. Si el archivo
-            # NO traía año, la IA tuvo que recordarlo — que es justo
-            # donde se ha visto que puede fallar (título en español)
-            # devolviendo un año equivocado — y ahí preferimos no
-            # proponer nada a arriesgarnos.
+        if tmdb_key or omdb_key:
+            titulo_aprox, año_aprox = self._separar_titulo_año(aproximacion)
+
+            if tmdb_key:
+                confirmado = self._buscar_en_tmdb(titulo_aprox, año_aprox)
+                if confirmado:
+                    return confirmado
+
+            if omdb_key:
+                confirmado = self._buscar_en_omdb(titulo_aprox, año_aprox)
+                if confirmado:
+                    return confirmado
+
+            # Ni TMDB ni OMDb encontraron nada convincente — puede pasar
+            # con títulos poco comunes que ninguna de las dos bases de
+            # datos indexa. Si el año que dio la IA ya estaba explícito
+            # en el propio nombre de archivo, lo más probable es que lo
+            # haya copiado de ahí, no inventado de memoria, así que nos
+            # podemos fiar igual. Si el archivo NO traía año, la IA tuvo
+            # que recordarlo — que es justo donde se ha visto que puede
+            # fallar (título en español) devolviendo un año equivocado —
+            # y ahí preferimos no proponer nada a arriesgarnos.
             if self._año_estaba_en_archivo(filename, año_aprox):
                 return aproximacion
             return None
@@ -143,6 +154,45 @@ class AINamingService:
         match = re.match(r"^(.+)\((\d{4})\)$", texto)
         return match.group(1).strip(), match.group(2)
 
+    def _buscar_en_tmdb(self, titulo: str, año_pista: Optional[str]) -> Optional[str]:
+        """
+        Busca `titulo` en TMDB y devuelve el candidato más parecido de la
+        lista de resultados reales, como "Título (Año)". Mejor cobertura
+        que OMDb para títulos traducidos/alternativos (ej. en español).
+        """
+        try:
+            api_key = settings.get_tmdb_api_key()
+            response = requests.get("https://api.themoviedb.org/3/search/movie", params={
+                "api_key": api_key,
+                "query": titulo,
+                "language": "es-ES",
+                "include_adult": "false",
+            }, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            # Se compara contra el título localizado (es-ES) Y el original:
+            # si la IA dio el nombre en inglés y solo comparásemos contra
+            # el título en español (o al revés), la similitud sale baja
+            # aunque sea la película correcta.
+            candidatos = []
+            for c in data.get("results", []):
+                año = (c.get("release_date") or "")[:4]
+                if c.get("title"):
+                    candidatos.append({"title": c["title"], "year": año})
+                if c.get("original_title") and c.get("original_title") != c.get("title"):
+                    candidatos.append({"title": c["original_title"], "year": año})
+
+            mejor = self._elegir_mejor_candidato(titulo, año_pista, candidatos)
+            if not mejor:
+                return None
+
+            return f"{mejor['title']} ({mejor['year']})"
+
+        except Exception as e:
+            self.logger.error(f"Error buscando '{titulo}' en TMDB: {e}")
+            return None
+
     def _buscar_en_omdb(self, titulo: str, año_pista: Optional[str]) -> Optional[str]:
         """
         Busca `titulo` en OMDb (modo de búsqueda, no de lookup exacto) y
@@ -162,12 +212,15 @@ class AINamingService:
             if data.get("Response") != "True":
                 return None
 
-            candidatos = data.get("Search", [])
+            candidatos = [
+                {"title": c.get("Title", ""), "year": c.get("Year", "")}
+                for c in data.get("Search", [])
+            ]
             mejor = self._elegir_mejor_candidato(titulo, año_pista, candidatos)
             if not mejor:
                 return None
 
-            return f"{mejor['Title']} ({mejor['Year']})"
+            return f"{mejor['title']} ({mejor['year']})"
 
         except Exception as e:
             self.logger.error(f"Error buscando '{titulo}' en OMDb: {e}")
@@ -175,18 +228,19 @@ class AINamingService:
 
     def _elegir_mejor_candidato(self, titulo: str, año_pista: Optional[str], candidatos: List[Dict]) -> Optional[Dict]:
         """
-        Elige, de una lista de resultados de búsqueda de OMDb, el más
+        Elige, de una lista de resultados de búsqueda ya normalizados a
+        {"title": str, "year": str} (venga de OMDb o de TMDB), el más
         convincente: combina similitud de título con la aproximación de
         la IA y cercanía al año que haya podido apuntar (sin exigirlo,
         solo como desempate).
         """
         mejores = []
         for c in candidatos:
-            año_match = re.match(r"(\d{4})", c.get("Year", ""))
+            año_match = re.match(r"(\d{4})", c.get("year", ""))
             if not año_match:
-                continue  # descarta series/años en rango tipo "2015–2018"
+                continue  # descarta series/años en rango tipo "2015–2018" o sin fecha
 
-            similitud = difflib.SequenceMatcher(None, titulo.lower(), c.get("Title", "").lower()).ratio()
+            similitud = difflib.SequenceMatcher(None, titulo.lower(), c.get("title", "").lower()).ratio()
 
             if año_pista:
                 diferencia_años = abs(int(año_match.group(1)) - int(año_pista))
@@ -195,7 +249,7 @@ class AINamingService:
                 cercania_año = 0.5  # sin pista de año: no penaliza ni premia
 
             puntuacion = similitud * 0.7 + cercania_año * 0.3
-            mejores.append((puntuacion, {**c, "Year": año_match.group(1)}))
+            mejores.append((puntuacion, {"title": c["title"], "year": año_match.group(1)}))
 
         if not mejores:
             return None
