@@ -1194,67 +1194,99 @@ class StreamlitAppManager:
         self._render_movie_controls(row, index)
     
     def _render_video_comparison(self, row: Dict[str, Any], index: int):
-        """Renderiza la comparación de videos mejorada"""
+        """
+        Renderiza la comparación de videos, campo por campo: cada fila usa
+        su propio st.columns(2), así ambas películas quedan alineadas
+        (nombre con nombre, tamaño con tamaño, fotograma con fotograma)
+        aunque un lado tenga más o menos contenido que el otro.
+        """
         st.subheader("🎬 Comparar Videos")
-        
-        # Verificar si se deben mostrar reproductores embebidos
+
         try:
             show_embedded = settings.get_show_embedded_players()
         except AttributeError:
             show_embedded = False
-        
-        # Crear columnas
+
+        ruta1 = row.get('Ruta 1', '')
+        ruta2 = row.get('Ruta 2', '')
+        existe1 = bool(ruta1) and os.path.exists(ruta1)
+        existe2 = bool(ruta2) and os.path.exists(ruta2)
+
+        # Nombre
         col1, col2 = st.columns(2)
-        
-        # Película 1
         with col1:
-            self._render_single_video(row, 1, index, col1, show_embedded)
-        
-        # Película 2
+            st.write("**Película 1:**")
+            st.write(f"📁 {row.get('Peli 1', 'N/A')}")
         with col2:
-            self._render_single_video(row, 2, index, col2, show_embedded)
-    
-    def _render_single_video(self, row: Dict[str, Any], video_num: int, index: int, col, show_embedded: bool = False):
-        """Renderiza un solo video con mejor manejo de errores"""
-        with col:
-            st.write(f"**Película {video_num}:**")
-            st.write(f"📁 {row.get(f'Peli {video_num}', 'N/A')}")
-            st.write(f"Tamaño: {row.get(f'Tamaño {video_num} (GB)', 'N/A')} GB")
-            st.write(f"Duración: {row.get(f'Duración {video_num}', 'N/A')}")
-            
-            # Obtener ruta del archivo
-            ruta = row.get(f'Ruta {video_num}', '')
-            
-            if not ruta or not os.path.exists(ruta):
-                st.error("❌ Archivo no encontrado")
-                return
-            
-            # Mostrar información de carpeta
-            self._render_folder_comparison(row, video_num)
-            
-            # Información del archivo
-            try:
-                file_size_gb = os.path.getsize(ruta) / (1024**3)
-                file_ext = os.path.splitext(ruta)[1].lower()
-                
-                # Mostrar información del archivo
-                st.write(f"📊 Tamaño: {file_size_gb:.2f} GB")
-                st.write(f"📄 Extensión: {file_ext}")
-                
-                # SIEMPRE mostrar botón de reproductor externo
-                self._render_external_player_button(ruta, f"open{video_num}_{index}")
-                
-                # Mostrar reproductores embebidos si están habilitados
-                if show_embedded:
-                    self._render_embedded_video(ruta, file_size_gb, file_ext, f"video{video_num}_{index}")
-                else:
-                    st.info("💡 Reproductores embebidos deshabilitados en configuración")
-                
-            except Exception as e:
-                st.error(f"❌ Error procesando archivo: {e}")
-                # Aún así mostrar botón de reproductor externo
-                self._render_external_player_button(ruta, f"open{video_num}_{index}")
-    
+            st.write("**Película 2:**")
+            st.write(f"📁 {row.get('Peli 2', 'N/A')}")
+
+        # Carpeta (se mantiene tal cual: aviso de "misma/distinta carpeta" solo bajo la Película 1)
+        col1, col2 = st.columns(2)
+        with col1:
+            self._render_folder_comparison(row, 1)
+        with col2:
+            self._render_folder_comparison(row, 2)
+
+        # Archivo no encontrado, si aplica (no corta el resto de filas)
+        if not existe1 or not existe2:
+            col1, col2 = st.columns(2)
+            with col1:
+                if not existe1:
+                    st.error("❌ Archivo no encontrado")
+            with col2:
+                if not existe2:
+                    st.error("❌ Archivo no encontrado")
+
+        # Tamaño (una sola vez; ya viene calculado del escaneo, no se
+        # recalcula leyendo el disco otra vez)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
+        with col2:
+            st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
+
+        # Duración
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"⏱️ Duración: {row.get('Duración 1', 'N/A')}")
+        with col2:
+            st.write(f"⏱️ Duración: {row.get('Duración 2', 'N/A')}")
+
+        # Botón de reproductor externo
+        col1, col2 = st.columns(2)
+        with col1:
+            if existe1:
+                self._render_external_player_button(ruta1, f"open1_{index}")
+        with col2:
+            if existe2:
+                self._render_external_player_button(ruta2, f"open2_{index}")
+
+        # Fotograma de comparación: siempre visible (es rápido), no
+        # depende de "Mostrar Reproductores Embebidos" — solo el
+        # reproductor completo, más abajo, depende de ese ajuste.
+        col1, col2 = st.columns(2)
+        with col1:
+            if existe1:
+                self._render_frame_preview(ruta1, f"video1_{index}")
+        with col2:
+            if existe2:
+                self._render_frame_preview(ruta2, f"video2_{index}")
+
+        # Reproductor completo, opcional (más lento)
+        if show_embedded:
+            col1, col2 = st.columns(2)
+            with col1:
+                if existe1:
+                    file_ext1 = os.path.splitext(ruta1)[1].lower()
+                    file_size_gb1 = os.path.getsize(ruta1) / (1024 ** 3)
+                    self._render_full_player(ruta1, file_size_gb1, file_ext1)
+            with col2:
+                if existe2:
+                    file_ext2 = os.path.splitext(ruta2)[1].lower()
+                    file_size_gb2 = os.path.getsize(ruta2) / (1024 ** 3)
+                    self._render_full_player(ruta2, file_size_gb2, file_ext2)
+
     def _render_folder_comparison(self, row: Dict[str, Any], video_num: int):
         """Renderiza la comparación de carpetas entre los dos archivos"""
         try:
@@ -1288,27 +1320,32 @@ class StreamlitAppManager:
         except Exception as e:
             logging.error(f"Error en comparación de carpetas: {e}")
     
-    def _render_embedded_video(self, file_path: str, file_size_gb: float, file_ext: str, key: str):
-        """Renderiza un fotograma de comparación y, opcionalmente, el video completo"""
+    def _render_frame_preview(self, file_path: str, key: str):
+        """Extrae y muestra un fotograma de comparación. Rápido y fiable incluso
+        sobre carpetas en red, a diferencia del reproductor completo (que
+        necesita que el navegador decodifique/busque en el archivo real)."""
         start_time = settings.get_video_start_time_seconds()
         minutes = start_time // 60
         seconds = start_time % 60
 
-        # Fotograma fijo: rápido y fiable incluso sobre carpetas en red,
-        # a diferencia del reproductor completo (que necesita que el
-        # navegador decodifique/busque en el archivo real).
-        if VideoFrameExtractor.is_available():
-            with st.spinner(f"Extrayendo fotograma en {minutes}:{seconds:02d}..."):
-                frame_bytes = VideoFrameExtractor.extract_frame(file_path, start_time)
-
-            if frame_bytes:
-                st.image(frame_bytes, caption=f"⏱️ Fotograma en {minutes}:{seconds:02d}", width=300)
-            else:
-                st.warning(f"⚠️ No se pudo extraer el fotograma en {minutes}:{seconds:02d} (¿el video dura menos?)")
-        else:
+        if not VideoFrameExtractor.is_available():
             st.info("💡 Instala ffmpeg y añádelo al PATH para ver un fotograma de comparación")
+            return
 
-        # Reproductor completo, opcional (más lento, útil si quieres ver movimiento/audio)
+        with st.spinner(f"Extrayendo fotograma en {minutes}:{seconds:02d}..."):
+            frame_bytes = VideoFrameExtractor.extract_frame(file_path, start_time)
+
+        if frame_bytes:
+            st.image(frame_bytes, caption=f"⏱️ Fotograma en {minutes}:{seconds:02d}", width=300)
+        else:
+            st.warning(f"⚠️ No se pudo extraer el fotograma en {minutes}:{seconds:02d} (¿el video dura menos?)")
+
+    def _render_full_player(self, file_path: str, file_size_gb: float, file_ext: str):
+        """Reproductor de video completo, dentro de un desplegable (opcional, más lento que el fotograma)"""
+        start_time = settings.get_video_start_time_seconds()
+        minutes = start_time // 60
+        seconds = start_time % 60
+
         with st.expander("▶️ Reproducir video completo"):
             try:
                 max_size_gb = 2.0
