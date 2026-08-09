@@ -47,6 +47,8 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 
 ![Renombrando una huérfana con nombre críptico: navegando hasta el minuto 0:29 aparece el título en los créditos](.img/renombrado%20peli%20huerfana.png)
 
+![Después de renombrar: archivo en verde, y biblioteca de Plex refrescada automáticamente](.img/renombrado%20peli%20huerfana2.png)
+
 ### 📺 Series
 - Detecta capítulos duplicados, capítulos sueltos sin indexar y **series
   enteras sin indexar en Plex** (agrupadas por serie, con desplegable)
