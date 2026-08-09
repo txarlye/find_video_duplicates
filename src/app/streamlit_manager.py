@@ -1105,17 +1105,24 @@ class StreamlitAppManager:
             progress_bar.progress(85)
             plex_series = {detector.normalizar_serie(s) for s in self.plex_service.get_all_show_titles()}
 
-            series_locales = defaultdict(lambda: {'episodios': 0, 'tamaño': 0, 'nombre': ''})
+            series_locales = defaultdict(lambda: {'episodios': [], 'tamaño': 0, 'nombre': ''})
             for e in episodios:
                 clave = e['serie_normalizada']
-                series_locales[clave]['episodios'] += 1
+                series_locales[clave]['episodios'].append(e)
                 series_locales[clave]['tamaño'] += e.get('tamaño', 0)
                 series_locales[clave]['nombre'] = e['serie']
 
+            ignoradas = set(settings.get_ignored_series())
+
             series_sin_indexar = [
-                {'serie': datos['nombre'], 'episodios': datos['episodios'], 'tamaño': datos['tamaño']}
+                {
+                    'clave': clave,
+                    'serie': datos['nombre'],
+                    'episodios': datos['episodios'],
+                    'tamaño': datos['tamaño'],
+                }
                 for clave, datos in series_locales.items()
-                if not self._serie_parece_indexada(clave, plex_series)
+                if not self._serie_parece_indexada(clave, plex_series) and clave not in ignoradas
             ]
             series_sin_indexar.sort(key=lambda s: s['tamaño'], reverse=True)
 
@@ -1238,13 +1245,40 @@ class StreamlitAppManager:
         if not series_sin_indexar:
             st.caption("Ninguna detectada.")
         else:
-            st.caption("Plex no tiene ni el nombre de estas series — probablemente nunca se han escaneado en esa biblioteca.")
-            for s in series_sin_indexar:
+            st.caption(
+                "Plex no tiene ni el nombre de estas series — probablemente nunca se han "
+                "escaneado en esa biblioteca. Si sabes que alguna sí está bien (Plex la "
+                "tiene con otro nombre que no reconocemos), puedes ignorarla."
+            )
+            for si, s in enumerate(series_sin_indexar):
                 tamaño_gb = s['tamaño'] / (1024 ** 3)
-                st.write(f"📁 **{s['serie']}** — {s['episodios']} episodio(s), {tamaño_gb:.2f} GB")
+                with st.expander(f"📁 {s['serie']} — {len(s['episodios'])} episodio(s), {tamaño_gb:.2f} GB", expanded=False):
+                    for ep in s['episodios']:
+                        ep_gb = ep.get('tamaño', 0) / (1024 ** 3)
+                        st.write(f"📄 T{ep['temporada']:02d}E{ep['episodio']:02d} — {ep['nombre']} ({ep_gb:.2f} GB)")
+
+                    if st.button("🙈 Ignorar esta serie", key=f"series_ignore_{si}"):
+                        settings.add_ignored_series(s['clave'])
+                        st.session_state.series_sin_indexar = [
+                            x for x in st.session_state.series_sin_indexar if x['clave'] != s['clave']
+                        ]
+                        st.rerun()
+
             if st.button("🔄 Refrescar biblioteca de series en Plex", key="series_refresh_library"):
                 self._refresh_plex_after_rename()
                 st.rerun()
+
+        ignoradas = settings.get_ignored_series()
+        if ignoradas:
+            with st.expander(f"⚙️ Series ignoradas ({len(ignoradas)})", expanded=False):
+                for serie_ignorada in ignoradas:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(serie_ignorada)
+                    with col2:
+                        if st.button("↩️ Quitar", key=f"series_unignore_{serie_ignorada}"):
+                            settings.remove_ignored_series(serie_ignorada)
+                            st.rerun()
 
     def _rename_series_orphan(self, index: int, episodio: Dict[str, Any], new_name: str):
         """Renombra un capítulo suelto sin indexar (mismo criterio que _rename_orphan)"""
