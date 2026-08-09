@@ -13,7 +13,7 @@ import hashlib
 import shutil
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from collections import defaultdict
 
 # Configurar logging para mostrar en terminal
@@ -2088,7 +2088,9 @@ class StreamlitAppManager:
             st.write("**Película 1:**")
             st.markdown(f"<h4 style='color: #1f77b4'>{row.get('Peli 1', 'N/A')}</h4>", unsafe_allow_html=True)
             st.write(f"Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
-            st.write(f"Duración: {row.get('Duración 1', 'N/A')}")
+            duracion1, resolucion1 = self._duracion_resolucion_en_vivo(row.get('Ruta 1', ''), row.get('Duración 1', 'N/A'))
+            st.write(f"Duración: {duracion1}")
+            st.write(f"Resolución: {resolucion1}")
             st.write(f"Ruta: {row.get('Ruta 1', 'N/A')}")
 
             # Checkbox para película 1
@@ -2103,7 +2105,9 @@ class StreamlitAppManager:
             st.write("**Película 2:**")
             st.markdown(f"<h4 style='color: #ff7f0e'>{row.get('Peli 2', 'N/A')}</h4>", unsafe_allow_html=True)
             st.write(f"Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
-            st.write(f"Duración: {row.get('Duración 2', 'N/A')}")
+            duracion2, resolucion2 = self._duracion_resolucion_en_vivo(row.get('Ruta 2', ''), row.get('Duración 2', 'N/A'))
+            st.write(f"Duración: {duracion2}")
+            st.write(f"Resolución: {resolucion2}")
             st.write(f"Ruta: {row.get('Ruta 2', 'N/A')}")
 
             # Checkbox para película 2
@@ -2392,7 +2396,8 @@ class StreamlitAppManager:
                     st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
             else:
                 st.write(f"📊 Tamaño: {row.get('Tamaño 1 (GB)', 'N/A')} GB")
-            st.write(f"⏱️ Duración: {row.get('Duración 1', 'N/A')}")
+            duracion1, _ = self._duracion_resolucion_en_vivo(ruta1, row.get('Duración 1', 'N/A'))
+            st.write(f"⏱️ Duración: {duracion1}")
             st.write(f"📁 Ruta: {row.get('Ruta 1', 'N/A')}")
             
             # Fecha de creación
@@ -2428,7 +2433,8 @@ class StreamlitAppManager:
                     st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
             else:
                 st.write(f"📊 Tamaño: {row.get('Tamaño 2 (GB)', 'N/A')} GB")
-            st.write(f"⏱️ Duración: {row.get('Duración 2', 'N/A')}")
+            duracion2, _ = self._duracion_resolucion_en_vivo(ruta2, row.get('Duración 2', 'N/A'))
+            st.write(f"⏱️ Duración: {duracion2}")
             st.write(f"📁 Ruta: {row.get('Ruta 2', 'N/A')}")
             
             # Fecha de creación
@@ -3473,6 +3479,46 @@ class StreamlitAppManager:
             st.warning(f"⚠️ Error calculando hash: {e}")
             return None
     
+    def _get_video_summary_cached(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """
+        Duración/resolución/etc. reales del archivo vía ffprobe
+        (video_info_service), cacheado en session_state por ruta+mtime
+        para no relanzar ffprobe cada vez que la misma película aparece
+        en varias secciones de la página (puede ser lento sobre archivos
+        grandes en red).
+        """
+        try:
+            mtime = os.path.getmtime(file_path)
+        except OSError:
+            return self.video_info_service.get_summary_info(file_path)
+
+        cache = st.session_state.setdefault('_video_summary_cache', {})
+        cache_key = f"{file_path}::{mtime}"
+        if cache_key not in cache:
+            cache[cache_key] = self.video_info_service.get_summary_info(file_path)
+        return cache[cache_key]
+
+    def _duracion_resolucion_en_vivo(self, ruta: str, duracion_fallback: str = 'N/A') -> Tuple[str, str]:
+        """
+        Duración y resolución reales del archivo (ffprobe), con el valor
+        del escaneo como respaldo si el archivo ya no es accesible. El
+        escaneo obtiene la duración con mutagen, que falla para algunos
+        MKV (HEVC/HDR, contenedores más complejos) y deja "N/A" aunque
+        ffprobe sí pueda leerlos sin problema — por eso no basta con
+        fiarse del dato precalculado justo antes de decidir qué borrar.
+        """
+        if not ruta or not os.path.exists(ruta):
+            return duracion_fallback, 'N/A'
+
+        info = self._get_video_summary_cached(ruta)
+        duracion = info.get('duration', 'N/A') if info else 'N/A'
+        resolucion = info.get('resolution', 'N/A') if info else 'N/A'
+
+        if duracion in (None, 'N/A') and duracion_fallback not in (None, 'N/A'):
+            duracion = duracion_fallback
+
+        return duracion, resolucion
+
     def _get_file_info(self, file_path: str) -> Optional[Dict]:
         """Obtiene información básica del archivo (tamaño y fecha)"""
         try:
