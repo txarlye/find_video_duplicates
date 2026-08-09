@@ -180,6 +180,18 @@ class Settings:
         """Obtiene el ID del canal de Telegram"""
         return self.get_env("TELEGRAM_CHANNEL_ID") or self.get("telegram.channel_id", "")
 
+    def get_telegram_api_id(self) -> str:
+        """Obtiene el API ID de Telethon (my.telegram.org), para subir archivos grandes"""
+        return self.get_env("TELEGRAM_API_ID")
+
+    def get_telegram_api_hash(self) -> str:
+        """Obtiene el API Hash de Telethon (my.telegram.org)"""
+        return self.get_env("TELEGRAM_API_HASH")
+
+    def get_telegram_phone(self) -> str:
+        """Obtiene el teléfono de la cuenta de Telegram usada por Telethon"""
+        return self.get_env("TELEGRAM_PHONE")
+
     def is_debug_mode(self) -> bool:
         """Verifica si está en modo debug"""
         return self.get("app.debug", False)

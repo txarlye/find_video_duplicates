@@ -5,10 +5,21 @@
 IMDB_API_KEY=your_imdb_api_key_here
 
 # Token del bot de Telegram (obtener de @BotFather)
+# Solo sirve para subir archivos de hasta 50MB (límite real del Bot API
+# de Telegram para el envío de vídeos/documentos vía api.telegram.org).
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
 # ID del canal de Telegram (formato: @channel_name o -1001234567890)
 TELEGRAM_CHANNEL_ID=your_telegram_channel_id_here
+
+# Para subir archivos más grandes de 50MB, la app usa Telethon (un
+# cliente de tu propia cuenta de Telegram, no del bot) — hace falta
+# rellenar también estas tres. Consíguelas en https://my.telegram.org
+# -> API development tools (créalas con tu cuenta personal, no con el
+# bot). TELEGRAM_PHONE en formato internacional, p.ej. +34600000000.
+TELEGRAM_API_ID=
+TELEGRAM_API_HASH=
+TELEGRAM_PHONE=
 
 # Token de Plex (obtener desde la configuración de Plex)
 PLEX_TOKEN=your_plex_token_here

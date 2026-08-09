@@ -1,6 +1,12 @@
 """
-Servicio de Telegram usando Bot API
-Límite de 50MB para videos, 2GB para documentos
+Servicio de Telegram usando Bot API.
+
+Límite real: 50MB tanto para sendVideo como para sendDocument cuando se
+usa el endpoint estándar api.telegram.org (el límite de 2GB para
+documentos solo aplica si se monta un servidor local de Bot API propio,
+algo que esta app no hace). Para archivos más grandes, ver
+TelegramTelethonService/TelegramUploader (cliente de usuario vía
+Telethon), que sí soporta hasta ~1.5-2GB.
 """
 
 import logging
@@ -16,35 +22,21 @@ class TelegramBotService:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        
-        # Credenciales - leer directamente del .env
-        self.bot_token = self._get_env_value("TELEGRAM_BOT_TOKEN")
-        self.channel_id = self._get_env_value("TELEGRAM_CHANNEL_ID")
-        
+
+        # Credenciales - vía settings.py, que ya sabe dónde vive el .env
+        # real (la raíz del proyecto, no src/settings/.env: ese fichero
+        # nunca existió, así que esto no encontraba nada antes).
+        self.bot_token = settings.get_telegram_bot_token()
+        self.channel_id = settings.get_telegram_channel_id()
+
         # Configuración
-        self.max_file_size = int(self._get_env_value("TELEGRAM_MAX_FILE_SIZE") or "52428800")  # 50MB
-        self.upload_delay = int(self._get_env_value("TELEGRAM_UPLOAD_DELAY") or "2")
-        
+        self.max_file_size = int(settings.get_env("TELEGRAM_MAX_FILE_SIZE") or "52428800")  # 50MB
+        self.upload_delay = int(settings.get_env("TELEGRAM_UPLOAD_DELAY") or "2")
+
         # URLs
         self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
-    
-    def _get_env_value(self, key: str) -> str:
-        """Lee un valor del archivo .env directamente"""
-        try:
-            env_path = Path(__file__).parent.parent.parent / "settings" / ".env"
-            if env_path.exists():
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            k, v = line.split('=', 1)
-                            if k == key:
-                                return v
-            return None
-        except Exception as e:
-            self.logger.error(f"Error leyendo {key}: {e}")
-            return None
-        
+
+
     def is_configured(self) -> bool:
         """Verifica si el servicio está configurado"""
         return all([

@@ -96,8 +96,18 @@ usar — todo es opcional salvo lo que necesites:
 | `TMDB_API_KEY` | Sinopsis/pósteres en español, contraste de sugerencias de IA | [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api) (gratis) |
 | `OMDB_API_KEY` | Contraste alternativo de sugerencias de IA (inglés) | [omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx) (gratis) |
 | `IMDB_API_KEY` | Búsquedas adicionales de IMDB | [imdb-api.com](https://imdb-api.com/api) |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHANNEL_ID` | Subida automática de vídeos a un canal | @BotFather / @userinfobot en Telegram |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHANNEL_ID` | Subida de vídeos a un canal, **hasta 50MB por archivo** | @BotFather / @userinfobot en Telegram |
+| `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` / `TELEGRAM_PHONE` | Subida de archivos **más grandes de 50MB** (usa tu cuenta personal vía Telethon, no el bot) | [my.telegram.org](https://my.telegram.org) → API development tools |
 | `OPENAI_API_KEY` / `GEMINI_API_KEY` | Solo si eliges OpenAI o Gemini como proveedor de IA para nombrar huérfanos | platform.openai.com / aistudio.google.com |
+
+**Sobre los límites de tamaño en Telegram**: el Bot API de Telegram
+(`TELEGRAM_BOT_TOKEN`) tiene un límite real de 50MB por archivo tanto
+para vídeo como para documento — no hay forma de saltárselo sin montar
+tu propio servidor de Bot API. Para películas más pesadas, la app usa
+Telethon (un cliente de tu cuenta personal de Telegram, con
+`TELEGRAM_API_ID`/`TELEGRAM_API_HASH`/`TELEGRAM_PHONE`), que sube
+directamente hasta ~1.5-2GB. Sin esas tres variables, cualquier archivo
+de más de 50MB fallará al subir sin más explicación en la interfaz.
 
 Si usas **Ollama en local** para la IA de nombrado de huérfanos, no
 necesitas ninguna de las dos claves de arriba (`OPENAI_API_KEY`/
