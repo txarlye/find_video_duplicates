@@ -253,8 +253,15 @@ class Settings:
         self.set("ui.video_start_time_seconds", value)
     
     def get_debug_enabled(self) -> bool:
-        """Obtiene si el modo debug está activado"""
-        return self.get("debug.enabled", True)
+        """
+        Si el modo debug (mover a la papelera en vez de borrar) está
+        activado. Forzado a True mientras la app esté en desarrollo: no
+        hay forma de desactivarlo desde la UI, para que ningún borrado
+        sea irreversible por accidente. El valor guardado en config.json
+        se conserva sin usar por si en el futuro se decide volver a
+        permitir desactivarlo.
+        """
+        return True
     
     def set_debug_enabled(self, value: bool):
         """Establece si el modo debug está activado"""
