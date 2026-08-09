@@ -33,12 +33,19 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 ### 🧩 Huérfanos (películas sin indexar en Plex)
 - Detecta archivos en disco que Plex no tiene indexados
 - Sugerencia de nombre con IA: **Ollama** (local, gratis), **OpenAI** o
-  **Gemini**, a elegir
+  **Gemini**, a elegir — individual o en lote (con límite configurable y
+  botón de detener, para colecciones grandes)
 - La sugerencia de la IA se contrasta contra **TMDB/OMDb** antes de
   aceptarla (mejor título en español vía TMDB, año real de la base de
   datos en vez de un año inventado por el modelo)
+- Si el nombre de archivo no dice nada (títulos crípticos, nombres de
+  escena...), el mismo visualizador con fotograma navegable de
+  duplicados permite "hojear" el vídeo hasta encontrar los créditos o
+  cualquier escena que revele de qué película se trata
 - Modo "sugerir" (confirmas tú cada renombrado) o "automático"
 - Listados paginados para colecciones grandes
+
+![Renombrando una huérfana con nombre críptico: navegando hasta el minuto 0:29 aparece el título en los créditos](.img/renombrado%20peli%20huerfana.png)
 
 ### 📺 Series
 - Detecta capítulos duplicados, capítulos sueltos sin indexar y **series
