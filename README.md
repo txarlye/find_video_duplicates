@@ -1,577 +1,194 @@
-# 🎬 Detector de Películas Duplicadas
+# 🎬 Detector de Películas y Series Duplicadas
 
-Una aplicación inteligente desarrollada en Python con Streamlit para detectar películas duplicadas en tu colección de videos, con filtros avanzados por duración y similitud de nombres. Incluye integración con **IMDB/TMDB**, **Telegram** y **Plex** para información completa de películas y subida automática.
+Aplicación en Python con Streamlit para organizar una biblioteca de vídeo
+local: detecta **películas y series duplicadas**, encuentra **archivos sin
+indexar en Plex** (con ayuda de IA para renombrarlos), y contrasta todo
+contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 
-## ✨ Características Principales
+> 📖 **¿Primera vez?** Antes de nada, sigue [SETUP.md](SETUP.md) para
+> apuntar la app a tu propio NAS (rutas, base de datos de Plex, API keys y
+> acceso remoto por Tailscale).
 
-### 🔍 **Detección Inteligente**
-- **Escaneo recursivo** de carpetas para encontrar archivos de video
-- **Análisis de similitud** de nombres de películas usando algoritmos avanzados
-- **Filtro por duración** para descartar falsos positivos (configurable)
-- **Soporte múltiples formatos**: MP4, AVI, MKV, MOV, WMV, FLV, M4V, MPG, MPEG, 3GP, WebM
+## ✨ Funcionalidades
 
-### 🎯 **Filtros Avanzados**
-- **Umbral de similitud** configurable (0.1 - 1.0)
-- **Filtro por duración** con tolerancia en minutos (1-30 min)
-- **Comparación de años** para evitar confundir secuelas
-- **Análisis de rutas** para detectar archivos en carpetas diferentes
+### 🔍 Duplicados de películas
+- Escaneo recursivo de carpetas con detección por similitud de nombre + año
+- Filtro por duración configurable para descartar falsos positivos
+- Comparación por fotograma (en vez de reproducir el vídeo completo) para
+  revisar pares rápido
+- Navegación por pares, con guardado/carga del progreso de un escaneo
+- Integración con **Ediciones de Plex**: cuando dos "duplicados" son en
+  realidad versiones distintas de la misma película (Director's Cut,
+  Extendida...), la app puede convertir uno de los dos en una Edición de
+  Plex en lugar de borrarlo
 
-### 🖥️ **Interfaz Moderna**
-- **Interfaz web** con Streamlit
-- **Navegación por pares** para mejor rendimiento
-- **Reproductores externos** para comparar videos
-- **Análisis visual** de similitud con indicadores de color
-- **Modo debug** para pruebas seguras
+### 🧩 Huérfanos (películas sin indexar en Plex)
+- Detecta archivos en disco que Plex no tiene indexados
+- Sugerencia de nombre con IA: **Ollama** (local, gratis), **OpenAI** o
+  **Gemini**, a elegir
+- La sugerencia de la IA se contrasta contra **TMDB/OMDb** antes de
+  aceptarla (mejor título en español vía TMDB, año real de la base de
+  datos en vez de un año inventado por el modelo)
+- Modo "sugerir" (confirmas tú cada renombrado) o "automático"
+- Listados paginados para colecciones grandes
 
-### ⚙️ **Configuración Flexible**
-- **Configuración persistente** en JSON
-- **Variables de entorno** para datos sensibles
-- **Patrón Singleton** para acceso global a configuración
-- **Interfaz de configuración** integrada en la aplicación
+### 📺 Series
+- Detecta capítulos duplicados, capítulos sueltos sin indexar y **series
+  enteras sin indexar en Plex** (agrupadas por serie, con desplegable)
+- Compara por episodios indexados, no por título de serie — así una serie
+  con título traducido en Plex (p.ej. "Earth Abides" en disco vs. "La
+  Tierra Permanece" en Plex) no sale como falso "sin indexar"
+- Permite marcar series como "ignoradas" de forma permanente
+- Guardado/carga de progreso, igual que en duplicados y huérfanos
 
-### 🎬 **Integración IMDB/TMDB**
-- **Búsqueda automática** de información de películas
-- **Sinopsis en español** usando TMDB API
-- **Pósteres de alta calidad** para carátulas
-- **Fallback inteligente**: IMDB → TMDB → Plex
-- **Información completa**: Rating, director, actores, género
+### 🗑️ Basura / Purgatorio
+- La app **nunca borra nada directamente**: todo lo eliminado o renombrado
+  se mueve a una carpeta de debug configurable
+- Vista dedicada con el contenido de esa carpeta (separado en películas /
+  capítulos de serie), tamaño total ocupado y, si indicas el tamaño
+  aproximado de tu biblioteca, qué porcentaje llevas ya "purgado"
+- Vaciarla de verdad es una acción manual tuya en el NAS, nunca automática
 
-### 📱 **Integración Telegram**
-- **Subida automática** de videos a canales de Telegram
-- **Envío de carátulas** y sinopsis antes del video
-- **Soporte para archivos grandes** (>1.5GB)
-- **Progreso en tiempo real** durante la subida
-- **Orden correcto**: Carátula → Sinopsis → Video
+### 🎬 IMDB / TMDB / OMDb
+- Sinopsis, pósteres y datos (rating, director, actores, género)
+- TMDB como fuente primaria (mejor cobertura en español), con OMDb como
+  contraste/fallback
 
-### 🗄️ **Integración Plex**
-- **Conexión de solo lectura** a base de datos de Plex
-- **Búsqueda de títulos reales** por nombre de archivo
-- **Información de biblioteca** (año, sinopsis, rating)
-- **Fallback seguro** cuando IMDB/TMDB fallan
+### 📱 Telegram
+- Subida de vídeos a un canal, con carátula + sinopsis antes del vídeo
+- Dos vías de subida: **Bot API** (archivos pequeños) y **Telethon**
+  (sesión de usuario, para archivos grandes que superan el límite del Bot
+  API)
 
-## 🚀 Instalación Automática
+### 🗄️ Plex
+- Conexión de **solo lectura** a la base de datos de Plex
+- Cruce de duplicados, huérfanos y series contra tu biblioteca real
+- Refresco de biblioteca desde la propia app tras renombrar/mover archivos
 
-### **Windows** 🪟
+## 🚀 Instalación
+
 ```bash
-# Ejecutar script de instalación automática
-setup\instalar_dependencias.bat
-
-# Ejecutar aplicación
-setup\run_app.bat
-```
-
-### **Linux/Mac** 🐧
-```bash
-# Hacer ejecutable y ejecutar
-chmod +x setup/run_app.sh
-./setup/run_app.sh
-```
-
-### **Python Cross-Platform** 🐍
-```bash
-# Instalación con Python
-python setup/install_dependencies.py
-
-# Ejecutar aplicación
-python main.py
-```
-
-> **📋 Nota**: Después de la instalación automática, necesitarás configurar las variables de entorno, APIs y rutas. Ver sección [Configuración Completa](#-configuración-completa) más abajo.
-
-## ⚙️ Configuración Inicial Requerida
-
-### **📁 Configuración de Rutas (OBLIGATORIO)**
-Antes de usar la aplicación, **DEBES** editar `src/settings/config.json` y configurar las rutas de tu sistema:
-
-```json
-{
-  "paths": {
-    "last_scan_path": "C:\\ruta\\a\\tus\\peliculas",
-    "debug_folder": "C:\\ruta\\para\\debug", 
-    "selected_movies_folder": "C:\\ruta\\para\\peliculas\\seleccionadas"
-  },
-  "plex": {
-    "database_path": "C:\\ruta\\a\\plex\\database.db"
-  }
-}
-```
-
-**⚠️ Sin estas rutas configuradas, la aplicación NO funcionará correctamente.**
-
-## 🚀 Instalación Manual
-
-### 1. **Clonar el Repositorio**
-```bash
-git clone <tu-repositorio>
-cd scrapper-pelis
-```
-
-### 2. **Instalar Dependencias**
-```bash
+git clone <tu-fork-o-este-repositorio>
+cd find_video_duplicates
 pip install -r requirements.txt
 ```
 
-### 3. **Configurar Variables de Entorno**
-```bash
-# Copiar plantilla de variables de entorno
-cp src/settings/env_template.txt .env
+O con los instaladores incluidos:
 
-# Editar .env con tus datos
-# Ver sección "Configuración Completa" más abajo
-```
-
-### 4. **Ejecutar la Aplicación**
 ```bash
+# Windows
+setup\instalar_dependencias.bat
+setup\run_app.bat
+
+# Linux/Mac
+chmod +x setup/run_app.sh
+./setup/run_app.sh
+
+# Cualquier plataforma
+python setup/install_dependencies.py
 python main.py
 ```
 
-La aplicación se abrirá automáticamente en tu navegador en `http://localhost:8501`
+La app se abre en `http://localhost:8501`.
+
+**Después de instalar**, sigue [SETUP.md](SETUP.md) para configurar tus
+rutas reales, la base de datos de Plex y las API keys — sin eso la app
+arranca pero no tiene nada que escanear.
 
 ## 📁 Estructura del Proyecto
 
 ```
-scrapper-pelis/
-├── main.py                          # Punto de entrada principal
-├── app_simple.py                    # Aplicación Streamlit
-├── requirements.txt                 # Dependencias Python
-├── README.md                        # Este archivo
+find_video_duplicates/
+├── main.py                          # Punto de entrada (abre navegador, Tailscale-friendly)
+├── app_simple.py                    # Entry point de Streamlit
+├── requirements.txt
+├── README.md
+├── SETUP.md                         # Configuración paso a paso (rutas, Plex, Tailscale)
 │
-├── src/                            # Código fuente
-│   ├── app/                        # Aplicación Streamlit
-│   │   └── streamlit_app.py
-│   ├── services/                   # Servicios externos
-│   │   ├── imdb_service.py         # Integración IMDB
-│   │   └── telegram_service.py     # Integración Telegram
-│   ├── settings/                   # Configuración
-│   │   ├── settings.py            # Patrón Singleton
-│   │   ├── config.json            # Configuración JSON
-│   │   └── env_template.txt       # Plantilla .env
-│   └── utils/                      # Utilidades
-│       └── movie_detector.py       # Lógica de detección
+├── src/
+│   ├── app/
+│   │   ├── streamlit_app.py
+│   │   └── streamlit_manager.py     # Toda la UI: escaneo, huérfanos, series, basura...
+│   ├── services/
+│   │   ├── ai_naming_service.py     # IA (Ollama/OpenAI/Gemini) + contraste TMDB/OMDb
+│   │   ├── plex_service.py
+│   │   ├── plex_refresh_service.py
+│   │   ├── scan_data_manager.py     # Guardado/carga de progreso de escaneos
+│   │   ├── video_info_service.py
+│   │   ├── Plex/                    # Detección/creación de Ediciones de Plex
+│   │   ├── Imdb/                    # Búsqueda de películas en IMDB/TMDB/OMDb
+│   │   └── Telegram/                # Bot API + Telethon
+│   ├── settings/
+│   │   ├── settings.py              # Singleton de configuración
+│   │   ├── config.example.json      # Plantilla — cópiala a config.json
+│   │   └── env_template.txt         # Plantilla — cópiala a .env
+│   └── utils/
+│       ├── movie_detector.py        # Similitud de nombres para películas
+│       ├── series_detector.py       # Parseo SxxExx / NxNN, agrupado por serie
+│       ├── file_operations.py
+│       └── ui_components.py
 │
-└── peliculas_duplicadas.py         # Script original (legacy)
+└── setup/                           # Instaladores por plataforma
 ```
 
 ## ⚙️ Configuración
 
-### **Archivo de Configuración (`src/settings/config.json`)**
+Ver **[SETUP.md](SETUP.md)** para la guía completa (rutas de tu NAS, dónde
+está la base de datos de Plex en un Synology, variables de entorno y
+acceso remoto por Tailscale).
 
-```json
-{
-    "detection": {
-        "similarity_threshold": 0.8,           // Umbral de similitud (0.1-1.0)
-        "duration_filter_enabled": true,       // Activar filtro por duración
-        "duration_tolerance_minutes": 1,       // Tolerancia en minutos
-        "supported_extensions": [".mp4", ".avi", ".mkv", ...]
-    },
-    "ui": {
-        "show_video_players": true,            // Mostrar reproductores
-        "video_player_size": "medium"          // Tamaño del reproductor
-    },
-    "debug": {
-        "enabled": true,                       // Modo debug activo
-        "debug_folder": "ruta/debug"           // Carpeta para archivos debug
-    }
-}
-```
-
-### **Variables de Entorno (`.env`)**
+Resumen rápido:
 
 ```bash
-# ===========================================
-# CONFIGURACIÓN BÁSICA
-# ===========================================
-
-# Ruta a la base de datos de Plex (SOLO LECTURA)
-PLEX_DATABASE_PATH=C:\Users\Usuario\AppData\Local\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db
-
-# ===========================================
-# TELEGRAM CONFIGURATION
-# ===========================================
-
-# Token del bot de Telegram (obtener de @BotFather)
-TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
-
-# ID del canal de Telegram (obtener de @userinfobot)
-TELEGRAM_CHANNEL_ID=-1001234567890
-
-# Límite de tamaño de archivo en bytes (50MB = 52428800)
-TELEGRAM_MAX_FILE_SIZE=52428800
-
-# Delay entre subidas en segundos
-TELEGRAM_UPLOAD_DELAY=2
-
-# ===========================================
-# API KEYS (OPCIONAL)
-# ===========================================
-
-# OMDb API Key (gratuita en omdbapi.com)
-OMDB_API_KEY=tu_omdb_api_key_aqui
-
-# TMDB API Key (gratuita en themoviedb.org)
-TMDB_API_KEY=tu_tmdb_api_key_aqui
-
-# IMDB API Key (opcional, para búsquedas adicionales)
-IMDB_API_KEY=tu_imdb_api_key_aqui
+cp src/settings/config.example.json src/settings/config.json
+cp src/settings/env_template.txt .env
 ```
 
-## 🔧 Configuración Completa
+Después edita `config.json` y `.env` con tus valores, o ajústalos desde la
+pestaña ⚙️ Configuración de la propia app. Ambos ficheros están en
+`.gitignore`: puedes meter tus rutas y claves reales sin miedo a subirlas.
 
-### **📱 Configuración de Telegram**
+## 🎮 Uso rápido
 
-#### **Paso 1: Crear Bot de Telegram**
-1. **Abrir Telegram** y buscar `@BotFather`
-2. **Enviar comando** `/newbot`
-3. **Elegir nombre** para tu bot (ej: "Mi Bot de Películas")
-4. **Elegir username** (debe terminar en 'bot', ej: "mi_bot_peliculas_bot")
-5. **Copiar el token** que te proporciona BotFather
-6. **Agregar token** a tu archivo `.env`:
-   ```bash
-   TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
-   ```
-
-#### **Paso 2: Crear Canal de Telegram**
-1. **Abrir Telegram** y crear un nuevo canal
-2. **Elegir nombre** para tu canal (ej: "Mis Películas")
-3. **Configurar como canal público** o privado
-4. **Agregar tu bot** como administrador del canal
-5. **Obtener ID del canal**:
-   - Buscar `@userinfobot` en Telegram
-   - Enviar el enlace de tu canal
-   - Copiar el ID que te proporciona
-6. **Agregar ID** a tu archivo `.env`:
-   ```bash
-   TELEGRAM_CHANNEL_ID=-1001234567890
-   ```
-
-#### **Paso 3: Configurar Permisos del Bot**
-1. **Ir a configuración** del canal
-2. **Administradores** → **Agregar administrador**
-3. **Seleccionar tu bot**
-4. **Dar permisos**:
-   - ✅ Enviar mensajes
-   - ✅ Enviar archivos multimedia
-   - ✅ Enviar documentos
-   - ✅ Enviar fotos
-
-### **🗄️ Configuración de Plex**
-
-#### **Ubicación de la Base de Datos**
-La aplicación se conecta a la base de datos de Plex en **modo de solo lectura** para obtener información de películas.
-
-**Ubicaciones típicas:**
-- **Windows**: `C:\Users\[Usuario]\AppData\Local\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db`
-- **macOS**: `~/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library.db`
-- **Linux**: `~/.local/share/plexmediaserver/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library.db`
-
-**⚠️ IMPORTANTE: Configurar rutas en `config.json`**
-Antes de usar la aplicación, debes editar `src/settings/config.json` y configurar las siguientes rutas:
-
-```json
-{
-  "paths": {
-    "last_scan_path": "C:\\ruta\\a\\tus\\peliculas",
-    "debug_folder": "C:\\ruta\\para\\debug",
-    "selected_movies_folder": "C:\\ruta\\para\\peliculas\\seleccionadas"
-  },
-  "plex": {
-    "database_path": "C:\\ruta\\a\\plex\\database.db"
-  }
-}
-```
-
-**Configurar en `.env` (opcional):**
-```bash
-PLEX_DATABASE_PATH=C:\Users\Usuario\AppData\Local\Plex Media Server\Plug-in Support\Databases\com.plexapp.plugins.library.db
-```
-
-⚠️ **IMPORTANTE**: La aplicación **NUNCA modifica** la base de datos de Plex, solo lee información.
-
-### **🎬 Configuración de APIs de Películas**
-
-#### **TMDB API (Recomendado - Español)**
-1. **Ir a** [themoviedb.org](https://www.themoviedb.org/settings/api)
-2. **Crear cuenta** gratuita
-3. **Solicitar API Key** (gratuita)
-4. **Agregar a `.env`**:
-   ```bash
-   TMDB_API_KEY=tu_tmdb_api_key_aqui
-   ```
-
-#### **OMDb API (Inglés)**
-1. **Ir a** [omdbapi.com](https://www.omdbapi.com/)
-2. **Registrarse** para obtener API key gratuita
-3. **Agregar a `.env`**:
-   ```bash
-   OMDB_API_KEY=tu_omdb_api_key_aqui
-   ```
-
-#### **Flujo de Búsqueda de Información**
-1. **Limpia el nombre** del archivo (elimina [DVDrip], [Spanish], etc.)
-2. **Busca en IMDB** con nombre limpio
-3. **Si falla IMDB** → Busca en Plex por nombre de archivo
-4. **Si Plex encuentra título** → Busca en TMDB (español)
-5. **Si TMDB falla** → Busca en OMDb (inglés)
-6. **Combina información** de todas las fuentes
-
-## 🎮 Uso de la Aplicación
-
-### **1. Escaneo de Películas**
-1. **Selecciona la carpeta** a escanear en el sidebar
-2. **Configura los filtros**:
-   - Umbral de similitud (recomendado: 0.8)
-   - Filtro por duración (recomendado: 1 minuto)
-3. **Haz clic en "🔍 Escanear Películas"**
-4. **Observa el progreso** en el miniterminal
-
-### **2. Revisar Duplicados**
-1. **Navega entre pares** con los botones Anterior/Siguiente
-2. **Compara videos** usando "Abrir en Reproductor"
-3. **Analiza la similitud** en la sección de análisis
-4. **Selecciona películas** para eliminar/mover
-
-### **3. Gestionar Duplicados**
-- **Seleccionar películas** con checkboxes (mutuamente excluyentes)
-- **Mover archivos seleccionados** a una carpeta específica
-- **Eliminar seleccionadas** (modo debug: mueve a carpeta debug)
-
-### **4. Subir a Telegram con Información IMDB**
-1. **Ir a la pestaña "IMDB"** en la aplicación
-2. **Seleccionar método de subida**:
-   - **📁 Desde Carpeta**: Escanear carpeta y seleccionar videos
-   - **📎 Archivos Individuales**: Subir archivos específicos
-3. **Configurar opciones**:
-   - ✅ **Usar Telethon** (para archivos grandes)
-   - ✅ **Enviar carátula** (póster de la película)
-4. **Hacer clic en "🚀 Subir a IMDB con Información"**
-5. **Observar el progreso**:
-   - 🔍 **Paso 1**: Buscar información de películas
-   - 🖼️ **Paso 2**: Enviar carátulas
-   - 📝 **Paso 3**: Enviar sinopsis
-   - 🎬 **Paso 4**: Subir videos
-
-### **5. Resultado en Telegram**
-Para cada película se enviará en orden:
-1. **🖼️ Carátula** (póster de alta calidad)
-2. **📝 Información completa**:
-   ```
-   🎬 **Título de la Película** (Año)
-   
-   ⭐ **Rating:** 8.5/10
-   🎭 **Director:** Nombre del Director
-   👥 **Actores:** Actor1, Actor2, Actor3
-   🎭 **Género:** Acción, Aventura, Comedia
-   
-   📖 **Sinopsis:**
-   [Sinopsis completa de la película]
-   ```
-3. **🎬 Video** (archivo de video)
-
-## 🔧 Configuración Avanzada
-
-### **Filtros de Detección**
-
-| Parámetro | Descripción | Rango | Recomendado |
-|-----------|-------------|-------|-------------|
-| `similarity_threshold` | Umbral de similitud de nombres | 0.1 - 1.0 | 0.8 |
-| `duration_tolerance_minutes` | Tolerancia de duración | 1 - 30 | 1 |
-| `duration_filter_enabled` | Activar filtro por duración | true/false | true |
-
-### **Formatos Soportados**
-- **MP4, AVI, MKV** (recomendados)
-- **MOV, WMV, FLV, M4V**
-- **MPG, MPEG, 3GP, WebM**
-
-### **Modo Debug**
-- **Activado por defecto** para seguridad
-- **No elimina archivos** realmente
-- **Mueve a carpeta debug** configurada
-- **Desactivar** solo cuando estés seguro
-
-## 🛠️ Desarrollo
-
-### **Arquitectura Clean Code**
-- **Separación de responsabilidades** en módulos
-- **Patrón Singleton** para configuración
-- **Inyección de dependencias** para servicios
-- **Logging estructurado** para debugging
-
-### **Extensibilidad**
-- **Servicios modulares** (IMDB, Telegram)
-- **Configuración flexible** via JSON
-- **API de detección** reutilizable
-- **Interfaz personalizable**
-
-### **Testing**
-```bash
-# Ejecutar tests (cuando estén implementados)
-python -m pytest tests/
-```
-
-## 📊 Rendimiento
-
-### **Optimizaciones Implementadas**
-- **Paginación** para grandes colecciones
-- **Reproductores externos** para mejor rendimiento
-- **Filtros inteligentes** para reducir falsos positivos
-- **Escaneo eficiente** con metadata de video
-
-### **Recomendaciones**
-- **Colecciones grandes**: Usar filtros estrictos
-- **Videos largos**: Desactivar reproductores embebidos
-- **Red lenta**: Configurar timeouts apropiados
+1. **Escanear**: elige carpeta en el sidebar, ajusta umbral de similitud y
+   filtro de duración, pulsa "🔍 Escanear".
+2. **Revisar pares**: navega con Anterior/Siguiente, compara por fotograma
+   o vídeo completo, decide si eliminar (va a la papelera) o mover.
+3. **Huérfanos**: pestaña 🧩, deja que la IA sugiera nombre y contrástalo
+   antes de renombrar.
+4. **Series**: pestaña 📺, mismo flujo pero por episodios y series enteras.
+5. **Basura**: pestaña 🗑️, revisa qué se ha ido acumulando en la papelera
+   antes de vaciarla tú a mano en el NAS.
+6. **Telegram/IMDB**: subida opcional a un canal con carátula y sinopsis.
 
 ## 🔒 Seguridad
 
-### **Modo Debug (Recomendado)**
-- **Activado por defecto** para prevenir pérdida de datos
-- **Archivos movidos** a carpeta debug
-- **Logging completo** de todas las operaciones
-- **Confirmación manual** antes de eliminar
+- La app **nunca borra archivos directamente**: todo pasa primero por la
+  carpeta de debug/papelera configurada.
+- La conexión a Plex es **de solo lectura**.
+- Las claves de API y tokens viven solo en `.env` / `config.json`, ambos
+  excluidos de git — nunca se hardcodean en el código.
 
-### **Variables Sensibles**
-- **API Keys** en archivo `.env` (no en git)
-- **Rutas de red** configuradas por usuario
-- **Tokens de Telegram** protegidos
+## 🐛 Solución de problemas
 
-## 🐛 Solución de Problemas
+Ver la sección de problemas comunes en **[SETUP.md](SETUP.md#7-problemas-comunes)**
+para lo relacionado con rutas, Plex y acceso remoto.
 
-### **Problemas Comunes**
+Otros problemas frecuentes:
 
-#### **"Mutagen no disponible"**
-```bash
-pip install mutagen>=1.47.0
-```
-
-#### **"Streamlit ya está ejecutándose"**
-```bash
-# Windows
-taskkill /f /im python.exe
-
-# Linux/Mac
-pkill -f streamlit
-```
-
-#### **"Puerto 8501 ocupado"**
-```bash
-# Cambiar puerto en main.py
-subprocess.run([..., "--server.port", "8502", ...])
-```
-
-#### **"Error 401: Unauthorized" (OMDb/TMDB)**
-```bash
-# Verificar que las API keys estén correctas en .env
-OMDB_API_KEY=tu_api_key_correcta
-TMDB_API_KEY=tu_api_key_correcta
-```
-
-#### **"No se encuentra la base de datos de Plex"**
-```bash
-# Verificar la ruta en config.json
-"plex": {
-  "database_path": "C:\\ruta\\correcta\\com.plexapp.plugins.library.db"
-}
-```
-
-#### **"Error: Rutas no configuradas"**
-```bash
-# Editar src/settings/config.json y configurar:
-{
-  "paths": {
-    "last_scan_path": "C:\\ruta\\a\\tus\\peliculas",
-    "debug_folder": "C:\\ruta\\para\\debug",
-    "selected_movies_folder": "C:\\ruta\\para\\peliculas\\seleccionadas"
-  }
-}
-```
-
-#### **"Carpeta de debug no encontrada"**
-```bash
-# Crear la carpeta manualmente o cambiar la ruta en config.json
-mkdir C:\ruta\para\debug
-```
-
-#### **"Bot de Telegram no responde"**
-1. **Verificar token** en `.env`
-2. **Agregar bot como administrador** del canal
-3. **Verificar permisos** del bot
-4. **Comprobar ID del canal** (debe empezar con -100)
-
-### **Logs y Debugging**
-- **Logs detallados** en `app.log`
-- **Modo debug** con información extra
-- **Miniterminal** para seguimiento en tiempo real
+- **"Streamlit ya está ejecutándose"**: hay un proceso previo ocupando el
+  puerto 8501 (`taskkill /f /im python.exe` en Windows, `pkill -f
+  streamlit` en Linux/Mac).
+- **"Mutagen no disponible"**: `pip install mutagen>=1.47.0`.
+- **Error 401 en OMDb/TMDB**: revisa que la API key en `.env` sea correcta.
 
 ## 🤝 Contribuir
 
-### **Cómo Contribuir**
-1. **Fork** el repositorio
-2. **Crear rama** para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. **Commit** tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. **Push** a la rama (`git push origin feature/nueva-funcionalidad`)
-5. **Crear Pull Request**
-
-### **Estándares de Código**
-- **PEP 8** para estilo de Python
-- **Docstrings** para documentación
-- **Type hints** para mejor legibilidad
-- **Tests** para nuevas funcionalidades
-
-## 📝 Changelog
-
-### **v1.0.0** (Actual)
-- ✅ Detección básica de duplicados
-- ✅ Filtros por duración y similitud
-- ✅ Interfaz Streamlit moderna
-- ✅ Modo debug para seguridad
-- ✅ Configuración flexible
-- ✅ Reproductores externos
-- ✅ Navegación por pares
-
-### **v2.0.0** (Actual)
-- ✅ **Integración IMDB/TMDB completa**
-- ✅ **Subida automática a Telegram**
-- ✅ **Integración con Plex (solo lectura)**
-- ✅ **Búsqueda inteligente de información**
-- ✅ **Envío de carátulas y sinopsis**
-- ✅ **Soporte para archivos grandes**
-- ✅ **Fallback automático entre APIs**
-- ✅ **Sinopsis en español (TMDB)**
-
-### **Próximas Versiones**
-- 🔄 Análisis de calidad de video
-- 🔄 Detección de subtítulos
-- 🔄 Interfaz de administración
-- 🔄 Soporte para series de TV
-- 🔄 Detección automática de ediciones
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
-
-## 👥 Autores
-
-- **Desarrollador Principal**: [Tu Nombre]
-- **Contribuidores**: [Lista de contribuidores]
-
-## 🙏 Agradecimientos
-
-- **Streamlit** por la excelente plataforma web
-- **Mutagen** por la extracción de metadata de video
-- **IMDB API** por la información de películas
-- **Telegram Bot API** por la integración de mensajería
+1. Fork del repositorio
+2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit de tus cambios
+4. Push y abre un Pull Request
 
 ---
 
-## 📞 Soporte
-
-Si tienes problemas o preguntas:
-
-1. **Revisa** la sección de solución de problemas
-2. **Consulta** los logs en `app.log`
-3. **Abre un issue** en GitHub
-4. **Contacta** al desarrollador
-
----
-
-**¡Disfruta organizando tu colección de películas! 🎬✨**
+**¡Disfruta organizando tu colección! 🎬✨**
