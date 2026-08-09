@@ -14,13 +14,21 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 ### 🔍 Duplicados de películas
 - Escaneo recursivo de carpetas con detección por similitud de nombre + año
 - Filtro por duración configurable para descartar falsos positivos
-- Comparación por fotograma (en vez de reproducir el vídeo completo) para
-  revisar pares rápido
+- Comparación por fotograma (mucho más rápido que reproducir el vídeo
+  completo, sobre todo en carpetas de red), con botones ◀ -10s / +10s ▶ y
+  un campo para saltar directo a un minuto exacto — útil para reconocer
+  la película cuando el nombre de archivo no dice nada
+- Reproductor de vídeo completo embebido, opcional, para cuando el
+  fotograma no basta
+- Tamaño, duración y resolución reales (no solo lo calculado en el
+  escaneo) justo antes de decidir qué eliminar
 - Navegación por pares, con guardado/carga del progreso de un escaneo
 - Integración con **Ediciones de Plex**: cuando dos "duplicados" son en
   realidad versiones distintas de la misma película (Director's Cut,
   Extendida...), la app puede convertir uno de los dos en una Edición de
   Plex en lugar de borrarlo
+
+![Comparando un par de duplicados: fotograma navegable, reproductor embebido opcional, y tamaño/duración/resolución reales antes de eliminar](.img/manejo%20de%20duplicados.png)
 
 ### 🧩 Huérfanos (películas sin indexar en Plex)
 - Detecta archivos en disco que Plex no tiene indexados
