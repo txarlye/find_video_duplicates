@@ -102,11 +102,26 @@ class AINamingService:
             confirmado = self._buscar_en_omdb(titulo_aprox, año_aprox)
             if confirmado:
                 return confirmado
-            # OMDb no encontró nada convincente: mejor no proponer un año
-            # inventado por el modelo sin contrastar.
+
+            # OMDb no encontró nada convincente — frecuente con títulos
+            # solo en español, que OMDb no suele indexar (p.ej. "La Cosa"
+            # de John Carpenter está como "The Thing"). Si el año que dio
+            # la IA ya estaba explícito en el propio nombre de archivo,
+            # lo más probable es que lo haya copiado de ahí, no inventado
+            # de memoria, así que nos podemos fiar igual. Si el archivo
+            # NO traía año, la IA tuvo que recordarlo — que es justo
+            # donde se ha visto que puede fallar (título en español)
+            # devolviendo un año equivocado — y ahí preferimos no
+            # proponer nada a arriesgarnos.
+            if self._año_estaba_en_archivo(filename, año_aprox):
+                return aproximacion
             return None
 
         return aproximacion
+
+    def _año_estaba_en_archivo(self, filename: str, año: str) -> bool:
+        """Comprueba si el año ya aparecía explícito en el nombre de archivo original"""
+        return bool(re.search(rf'\b{re.escape(año)}\b', filename))
 
     def _validar_respuesta(self, respuesta: Optional[str]) -> Optional[str]:
         """Acepta solo respuestas con forma 'Algo (AAAA)'; descarta el resto"""
