@@ -5,12 +5,20 @@ Servicio para sugerir un nombre limpio "Título (Año)" a partir del nombre
 de un archivo de vídeo, usando un modelo de IA. Soporta tres proveedores
 intercambiables (elegibles desde Configuración): Ollama en local (gratis,
 no requiere API key), OpenAI (ChatGPT) y Gemini.
+
+La IA sola tiende a acertar el título pero puede inventarse el año (es
+memoria del modelo, no una consulta real). Por eso, si hay una API key
+de OMDb configurada, la respuesta de la IA se usa solo como término de
+búsqueda: se contrasta contra los resultados reales de OMDb y se
+devuelve el candidato más parecido, con el año que diga la base de
+datos — no el que haya podido inventar el modelo.
 """
 
 import re
 import logging
+import difflib
 import requests
-from typing import Optional
+from typing import Optional, List, Dict
 
 from src.settings.settings import settings
 
@@ -50,6 +58,15 @@ class AINamingService:
         """
         Sugiere un nombre limpio para un archivo de vídeo.
 
+        Primero le pide a la IA una aproximación (título y año) a partir
+        del nombre de archivo. Si hay una API key de OMDb configurada,
+        esa aproximación se usa solo como término de búsqueda: se busca
+        en OMDb de verdad y se devuelve el candidato más parecido de la
+        lista de resultados, con el año real — no el que haya podido
+        inventar el modelo. Sin OMDb configurado, se devuelve la
+        aproximación de la IA tal cual (mejor que nada, pero sin
+        contrastar).
+
         Args:
             filename: Nombre de archivo original (con extensión)
 
@@ -76,7 +93,20 @@ class AINamingService:
             self.logger.error(f"Error consultando IA ({provider}) para '{filename}': {e}")
             return None
 
-        return self._validar_respuesta(respuesta)
+        aproximacion = self._validar_respuesta(respuesta)
+        if not aproximacion:
+            return None
+
+        if settings.get_omdb_api_key():
+            titulo_aprox, año_aprox = self._separar_titulo_año(aproximacion)
+            confirmado = self._buscar_en_omdb(titulo_aprox, año_aprox)
+            if confirmado:
+                return confirmado
+            # OMDb no encontró nada convincente: mejor no proponer un año
+            # inventado por el modelo sin contrastar.
+            return None
+
+        return aproximacion
 
     def _validar_respuesta(self, respuesta: Optional[str]) -> Optional[str]:
         """Acepta solo respuestas con forma 'Algo (AAAA)'; descarta el resto"""
@@ -92,6 +122,78 @@ class AINamingService:
             return None
 
         return texto
+
+    def _separar_titulo_año(self, texto: str) -> tuple:
+        """Separa 'Título (Año)' en (titulo, año). El regex de _validar_respuesta ya garantiza el formato"""
+        match = re.match(r"^(.+)\((\d{4})\)$", texto)
+        return match.group(1).strip(), match.group(2)
+
+    def _buscar_en_omdb(self, titulo: str, año_pista: Optional[str]) -> Optional[str]:
+        """
+        Busca `titulo` en OMDb (modo de búsqueda, no de lookup exacto) y
+        devuelve el candidato más parecido de la lista de resultados
+        reales, como "Título (Año)".
+        """
+        try:
+            api_key = settings.get_omdb_api_key()
+            response = requests.get("http://www.omdbapi.com/", params={
+                "apikey": api_key,
+                "s": titulo,
+                "type": "movie",
+            }, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("Response") != "True":
+                return None
+
+            candidatos = data.get("Search", [])
+            mejor = self._elegir_mejor_candidato(titulo, año_pista, candidatos)
+            if not mejor:
+                return None
+
+            return f"{mejor['Title']} ({mejor['Year']})"
+
+        except Exception as e:
+            self.logger.error(f"Error buscando '{titulo}' en OMDb: {e}")
+            return None
+
+    def _elegir_mejor_candidato(self, titulo: str, año_pista: Optional[str], candidatos: List[Dict]) -> Optional[Dict]:
+        """
+        Elige, de una lista de resultados de búsqueda de OMDb, el más
+        convincente: combina similitud de título con la aproximación de
+        la IA y cercanía al año que haya podido apuntar (sin exigirlo,
+        solo como desempate).
+        """
+        mejores = []
+        for c in candidatos:
+            año_match = re.match(r"(\d{4})", c.get("Year", ""))
+            if not año_match:
+                continue  # descarta series/años en rango tipo "2015–2018"
+
+            similitud = difflib.SequenceMatcher(None, titulo.lower(), c.get("Title", "").lower()).ratio()
+
+            if año_pista:
+                diferencia_años = abs(int(año_match.group(1)) - int(año_pista))
+                cercania_año = max(0, 1 - diferencia_años / 5)
+            else:
+                cercania_año = 0.5  # sin pista de año: no penaliza ni premia
+
+            puntuacion = similitud * 0.7 + cercania_año * 0.3
+            mejores.append((puntuacion, {**c, "Year": año_match.group(1)}))
+
+        if not mejores:
+            return None
+
+        mejores.sort(key=lambda x: x[0], reverse=True)
+        mejor_puntuacion, mejor_candidato = mejores[0]
+
+        # Umbral mínimo: si ni el mejor candidato se parece razonablemente,
+        # mejor no proponer nada a que se cuele un resultado sin relación.
+        if mejor_puntuacion < 0.5:
+            return None
+
+        return mejor_candidato
 
     def _ask_ollama(self, filename: str) -> Optional[str]:
         url = settings.get_ai_ollama_url().rstrip('/') + "/api/generate"
