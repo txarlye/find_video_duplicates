@@ -11,7 +11,6 @@ import os
 import subprocess
 import hashlib
 import shutil
-import difflib
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -132,9 +131,10 @@ class StreamlitAppManager:
 
         # Grupo 2: utilidades ajenas al escaneo de vídeo
         st.caption("🛠️ Utilidades")
-        col4, col5 = st.columns(2)
+        col4, col5, col6 = st.columns(3)
         self._nav_button("📱 Telegram", "telegram", col4)
         self._nav_button("🎭 IMDB", "imdb", col5)
+        self._nav_button("🗑️ Basura", "trash", col6)
 
         st.markdown("---")
 
@@ -972,6 +972,22 @@ class StreamlitAppManager:
                         if st.button("🤖 Sugerir nombre con IA", key=f"orphan_ai_btn_{i}"):
                             self._suggest_orphan_name_ai(i, pelicula)
 
+                    # El visualizador solo se renderiza si se pide explícitamente
+                    # con este botón: con listas largas, un reproductor por fila
+                    # de golpe es lo que dejaba la página pesada/sin responder
+                    # (ver bug de paginado). Al pedirlo, puedes ir avanzando el
+                    # video para reconocer de qué película se trata antes de
+                    # ponerle nombre.
+                    show_player_key = f"orphan_show_player_{i}"
+                    if st.session_state.get(show_player_key):
+                        if st.button("🙈 Ocultar visualizador", key=f"orphan_hide_player_btn_{i}"):
+                            st.session_state[show_player_key] = False
+                            st.rerun()
+                    else:
+                        if st.button("🎥 Mostrar visualizador", key=f"orphan_show_player_btn_{i}"):
+                            st.session_state[show_player_key] = True
+                            st.rerun()
+
                     nuevo_nombre = st.text_input(
                         "Nuevo nombre (sin extensión)",
                         value=Path(pelicula['nombre']).stem,
@@ -985,6 +1001,15 @@ class StreamlitAppManager:
                         if st.button("🔄 Refrescar Plex", key=f"orphan_refresh_btn_{i}"):
                             self._refresh_plex_after_rename()
                             st.rerun()
+
+                if st.session_state.get(f"orphan_show_player_{i}"):
+                    archivo = pelicula['archivo']
+                    if Path(archivo).exists():
+                        file_ext = Path(archivo).suffix.lower()
+                        file_size_gb = pelicula.get('tamaño', 0) / (1024 ** 3)
+                        self._render_full_player(archivo, file_size_gb, file_ext, wrap_in_expander=False)
+                    else:
+                        st.warning("⚠️ El archivo ya no existe en esa ruta")
 
                 st.markdown("---")
 
@@ -1078,25 +1103,165 @@ class StreamlitAppManager:
         if st.button("🔍 Buscar", type="primary", disabled=not carpeta, key="series_scan_button"):
             self._process_series_scan(carpeta)
 
-        if st.session_state.get('episodios_duplicados') is not None:
+        hay_resultados = st.session_state.get('episodios_duplicados') is not None
+
+        st.markdown("---")
+        col_save, col_load = st.columns(2)
+        with col_save:
+            if st.button("💾 Guardar Series", disabled=not hay_resultados, key="series_save_button"):
+                self._save_series_data(carpeta)
+        with col_load:
+            if st.button("📂 Cargar Series Guardadas", key="series_load_toggle_button"):
+                st.session_state.show_load_series_interface = not st.session_state.get('show_load_series_interface', False)
+                st.rerun()
+
+        if st.session_state.get('show_load_series_interface'):
+            self._show_load_series_interface()
+
+        if hay_resultados:
             self._render_series_results()
 
-    def _serie_parece_indexada(self, serie_normalizada: str, plex_series: set, umbral: float = 0.6) -> bool:
+    def _save_series_data(self, carpeta: str):
         """
-        Comprueba si una serie parece ya indexada en Plex, admitiendo que
-        el nombre del archivo y el título de Plex puedan no ser idénticos
-        (ej. el archivo trae "12 Monkeys" en inglés, pero Plex la indexó
-        como "12 monos" en español — comparar por igualdad exacta daría
-        un falso "sin indexar" para una serie que sí está). Se usa
-        similitud de texto, igual que ya hace MovieDetector para
-        películas, en vez de una comparación exacta.
+        Guarda los 3 resultados de la búsqueda de series (duplicados,
+        capítulos sueltos sin indexar, series enteras sin indexar) para
+        continuar el trabajo otro día — mismo mecanismo que ya existe
+        para duplicados de películas y huérfanos, pero con 3 listas en
+        vez de 1: cada elemento se guarda etiquetado con su 'tipo' en
+        una sola lista para reutilizar tal cual save_scan_data/kind.
         """
-        if serie_normalizada in plex_series:
-            return True
-        return any(
-            difflib.SequenceMatcher(None, serie_normalizada, plex_serie).ratio() >= umbral
-            for plex_serie in plex_series
-        )
+        try:
+            duplicados = st.session_state.get('episodios_duplicados') or []
+            huerfanos = st.session_state.get('episodios_huerfanos') or []
+            series_sin_indexar = st.session_state.get('series_sin_indexar') or []
+
+            if not duplicados and not huerfanos and not series_sin_indexar:
+                st.warning("⚠️ No hay resultados de series para guardar")
+                return
+
+            items = (
+                [{'tipo': 'duplicado', 'grupo': grupo} for grupo in duplicados] +
+                [{'tipo': 'huerfano', 'episodio': ep} for ep in huerfanos] +
+                [{'tipo': 'serie_sin_indexar', 'serie': s} for s in series_sin_indexar]
+            )
+
+            file_path = self.scan_data_manager.save_scan_data(
+                pairs_data=items,
+                scan_path=carpeta,
+                kind="series"
+            )
+            st.success(f"✅ Series guardadas: {Path(file_path).name}")
+
+        except Exception as e:
+            st.error(f"❌ Error guardando series: {e}")
+
+    def _show_load_series_interface(self):
+        """Muestra la interfaz para cargar resultados de series guardados"""
+        try:
+            scans = self.scan_data_manager.get_available_scans(kind="series")
+
+            if not scans:
+                st.info("📋 No hay resultados de series guardados")
+                return
+
+            st.subheader("📂 Cargar Series Guardadas")
+            scan_options = [
+                f"{s.get('scan_date', 'N/A')[:19]} - {s.get('scan_path', 'N/A')} ({s.get('total_pairs', 0)} elementos)"
+                for s in scans
+            ]
+            selected = st.selectbox(
+                "Seleccionar guardado:",
+                options=range(len(scans)),
+                format_func=lambda x: scan_options[x],
+                key="load_series_select"
+            )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📂 Cargar Seleccionado", key="load_series_confirm"):
+                    self._load_series_data(scans[selected]['file_path'])
+                    st.session_state.show_load_series_interface = False
+            with col2:
+                if st.button("❌ Cancelar", key="load_series_cancel"):
+                    st.session_state.show_load_series_interface = False
+                    st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Error mostrando series guardadas: {e}")
+
+    def _load_series_data(self, file_path: str):
+        """
+        Carga resultados de series guardados previamente. Igual que con
+        huérfanos de películas, puede haber pasado tiempo desde que se
+        guardó: se comprueba que cada archivo siga existiendo y se
+        avisa de cuántos ya no están (renombrados/movidos/borrados
+        desde entonces) en vez de dejar la lista con rutas muertas.
+        """
+        try:
+            scan_data = self.scan_data_manager.load_scan_data(file_path)
+            items = scan_data.get('pairs_data', [])
+
+            def _vivos(episodios):
+                return [e for e in episodios if e.get('archivo') and Path(e['archivo']).exists()]
+
+            total_guardado = 0
+            total_caidos = 0
+
+            duplicados = []
+            for it in items:
+                if it.get('tipo') != 'duplicado':
+                    continue
+                grupo = it.get('grupo', [])
+                total_guardado += len(grupo)
+                vivos = _vivos(grupo)
+                total_caidos += len(grupo) - len(vivos)
+                if len(vivos) > 1:
+                    duplicados.append(vivos)
+
+            huerfanos = []
+            for it in items:
+                if it.get('tipo') != 'huerfano':
+                    continue
+                total_guardado += 1
+                ep = it.get('episodio', {})
+                if ep.get('archivo') and Path(ep['archivo']).exists():
+                    huerfanos.append(ep)
+                else:
+                    total_caidos += 1
+
+            series_sin_indexar = []
+            for it in items:
+                if it.get('tipo') != 'serie_sin_indexar':
+                    continue
+                serie = it.get('serie', {})
+                episodios = serie.get('episodios', [])
+                total_guardado += len(episodios)
+                vivos = _vivos(episodios)
+                total_caidos += len(episodios) - len(vivos)
+                if vivos:
+                    series_sin_indexar.append({**serie, 'episodios': vivos})
+
+            st.session_state.episodios_duplicados = duplicados
+            st.session_state.episodios_huerfanos = huerfanos
+            st.session_state.series_sin_indexar = series_sin_indexar
+
+            st.success(
+                f"✅ Cargado: {len(duplicados)} grupo(s) duplicado(s), "
+                f"{len(huerfanos)} capítulo(s) sin indexar, "
+                f"{len(series_sin_indexar)} serie(s) sin indexar"
+            )
+            if total_caidos:
+                st.warning(
+                    f"⚠️ {total_caidos} de {total_guardado} archivo(s) del guardado ya no existen "
+                    "en su ruta original — probablemente ya los renombraste, moviste o borraste "
+                    "desde que se guardó este escaneo. Se han quitado de la lista; vuelve a "
+                    "escanear la carpeta si quieres verlos con su estado actual."
+                )
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Error cargando series guardadas: {e}")
 
     def _process_series_scan(self, carpeta: str):
         """Escanea una carpeta de series: duplicados + cruce contra Plex (episodios y series)"""
@@ -1136,9 +1301,8 @@ class StreamlitAppManager:
             plex_episodios = self.plex_service.get_all_episode_filenames()
             huerfanos = [e for e in episodios if e['nombre'].lower() not in plex_episodios]
 
-            status_text.text("🔎 Comprobando series contra Plex...")
+            status_text.text("🔎 Agrupando por serie...")
             progress_bar.progress(85)
-            plex_series = {detector.normalizar_serie(s) for s in self.plex_service.get_all_show_titles()}
 
             series_locales = defaultdict(lambda: {'episodios': [], 'tamaño': 0, 'nombre': ''})
             for e in episodios:
@@ -1149,6 +1313,15 @@ class StreamlitAppManager:
 
             ignoradas = set(settings.get_ignored_series())
 
+            # Una serie se considera "sin indexar" solo si NINGUNO de sus
+            # episodios locales está en Plex (mismo criterio exacto que ya
+            # usamos arriba para huérfanos, por nombre de archivo). No se
+            # compara el título de la serie contra el de Plex: Plex puede
+            # tener la serie con un título traducido que no se parece en
+            # nada al nombre de la carpeta local (ej. "Earth Abides" en
+            # disco vs. "La tierra permanece" en Plex) y una comparación
+            # por título daría un falso "sin indexar" aunque los episodios
+            # ya estén indexados de verdad.
             series_sin_indexar = [
                 {
                     'clave': clave,
@@ -1157,7 +1330,8 @@ class StreamlitAppManager:
                     'tamaño': datos['tamaño'],
                 }
                 for clave, datos in series_locales.items()
-                if not self._serie_parece_indexada(clave, plex_series) and clave not in ignoradas
+                if clave not in ignoradas
+                and not any(e['nombre'].lower() in plex_episodios for e in datos['episodios'])
             ]
             series_sin_indexar.sort(key=lambda s: s['tamaño'], reverse=True)
 
@@ -1251,46 +1425,65 @@ class StreamlitAppManager:
         st.subheader(f"🧩 {len(huerfanos)} capítulo(s) sin indexar en Plex")
         if not huerfanos:
             st.caption("Ninguno detectado.")
-
-        page_size = settings.get("ui.page_size", 20)
-        total_paginas = max(1, (len(huerfanos) - 1) // page_size + 1) if huerfanos else 1
-
-        if total_paginas > 1:
-            pagina = st.number_input(
-                f"Página (1-{total_paginas})",
-                min_value=1, max_value=total_paginas, value=1, step=1,
-                key="series_huerfanos_pagina"
-            ) - 1
-            inicio = pagina * page_size
-            st.caption(f"Mostrando {inicio + 1}–{min(inicio + page_size, len(huerfanos))} de {len(huerfanos)}")
         else:
-            inicio = 0
+            # Agrupados por serie (carpeta), igual que "series sin indexar
+            # en absoluto" más abajo — más fácil de repasar que una lista
+            # plana cuando hay varios capítulos sueltos de la misma serie.
+            grupos_huerfanos = defaultdict(list)
+            indices_por_archivo = {ep['archivo']: idx for idx, ep in enumerate(huerfanos)}
+            for ep in huerfanos:
+                grupos_huerfanos[ep['serie_normalizada']].append(ep)
 
-        fin = inicio + page_size
+            grupos_ordenados = sorted(
+                grupos_huerfanos.items(),
+                key=lambda kv: sum(e.get('tamaño', 0) for e in kv[1]),
+                reverse=True
+            )
 
-        for i, ep in enumerate(huerfanos[inicio:fin], start=inicio):
-            col1, col2 = st.columns([3, 2])
-            with col1:
-                st.write(f"**{ep['nombre']}**")
-                st.caption(f"{ep['serie']} — T{ep['temporada']:02d}E{ep['episodio']:02d}")
-                st.caption(ep['archivo'])
-                tamaño_gb = ep.get('tamaño', 0) / (1024 ** 3)
-                st.write(f"📊 {tamaño_gb:.2f} GB")
-            with col2:
-                nuevo_nombre = st.text_input(
-                    "Nuevo nombre (sin extensión)",
-                    value=Path(ep['nombre']).stem,
-                    key=f"serie_orphan_rename_{i}"
-                )
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.button("✏️ Renombrar", key=f"serie_orphan_rename_btn_{i}"):
-                        self._rename_series_orphan(i, ep, nuevo_nombre)
-                with col_btn2:
-                    if st.button("🔄 Refrescar Plex", key=f"serie_orphan_refresh_btn_{i}"):
-                        self._refresh_plex_after_rename()
-                        st.rerun()
-            st.markdown("---")
+            page_size = settings.get("ui.page_size", 20)
+            total_paginas = max(1, (len(grupos_ordenados) - 1) // page_size + 1)
+
+            if total_paginas > 1:
+                pagina = st.number_input(
+                    f"Página de series (1-{total_paginas})",
+                    min_value=1, max_value=total_paginas, value=1, step=1,
+                    key="series_huerfanos_pagina"
+                ) - 1
+                inicio = pagina * page_size
+                st.caption(f"Mostrando series {inicio + 1}–{min(inicio + page_size, len(grupos_ordenados))} de {len(grupos_ordenados)}")
+            else:
+                inicio = 0
+
+            fin = inicio + page_size
+
+            for clave, episodios_grupo in grupos_ordenados[inicio:fin]:
+                nombre_serie = episodios_grupo[0]['serie']
+                tamaño_gb = sum(e.get('tamaño', 0) for e in episodios_grupo) / (1024 ** 3)
+                with st.expander(f"📁 {nombre_serie} — {len(episodios_grupo)} capítulo(s), {tamaño_gb:.2f} GB", expanded=False):
+                    for ep in episodios_grupo:
+                        i = indices_por_archivo[ep['archivo']]
+                        col1, col2 = st.columns([3, 2])
+                        with col1:
+                            st.write(f"**{ep['nombre']}**")
+                            st.caption(f"T{ep['temporada']:02d}E{ep['episodio']:02d}")
+                            st.caption(ep['archivo'])
+                            ep_gb = ep.get('tamaño', 0) / (1024 ** 3)
+                            st.write(f"📊 {ep_gb:.2f} GB")
+                        with col2:
+                            nuevo_nombre = st.text_input(
+                                "Nuevo nombre (sin extensión)",
+                                value=Path(ep['nombre']).stem,
+                                key=f"serie_orphan_rename_{i}"
+                            )
+                            col_btn1, col_btn2 = st.columns(2)
+                            with col_btn1:
+                                if st.button("✏️ Renombrar", key=f"serie_orphan_rename_btn_{i}"):
+                                    self._rename_series_orphan(i, ep, nuevo_nombre)
+                            with col_btn2:
+                                if st.button("🔄 Refrescar Plex", key=f"serie_orphan_refresh_btn_{i}"):
+                                    self._refresh_plex_after_rename()
+                                    st.rerun()
+                        st.markdown("---")
 
         # --- Series enteras sin indexar ---
         st.subheader(f"📭 {len(series_sin_indexar)} serie(s) sin indexar en absoluto")
@@ -1805,13 +1998,20 @@ class StreamlitAppManager:
         else:
             st.warning(f"⚠️ No se pudo extraer el fotograma en {minutes}:{seconds:02d} (¿el video dura menos?)")
 
-    def _render_full_player(self, file_path: str, file_size_gb: float, file_ext: str):
-        """Reproductor de video completo, dentro de un desplegable (opcional, más lento que el fotograma)"""
+    def _render_full_player(self, file_path: str, file_size_gb: float, file_ext: str, wrap_in_expander: bool = True):
+        """
+        Reproductor de video completo (más lento que el fotograma, pero
+        permite avanzar/retroceder para reconocer la película). Por
+        defecto va dentro de un desplegable; los llamantes que ya lo
+        muestran detrás de su propio botón de "mostrar/ocultar" pueden
+        pasar wrap_in_expander=False para no anidar un colapsable dentro
+        de otro.
+        """
         start_time = settings.get_video_start_time_seconds()
         minutes = start_time // 60
         seconds = start_time % 60
 
-        with st.expander("▶️ Reproducir video completo"):
+        def _cuerpo():
             try:
                 max_size_gb = 2.0
                 if file_size_gb > max_size_gb:
@@ -1850,6 +2050,12 @@ class StreamlitAppManager:
 
             except Exception as e:
                 st.error(f"❌ Error inesperado: {e}")
+
+        if wrap_in_expander:
+            with st.expander("▶️ Reproducir video completo"):
+                _cuerpo()
+        else:
+            _cuerpo()
     
     def _render_external_player_button(self, file_path: str, key: str):
         """Renderiza botón para abrir en reproductor externo"""
@@ -3555,10 +3761,120 @@ class StreamlitAppManager:
             else:
                 st.info("💡 No hay duplicados para enviar. Escanea una carpeta primero.")
     
+    def _render_trash_interface(self):
+        """
+        Renderiza "Basura": lo que la app ha ido moviendo a la carpeta de
+        debug/purgatorio (duplicados eliminados, huérfanos... nunca se
+        borra directo, solo se mueve aquí). Películas y capítulos de
+        serie acaban en la misma carpeta plana sin ningún metadato que
+        diga de qué flujo vino cada archivo, así que se separan solo por
+        si el nombre tiene un patrón de episodio reconocible (mismo
+        regex que ya usa el detector de series) — no es infalible, pero
+        es la única señal real disponible sin tener que duplicar la
+        carpeta de debug en dos.
+        """
+        st.header("🗑️ Basura / Purgatorio")
+        st.caption(
+            "Todo lo que la app ha movido aquí al eliminar duplicados o "
+            "renombrar huérfanos. La app nunca borra nada directamente — "
+            "esto es la papelera, no el borrado final."
+        )
+
+        debug_folder = settings.get_debug_folder()
+        if not debug_folder:
+            st.warning("⚠️ No hay carpeta de debug/purgatorio configurada (pestaña ⚙️ Configuración del menú lateral).")
+            return
+
+        debug_path = Path(debug_folder)
+        st.code(str(debug_path), language=None)
+        st.info(
+            "ℹ️ Esta app **nunca vacía esta carpeta por ti**. Cuando quieras "
+            "recuperar el espacio de verdad, entra a tu NAS y bórrala tú a mano."
+        )
+
+        if not debug_path.exists():
+            st.info("📭 Esa carpeta todavía no existe — no se ha movido nada a la papelera todavía.")
+            return
+
+        try:
+            archivos = [f for f in debug_path.rglob('*') if f.is_file()]
+        except Exception as e:
+            st.error(f"❌ Error leyendo la carpeta de purgatorio: {e}")
+            return
+
+        if not archivos:
+            st.success("✅ El purgatorio está vacío ahora mismo.")
+            return
+
+        episodios, peliculas = [], []
+        tamaño_total = 0
+        for f in archivos:
+            try:
+                tamaño = f.stat().st_size
+            except OSError:
+                continue
+            tamaño_total += tamaño
+            info = {'Nombre': f.name, 'GB': round(tamaño / (1024 ** 3), 2), 'Ruta': str(f), '_tamaño': tamaño}
+            if SeriesDetector.PATRON_SXXEXX.search(f.name) or SeriesDetector.PATRON_NXNN.search(f.name):
+                episodios.append(info)
+            else:
+                peliculas.append(info)
+
+        tamaño_gb = tamaño_total / (1024 ** 3)
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("🗑️ Archivos", len(archivos))
+        with col2:
+            st.metric("💾 Espacio en purgatorio", f"{tamaño_gb:.2f} GB")
+        with col3:
+            st.metric("🎬 Películas / 📺 Capítulos", f"{len(peliculas)} / {len(episodios)}")
+
+        with st.expander("📏 Tamaño de tu biblioteca (opcional, para ver qué % has liberado)"):
+            st.caption(
+                "No lo calculamos recorriendo la red — para una biblioteca de "
+                "varios TB tardaría bastante y es un dato que ya conoces de un "
+                "vistazo a tu NAS. Ponlo aquí una vez y verás qué porcentaje "
+                "representa lo que llevas purgado."
+            )
+            library_gb = st.number_input(
+                "Tamaño total aproximado de tu biblioteca (GB)",
+                min_value=0.0,
+                value=float(settings.get_library_size_gb()),
+                step=100.0,
+                key="trash_library_size_input",
+            )
+            if st.button("💾 Guardar tamaño de biblioteca", key="trash_library_size_save"):
+                settings.set_library_size_gb(library_gb)
+                st.success("✅ Guardado")
+                st.rerun()
+
+        library_gb_guardado = settings.get_library_size_gb()
+        if library_gb_guardado > 0:
+            porcentaje = min(tamaño_gb / library_gb_guardado, 1.0)
+            st.progress(porcentaje)
+            st.caption(
+                f"📉 Con una biblioteca de ~{library_gb_guardado:.0f} GB, llevas "
+                f"{tamaño_gb:.2f} GB ({porcentaje * 100:.1f}%) esperando en el "
+                "purgatorio a que los vacíes en el NAS."
+            )
+
+        st.markdown("---")
+
+        if peliculas:
+            st.subheader(f"🎬 Películas ({len(peliculas)})")
+            tabla = [{k: v for k, v in p.items() if k != '_tamaño'} for p in sorted(peliculas, key=lambda x: x['_tamaño'], reverse=True)]
+            st.dataframe(tabla, use_container_width=True, hide_index=True)
+
+        if episodios:
+            st.subheader(f"📺 Capítulos de serie ({len(episodios)})")
+            tabla = [{k: v for k, v in e.items() if k != '_tamaño'} for e in sorted(episodios, key=lambda x: x['_tamaño'], reverse=True)]
+            st.dataframe(tabla, use_container_width=True, hide_index=True)
+
     def _render_telegram_interface(self):
         """Renderiza la interfaz principal de Telegram"""
         st.header("📱 Interfaz de Telegram")
-        
+
         # Botón para volver
         if st.button("← Volver al Inicio"):
             st.session_state.active_view = 'scan'
@@ -3692,6 +4008,8 @@ class StreamlitAppManager:
             self._render_telegram_interface()
         elif active_view == 'imdb':
             self._render_imdb_interface()
+        elif active_view == 'trash':
+            self._render_trash_interface()
         else:
             # 'scan' (por defecto)
             self.render_scan_section()

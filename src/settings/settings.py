@@ -256,6 +256,21 @@ class Settings:
         """Establece la carpeta de debug"""
         self.set("paths.debug_folder", value)
     
+    def get_library_size_gb(self) -> float:
+        """
+        Tamaño total aproximado de la biblioteca (en GB), introducido a
+        mano por el usuario — no se calcula recorriendo la red porque
+        para una biblioteca de varios TB sería lento y no aporta tanto
+        como para justificar la espera. Solo se usa para mostrar qué
+        porcentaje representa lo purgado (pestaña Basura). 0 = sin
+        configurar, no se muestra el porcentaje.
+        """
+        return self.get("trash.library_size_gb", 0)
+
+    def set_library_size_gb(self, value: float):
+        """Establece el tamaño total aproximado de la biblioteca (GB)"""
+        self.set("trash.library_size_gb", value)
+
     def get_plex_database_path(self) -> str:
         """Obtiene la ruta de la base de datos de Plex"""
         return self.get("plex.database_path", "")
