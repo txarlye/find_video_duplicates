@@ -76,5 +76,14 @@
     "runtime": {
         "total_pairs": 0,
         "pairs_deleted": 0
+    },
+    "ai": {
+        "enabled": false,
+        "provider": "ollama",
+        "mode": "suggest",
+        "ollama_url": "http://localhost:11434",
+        "ollama_model": "qwen2.5:7b",
+        "openai_model": "gpt-4o-mini",
+        "gemini_model": "gemini-1.5-flash"
     }
 }

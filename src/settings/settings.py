@@ -397,6 +397,71 @@ class Settings:
             excluded.remove(directory)
             self.set_excluded_directories(excluded)
 
+    # Métodos para sugerencia de nombres con IA (detector de huérfanos)
+    def get_ai_enabled(self) -> bool:
+        """Obtiene si la sugerencia de nombres con IA está activada"""
+        return self.get("ai.enabled", False)
+
+    def set_ai_enabled(self, value: bool):
+        """Establece si la sugerencia de nombres con IA está activada"""
+        self.set("ai.enabled", value)
+
+    def get_ai_provider(self) -> str:
+        """Obtiene el proveedor de IA: 'ollama', 'openai' o 'gemini'"""
+        return self.get("ai.provider", "ollama")
+
+    def set_ai_provider(self, value: str):
+        """Establece el proveedor de IA"""
+        self.set("ai.provider", value)
+
+    def get_ai_mode(self) -> str:
+        """Obtiene el modo: 'suggest' (proponer, confirmas tú) o 'auto' (renombra solo)"""
+        return self.get("ai.mode", "suggest")
+
+    def set_ai_mode(self, value: str):
+        """Establece el modo de la IA"""
+        self.set("ai.mode", value)
+
+    def get_ai_ollama_url(self) -> str:
+        """Obtiene la URL del servidor Ollama local"""
+        return self.get("ai.ollama_url", "http://localhost:11434")
+
+    def set_ai_ollama_url(self, value: str):
+        """Establece la URL del servidor Ollama local"""
+        self.set("ai.ollama_url", value)
+
+    def get_ai_ollama_model(self) -> str:
+        """Obtiene el modelo de Ollama a usar"""
+        return self.get("ai.ollama_model", "qwen2.5:7b")
+
+    def set_ai_ollama_model(self, value: str):
+        """Establece el modelo de Ollama a usar"""
+        self.set("ai.ollama_model", value)
+
+    def get_ai_openai_model(self) -> str:
+        """Obtiene el modelo de OpenAI a usar"""
+        return self.get("ai.openai_model", "gpt-4o-mini")
+
+    def set_ai_openai_model(self, value: str):
+        """Establece el modelo de OpenAI a usar"""
+        self.set("ai.openai_model", value)
+
+    def get_ai_gemini_model(self) -> str:
+        """Obtiene el modelo de Gemini a usar"""
+        return self.get("ai.gemini_model", "gemini-1.5-flash")
+
+    def set_ai_gemini_model(self, value: str):
+        """Establece el modelo de Gemini a usar"""
+        self.set("ai.gemini_model", value)
+
+    def get_openai_api_key(self) -> str:
+        """Obtiene la API key de OpenAI (solo por variable de entorno, nunca en config.json)"""
+        return self.get_env("OPENAI_API_KEY")
+
+    def get_gemini_api_key(self) -> str:
+        """Obtiene la API key de Gemini (solo por variable de entorno, nunca en config.json)"""
+        return self.get_env("GEMINI_API_KEY")
+
 
 # Instancia global del singleton
 settings = Settings()

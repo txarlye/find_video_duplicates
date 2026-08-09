@@ -42,6 +42,7 @@ from src.services.telegram_service import TelegramService
 from src.services.Telegram.telegram_manager import TelegramManager
 from src.services.Telegram.telegram_uploader import TelegramUploader
 from src.services.Imdb.imdb_service import ImdbService
+from src.services.ai_naming_service import AINamingService
 
 
 class StreamlitAppManager:
@@ -66,7 +67,8 @@ class StreamlitAppManager:
         self.telegram_manager = TelegramManager()
         self.telegram_uploader = TelegramUploader()
         self.imdb_service = ImdbService()
-        
+        self.ai_naming_service = AINamingService()
+
         # Inicializar estado de sesión
         self._initialize_session_state()
     
@@ -619,6 +621,8 @@ class StreamlitAppManager:
             )
             return
 
+        self._render_ai_naming_config()
+
         try:
             last_path = settings.get_last_scan_path()
         except AttributeError:
@@ -642,6 +646,69 @@ class StreamlitAppManager:
 
         if st.session_state.get('huerfanos') is not None:
             self._render_orphans_results()
+
+    def _render_ai_naming_config(self):
+        """Renderiza la configuración de sugerencia de nombres con IA"""
+        with st.expander("🤖 Sugerencia de nombres con IA"):
+            ai_enabled = st.checkbox(
+                "Activar IA para nombres de huérfanos",
+                value=settings.get_ai_enabled()
+            )
+
+            proveedores = ["ollama", "openai", "gemini"]
+            etiquetas = {
+                "ollama": "Ollama (local, gratis)",
+                "openai": "ChatGPT (OpenAI)",
+                "gemini": "Gemini (Google)",
+            }
+            provider = st.selectbox(
+                "Proveedor",
+                options=proveedores,
+                index=proveedores.index(settings.get_ai_provider()),
+                format_func=lambda p: etiquetas[p]
+            )
+
+            modos = ["suggest", "auto"]
+            etiquetas_modo = {
+                "suggest": "Proponer nombre (lo confirmas tú)",
+                "auto": "Renombrar automáticamente al escanear",
+            }
+            mode = st.radio(
+                "Modo",
+                options=modos,
+                index=modos.index(settings.get_ai_mode()),
+                format_func=lambda m: etiquetas_modo[m]
+            )
+            if mode == "auto":
+                st.caption("⚠️ La IA puede equivocarse. Revisa de vez en cuando los renombrados (salen en verde).")
+
+            if provider == "ollama":
+                ollama_url = st.text_input("URL de Ollama", value=settings.get_ai_ollama_url())
+                ollama_model = st.text_input(
+                    "Modelo", value=settings.get_ai_ollama_model(),
+                    help="Debe estar descargado en tu Ollama local (ollama pull <modelo>)"
+                )
+            elif provider == "openai":
+                openai_model = st.text_input("Modelo", value=settings.get_ai_openai_model())
+                if not settings.get_openai_api_key():
+                    st.warning("⚠️ Falta la variable de entorno OPENAI_API_KEY")
+            else:  # gemini
+                gemini_model = st.text_input("Modelo", value=settings.get_ai_gemini_model())
+                if not settings.get_gemini_api_key():
+                    st.warning("⚠️ Falta la variable de entorno GEMINI_API_KEY")
+
+            if st.button("💾 Guardar configuración IA", key="save_ai_config"):
+                settings.set_ai_enabled(ai_enabled)
+                settings.set_ai_provider(provider)
+                settings.set_ai_mode(mode)
+                if provider == "ollama":
+                    settings.set_ai_ollama_url(ollama_url)
+                    settings.set_ai_ollama_model(ollama_model)
+                elif provider == "openai":
+                    settings.set_ai_openai_model(openai_model)
+                else:
+                    settings.set_ai_gemini_model(gemini_model)
+                st.success("✅ Configuración de IA guardada")
 
     def _process_orphans_scan(self, carpeta: str):
         """Escanea una carpeta y cruza los archivos contra la biblioteca de Plex"""
@@ -675,11 +742,33 @@ class StreamlitAppManager:
                     f"🧩 {len(huerfanos)} de {len(peliculas)} archivos no están "
                     f"indexados en Plex ({detector.formatear_tamaño(espacio)})"
                 )
+
+                if settings.get_ai_enabled() and settings.get_ai_mode() == "auto":
+                    self._auto_rename_orphans_with_ai(huerfanos)
             else:
                 st.success(f"✅ Los {len(peliculas)} archivos escaneados están indexados en Plex")
 
         except Exception as e:
             st.error(f"❌ Error buscando huérfanos: {e}")
+
+    def _auto_rename_orphans_with_ai(self, huerfanos: List[Dict[str, Any]]):
+        """Pide a la IA un nombre para cada huérfano y renombra los que reconoce"""
+        if not self.ai_naming_service.is_configured():
+            st.info("💡 IA en modo automático activada pero no configurada correctamente (revisa proveedor/API key)")
+            return
+
+        with st.spinner(f"🤖 Consultando IA para {len(huerfanos)} archivo(s)..."):
+            renombrados = 0
+            for i, pelicula in enumerate(huerfanos):
+                sugerido = self.ai_naming_service.suggest_name(pelicula['nombre'])
+                if sugerido and self._apply_orphan_rename(i, pelicula, sugerido):
+                    renombrados += 1
+
+        if renombrados:
+            st.info(f"🤖 IA renombró automáticamente {renombrados} de {len(huerfanos)} huérfanos")
+            self._refresh_plex_after_rename()
+        else:
+            st.info("🤖 La IA no pudo sugerir un nombre con suficiente certeza para ninguno")
 
     def _render_orphans_results(self):
         """Renderiza la lista de películas huérfanas con opción de renombrar/refrescar"""
@@ -705,6 +794,10 @@ class StreamlitAppManager:
                     st.write(f"📊 {tamaño_gb:.2f} GB")
 
                 with col2:
+                    if settings.get_ai_enabled() and settings.get_ai_mode() == "suggest":
+                        if st.button("🤖 Sugerir nombre con IA", key=f"orphan_ai_btn_{i}"):
+                            self._suggest_orphan_name_ai(i, pelicula)
+
                     nuevo_nombre = st.text_input(
                         "Nuevo nombre (sin extensión)",
                         value=Path(pelicula['nombre']).stem,
@@ -721,24 +814,40 @@ class StreamlitAppManager:
 
                 st.markdown("---")
 
-    def _rename_orphan(self, index: int, pelicula: Dict[str, Any], new_name: str):
+    def _suggest_orphan_name_ai(self, index: int, pelicula: Dict[str, Any]):
+        """Pide a la IA un nombre sugerido y precarga el campo de renombrado (no renombra solo)"""
+        with st.spinner("🤖 Consultando IA..."):
+            sugerido = self.ai_naming_service.suggest_name(pelicula['nombre'])
+
+        if sugerido:
+            st.session_state[f"orphan_rename_input_{index}"] = sugerido
+            st.rerun()
+        else:
+            st.warning("⚠️ La IA no pudo sugerir un nombre para este archivo")
+
+    def _apply_orphan_rename(self, index: int, pelicula: Dict[str, Any], new_name: str) -> bool:
         """
-        Renombra un huérfano y actualiza su entrada en la lista en vez de
-        dejarla apuntando a una ruta que ya no existe. No se quita de la
-        lista (a diferencia de un par de duplicados al moverlo/borrarlo):
-        así queda constancia visual de qué archivos ya se renombraron y
-        están pendientes de que Plex los reindexe.
+        Renombra un huérfano en disco y actualiza su entrada en la lista
+        (nombre/ruta nuevos + marca 'renombrado') en vez de dejarla
+        apuntando a una ruta que ya no existe. No se quita de la lista
+        (a diferencia de un par de duplicados al moverlo/borrarlo): así
+        queda constancia visual de qué archivos ya se procesaron.
+
+        No hace st.rerun() ni refresca Plex — lo decide quien la llama,
+        para poder usarla también en lote (modo automático de IA) sin
+        cortar la ejecución en el primer archivo.
+
+        Returns:
+            True si se renombró correctamente.
         """
         if not new_name:
-            st.error("❌ Nombre no puede estar vacío")
-            return
+            return False
 
         try:
             old_path = Path(pelicula['archivo'])
             new_path = old_path.parent / f"{new_name}{old_path.suffix}"
 
             os.rename(str(old_path), str(new_path))
-            st.success(f"✅ Archivo renombrado: {new_path.name}")
 
             huerfanos = st.session_state.huerfanos
             huerfanos[index] = {
@@ -748,12 +857,22 @@ class StreamlitAppManager:
                 'renombrado': True,
             }
             st.session_state.huerfanos = huerfanos
-
-            self._refresh_plex_after_rename()
-            st.rerun()
+            return True
 
         except Exception as e:
-            st.error(f"❌ Error renombrando archivo: {e}")
+            st.error(f"❌ Error renombrando '{pelicula['nombre']}': {e}")
+            return False
+
+    def _rename_orphan(self, index: int, pelicula: Dict[str, Any], new_name: str):
+        """Renombra un huérfano desde el botón manual (con feedback y rerun inmediatos)"""
+        if not new_name:
+            st.error("❌ Nombre no puede estar vacío")
+            return
+
+        if self._apply_orphan_rename(index, pelicula, new_name):
+            st.success(f"✅ Archivo renombrado: {st.session_state.huerfanos[index]['nombre']}")
+            self._refresh_plex_after_rename()
+            st.rerun()
 
     def render_results(self):
         """Renderiza los resultados del escaneo"""
