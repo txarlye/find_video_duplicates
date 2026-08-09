@@ -107,7 +107,6 @@ find_video_duplicates/
 │
 ├── src/
 │   ├── app/
-│   │   ├── streamlit_app.py
 │   │   └── streamlit_manager.py     # Toda la UI: escaneo, huérfanos, series, basura...
 │   ├── services/
 │   │   ├── ai_naming_service.py     # IA (Ollama/OpenAI/Gemini) + contraste TMDB/OMDb
