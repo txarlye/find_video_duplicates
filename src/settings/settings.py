@@ -234,7 +234,7 @@ class Settings:
     
     def get_video_start_time_seconds(self) -> int:
         """Obtiene el tiempo de inicio en segundos para los reproductores embebidos"""
-        return self.get("ui.video_start_time_seconds", 900)  # 15 minutos por defecto
+        return self.get("ui.video_start_time_seconds", 360)  # 6 minutos por defecto (pasados los títulos de crédito)
     
     def set_video_start_time_seconds(self, value: int):
         """Establece el tiempo de inicio en segundos para los reproductores embebidos"""

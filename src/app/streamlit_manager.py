@@ -29,7 +29,7 @@ sys.path.insert(0, str(current_dir))
 
 from src.settings.settings import settings
 from src.utils.movie_detector import MovieDetector
-from src.utils.video import VideoPlayer, VideoFormatter, VideoComparison
+from src.utils.video import VideoPlayer, VideoFormatter, VideoComparison, VideoFrameExtractor
 from src.utils.ui_components import UIComponents, MovieInfoDisplay, SelectionManager, DuplicatePairsManager
 from src.utils.file_operations import FileBatchProcessor
 from src.services.plex_service import PlexService
@@ -234,21 +234,32 @@ class StreamlitAppManager:
             help="Tamaño de los reproductores de video"
         )
         
-        # Tiempo de inicio para reproductores embebidos
-        start_time_minutes = st.slider(
-            "⏱️ Minuto de inicio para comparación",
-            min_value=1,
-            max_value=60,
-            value=settings.get_video_start_time_seconds() // 60,
-            step=1,
-            help="Minuto desde el cual empezar a reproducir para comparar duplicados"
-        )
-        
+        # Tiempo del fotograma de comparación (minuto:segundo)
+        st.write("⏱️ **Momento del fotograma para comparar** (evita ver los títulos de crédito)")
+        col_min, col_sec = st.columns(2)
+        current_start_time = settings.get_video_start_time_seconds()
+        with col_min:
+            start_time_minutes = st.number_input(
+                "Minuto",
+                min_value=0,
+                max_value=180,
+                value=current_start_time // 60,
+                step=1
+            )
+        with col_sec:
+            start_time_seconds = st.number_input(
+                "Segundo",
+                min_value=0,
+                max_value=59,
+                value=current_start_time % 60,
+                step=1
+            )
+
         if st.button("💾 Guardar configuración reproductores", key="save_players_config"):
             settings.set_show_video_players(show_players)
             settings.set_show_embedded_players(show_embedded)
             settings.set_video_player_size(player_size)
-            settings.set_video_start_time_seconds(start_time_minutes * 60)
+            settings.set_video_start_time_seconds(start_time_minutes * 60 + start_time_seconds)
             st.success("✅ Configuración de reproductores guardada")
         
         st.markdown("---")
@@ -983,55 +994,65 @@ class StreamlitAppManager:
             logging.error(f"Error en comparación de carpetas: {e}")
     
     def _render_embedded_video(self, file_path: str, file_size_gb: float, file_ext: str, key: str):
-        """Renderiza un video embebido con mejor manejo de errores"""
-        try:
-            # Obtener tiempo de inicio desde configuración
-            start_time = settings.get_video_start_time_seconds()
-            
-            # Verificar tamaño del archivo (límite más permisivo)
-            max_size_gb = 2.0  # Volver a 2GB como límite original
-            if file_size_gb > max_size_gb:
-                st.warning(f"📁 Archivo muy grande ({file_size_gb:.1f}GB) para reproductor embebido")
-                st.info("💡 Usa el botón 'Abrir en Reproductor' para archivos grandes")
-                return
-            
-            # Verificar formato compatible
-            supported_formats = ['.mp4', '.webm', '.ogg', '.avi', '.mov']
-            if file_ext not in supported_formats:
-                st.warning(f"❌ Formato no compatible: {file_ext}")
-                st.info(f"📁 Formatos soportados: {', '.join(supported_formats)}")
-                return
-            
-            # Intentar cargar el video
+        """Renderiza un fotograma de comparación y, opcionalmente, el video completo"""
+        start_time = settings.get_video_start_time_seconds()
+        minutes = start_time // 60
+        seconds = start_time % 60
+
+        # Fotograma fijo: rápido y fiable incluso sobre carpetas en red,
+        # a diferencia del reproductor completo (que necesita que el
+        # navegador decodifique/busque en el archivo real).
+        if VideoFrameExtractor.is_available():
+            with st.spinner(f"Extrayendo fotograma en {minutes}:{seconds:02d}..."):
+                frame_bytes = VideoFrameExtractor.extract_frame(file_path, start_time)
+
+            if frame_bytes:
+                st.image(frame_bytes, caption=f"⏱️ Fotograma en {minutes}:{seconds:02d}", width=300)
+            else:
+                st.warning(f"⚠️ No se pudo extraer el fotograma en {minutes}:{seconds:02d} (¿el video dura menos?)")
+        else:
+            st.info("💡 Instala ffmpeg y añádelo al PATH para ver un fotograma de comparación")
+
+        # Reproductor completo, opcional (más lento, útil si quieres ver movimiento/audio)
+        with st.expander("▶️ Reproducir video completo"):
             try:
-                # Método mejorado: usar ruta directa en lugar de bytes para archivos grandes
-                if file_size_gb <= 0.5:  # Archivos pequeños: usar bytes
-                    with open(file_path, "rb") as video_file:
-                        video_bytes = video_file.read()
-                    st.video(video_bytes, start_time=start_time, width=300)
-                else:  # Archivos medianos: usar ruta directa
-                    st.video(file_path, start_time=start_time, width=300)
-                
-                # Mostrar información del tiempo de inicio
-                minutes = start_time // 60
-                seconds = start_time % 60
-                st.caption(f"⏱️ Inicia en {minutes}:{seconds:02d}")
-                
-            except Exception as video_error:
-                st.error(f"❌ Error cargando video: {str(video_error)}")
-                st.info("💡 Posibles causas:")
-                st.info("• Codec no compatible con el navegador")
-                st.info("• Archivo corrupto o incompleto")
-                st.info("• Problema de permisos de archivo")
-                
-                # Sugerir alternativas
-                st.info("🔧 Soluciones:")
-                st.info("• Usa el botón 'Abrir en Reproductor' para reproducir externamente")
-                st.info("• Verifica que el archivo no esté corrupto")
-                st.info("• Intenta con un archivo más pequeño para prueba")
-                
-        except Exception as e:
-            st.error(f"❌ Error inesperado: {e}")
+                max_size_gb = 2.0
+                if file_size_gb > max_size_gb:
+                    st.warning(f"📁 Archivo muy grande ({file_size_gb:.1f}GB) para reproductor embebido")
+                    st.info("💡 Usa el botón 'Abrir en Reproductor' para archivos grandes")
+                    return
+
+                supported_formats = ['.mp4', '.webm', '.ogg', '.avi', '.mov']
+                if file_ext not in supported_formats:
+                    st.warning(f"❌ Formato no compatible: {file_ext}")
+                    st.info(f"📁 Formatos soportados: {', '.join(supported_formats)}")
+                    return
+
+                try:
+                    # Método mejorado: usar ruta directa en lugar de bytes para archivos grandes
+                    if file_size_gb <= 0.5:  # Archivos pequeños: usar bytes
+                        with open(file_path, "rb") as video_file:
+                            video_bytes = video_file.read()
+                        st.video(video_bytes, start_time=start_time, width=300)
+                    else:  # Archivos medianos: usar ruta directa
+                        st.video(file_path, start_time=start_time, width=300)
+
+                    st.caption(f"⏱️ Inicia en {minutes}:{seconds:02d}")
+
+                except Exception as video_error:
+                    st.error(f"❌ Error cargando video: {str(video_error)}")
+                    st.info("💡 Posibles causas:")
+                    st.info("• Codec no compatible con el navegador")
+                    st.info("• Archivo corrupto o incompleto")
+                    st.info("• Problema de permisos de archivo")
+
+                    st.info("🔧 Soluciones:")
+                    st.info("• Usa el botón 'Abrir en Reproductor' para reproducir externamente")
+                    st.info("• Verifica que el archivo no esté corrupto")
+                    st.info("• Intenta con un archivo más pequeño para prueba")
+
+            except Exception as e:
+                st.error(f"❌ Error inesperado: {e}")
     
     def _render_external_player_button(self, file_path: str, key: str):
         """Renderiza botón para abrir en reproductor externo"""

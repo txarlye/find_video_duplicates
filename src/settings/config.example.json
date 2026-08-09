@@ -56,7 +56,7 @@
         "show_video_players": true,
         "video_player_size": "medium",
         "show_embedded_players": false,
-        "video_start_time_seconds": 900
+        "video_start_time_seconds": 360
     },
     "debug": {
         "enabled": true
