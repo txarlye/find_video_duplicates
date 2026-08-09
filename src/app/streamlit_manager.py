@@ -696,7 +696,10 @@ class StreamlitAppManager:
                 col1, col2 = st.columns([3, 2])
 
                 with col1:
-                    st.write(f"**{pelicula['nombre']}**")
+                    if pelicula.get('renombrado'):
+                        st.success(f"✅ {pelicula['nombre']} (renombrado, pendiente de reindexar)")
+                    else:
+                        st.write(f"**{pelicula['nombre']}**")
                     st.caption(pelicula['archivo'])
                     tamaño_gb = pelicula.get('tamaño', 0) / (1024 ** 3)
                     st.write(f"📊 {tamaño_gb:.2f} GB")
@@ -710,13 +713,47 @@ class StreamlitAppManager:
                     col_btn1, col_btn2 = st.columns(2)
                     with col_btn1:
                         if st.button("✏️ Renombrar", key=f"orphan_rename_btn_{i}"):
-                            self._rename_file(pelicula['archivo'], nuevo_nombre)
+                            self._rename_orphan(i, pelicula, nuevo_nombre)
                     with col_btn2:
                         if st.button("🔄 Refrescar Plex", key=f"orphan_refresh_btn_{i}"):
                             self._refresh_plex_after_rename()
                             st.rerun()
 
                 st.markdown("---")
+
+    def _rename_orphan(self, index: int, pelicula: Dict[str, Any], new_name: str):
+        """
+        Renombra un huérfano y actualiza su entrada en la lista en vez de
+        dejarla apuntando a una ruta que ya no existe. No se quita de la
+        lista (a diferencia de un par de duplicados al moverlo/borrarlo):
+        así queda constancia visual de qué archivos ya se renombraron y
+        están pendientes de que Plex los reindexe.
+        """
+        if not new_name:
+            st.error("❌ Nombre no puede estar vacío")
+            return
+
+        try:
+            old_path = Path(pelicula['archivo'])
+            new_path = old_path.parent / f"{new_name}{old_path.suffix}"
+
+            os.rename(str(old_path), str(new_path))
+            st.success(f"✅ Archivo renombrado: {new_path.name}")
+
+            huerfanos = st.session_state.huerfanos
+            huerfanos[index] = {
+                **pelicula,
+                'nombre': new_path.name,
+                'archivo': str(new_path),
+                'renombrado': True,
+            }
+            st.session_state.huerfanos = huerfanos
+
+            self._refresh_plex_after_rename()
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Error renombrando archivo: {e}")
 
     def render_results(self):
         """Renderiza los resultados del escaneo"""
