@@ -1,0 +1,36 @@
+# Contexto de build = raíz del repo (ver docker/Dockerfile). Nada de esto
+# debe acabar dentro de la imagen.
+
+.git/
+.gitignore
+.dockerignore
+
+# Nunca hornear datos personales dentro de la imagen: config.json y .env
+# se montan como volumen/env_file en tiempo de ejecución, no se copian.
+src/settings/config.json
+.env
+.env.*
+
+# Entornos y cachés de desarrollo
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# No forman parte de la app en sí
+test/
+setup/
+docker/
+scan_data/
+logs/
+*.log
+*.session
+*.session-journal
+
+# Documentación y metadatos del editor/IDE, no del runtime
+.vscode/
+.idea/
+.claude/
+*.md

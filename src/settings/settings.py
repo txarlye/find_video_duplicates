@@ -35,11 +35,17 @@ class Settings:
         env_path = Path(__file__).parent.parent.parent / ".env"
         if env_path.exists():
             load_dotenv(env_path)
-        
-        # Cargar configuración JSON
-        config_path = Path(__file__).parent / "config.json"
-        if config_path.exists():
-            with open(config_path, 'r', encoding='utf-8') as f:
+
+        # Ruta de config.json: por defecto junto a este archivo (uso local
+        # normal). En Docker se sobreescribe con CONFIG_PATH apuntando a un
+        # volumen persistente (ver docker-compose-synology.yml) — así la
+        # imagen nunca lleva datos personales horneados dentro y los
+        # cambios hechos desde la UI sobreviven a recrear el contenedor.
+        config_path_env = os.environ.get("CONFIG_PATH")
+        self._config_path = Path(config_path_env) if config_path_env else Path(__file__).parent / "config.json"
+
+        if self._config_path.exists():
+            with open(self._config_path, 'r', encoding='utf-8') as f:
                 self.config = json.load(f)
         else:
             self.config = self._create_default_config()
@@ -85,8 +91,8 @@ class Settings:
 
     def _save_config(self):
         """Guarda la configuración actual"""
-        config_path = Path(__file__).parent / "config.json"
-        with open(config_path, 'w', encoding='utf-8') as f:
+        self._config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._config_path, 'w', encoding='utf-8') as f:
             json.dump(self.config, f, indent=4, ensure_ascii=False)
 
     def get(self, key: str, default: Any = None) -> Any:

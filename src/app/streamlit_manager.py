@@ -131,10 +131,11 @@ class StreamlitAppManager:
 
         # Grupo 2: utilidades ajenas al escaneo de vídeo
         st.caption("🛠️ Utilidades")
-        col4, col5, col6 = st.columns(3)
+        col4, col5, col6, col7 = st.columns(4)
         self._nav_button("📱 Telegram", "telegram", col4)
         self._nav_button("🎭 IMDB", "imdb", col5)
         self._nav_button("🗑️ Basura", "trash", col6)
+        self._nav_button("⚙️ Configuración", "settings", col7)
 
         st.markdown("---")
 
@@ -4085,6 +4086,31 @@ class StreamlitAppManager:
             else:
                 st.info("💡 No hay duplicados para enviar. Escanea una carpeta primero.")
     
+    def _render_settings_interface(self):
+        """
+        Renderiza "Configuración" a página completa en Utilidades — el
+        mismo contenido que ya vivía escondido en las pestañas del
+        sidebar (Detección/Configuración/Plex), pero más visible para
+        alguien configurando la app por primera vez (p.ej. tras instalar
+        la imagen Docker). Las API keys/tokens no están aquí a propósito:
+        esos siguen solo en el archivo .env, nunca en un campo de la UI
+        que pueda acabar guardado en config.json.
+        """
+        st.header("⚙️ Configuración")
+        st.caption(
+            "Rutas, comportamiento de detección y conexión con Plex. Las claves de "
+            "API y tokens (Telegram, TMDB, OMDb, IA...) se configuran aparte, en el "
+            "archivo .env — no aquí, para no acabar guardándolas en config.json."
+        )
+
+        tab1, tab2, tab3 = st.tabs(["🔍 Detección", "🎬 Reproductores y Debug", "🎬 Plex"])
+        with tab1:
+            self._render_detection_tab()
+        with tab2:
+            self._render_configuration_tab()
+        with tab3:
+            self._render_plex_tab()
+
     def _render_trash_interface(self):
         """
         Renderiza "Basura": lo que la app ha ido moviendo a la carpeta de
@@ -4408,6 +4434,8 @@ class StreamlitAppManager:
             self._render_imdb_interface()
         elif active_view == 'trash':
             self._render_trash_interface()
+        elif active_view == 'settings':
+            self._render_settings_interface()
         else:
             # 'scan' (por defecto)
             self.render_scan_section()
