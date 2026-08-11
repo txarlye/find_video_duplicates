@@ -265,5 +265,14 @@ docs/
 # A safe template lives in src/settings/config.example.json
 src/settings/config.json
 
-# Local Docker deployment files (contain real secrets, huge tar image)
-docker/
+# Docker: la receta (Dockerfile, compose, env.template, README) SÍ se
+# versiona — está limpia de secretos y de datos personales por diseño
+# (config.json y .env se montan en tiempo de ejecución, nunca se hornean
+# en la imagen). Lo que NO se versiona son los artefactos/datos locales:
+docker/*.tar
+docker/.env
+docker/data/
+docker/logs/
+docker/scan_data/
+docker/config/
+docker/test/
