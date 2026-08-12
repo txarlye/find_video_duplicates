@@ -175,8 +175,13 @@ class StreamlitAppManager:
             with tab5:
                 self._render_imdb_tab()
     
-    def _render_detection_tab(self):
-        """Renderiza la pestaña de detección"""
+    def _render_detection_tab(self, key_prefix: str = ""):
+        """
+        Renderiza la pestaña de detección. Se llama tanto desde el
+        sidebar como desde la página de Configuración de Utilidades en
+        la misma ejecución — key_prefix evita colisión de keys de
+        widgets entre ambas llamadas (StreamlitDuplicateElementKey).
+        """
         # Umbral de similitud
         umbral = st.slider(
             "Umbral de similitud",
@@ -211,7 +216,7 @@ class StreamlitAppManager:
         
         with col2:
             if excluded_dirs:
-                dir_to_remove = st.selectbox("Remover directorio:", options=excluded_dirs, key="remove_dir")
+                dir_to_remove = st.selectbox("Remover directorio:", options=excluded_dirs, key=f"{key_prefix}remove_dir")
                 if st.button("➖ Remover") and dir_to_remove:
                     settings.remove_excluded_directory(dir_to_remove)
                     st.success(f"✅ Directorio '{dir_to_remove}' removido de la exclusión")
@@ -242,13 +247,13 @@ class StreamlitAppManager:
             
             st.write(f"Tolerancia: {tolerancia} minutos")
             
-            if st.button("💾 Guardar filtro duración", key="save_duration_filter"):
+            if st.button("💾 Guardar filtro duración", key=f"{key_prefix}save_duration_filter"):
                 settings.set_duration_filter_enabled(filtro_duracion)
                 settings.set_duration_tolerance_minutes(tolerancia)
                 st.success("✅ Filtro de duración guardado")
     
-    def _render_configuration_tab(self):
-        """Renderiza la pestaña de configuración"""
+    def _render_configuration_tab(self, key_prefix: str = ""):
+        """Renderiza la pestaña de configuración (ver nota de key_prefix en _render_detection_tab)"""
         st.subheader("🎬 Reproductores de Video")
         
         # Mostrar reproductores de video
@@ -294,7 +299,7 @@ class StreamlitAppManager:
                 step=1
             )
 
-        if st.button("💾 Guardar configuración reproductores", key="save_players_config"):
+        if st.button("💾 Guardar configuración reproductores", key=f"{key_prefix}save_players_config"):
             settings.set_show_video_players(show_players)
             settings.set_show_embedded_players(show_embedded)
             settings.set_video_player_size(player_size)
@@ -321,12 +326,12 @@ class StreamlitAppManager:
             help="Carpeta donde se mueven los archivos en vez de borrarse"
         )
 
-        if st.button("💾 Guardar configuración debug", key="save_debug_config"):
+        if st.button("💾 Guardar configuración debug", key=f"{key_prefix}save_debug_config"):
             settings.set_debug_folder(debug_folder)
             st.success("✅ Configuración de debug guardada")
     
-    def _render_plex_tab(self):
-        """Renderiza la pestaña de configuración de Plex"""
+    def _render_plex_tab(self, key_prefix: str = ""):
+        """Renderiza la pestaña de configuración de Plex (ver nota de key_prefix en _render_detection_tab)"""
         st.subheader("🎬 Configuración de Plex")
         
         # Estado de conexión
@@ -348,7 +353,7 @@ class StreamlitAppManager:
         
         with col1:
             st.write("🎬 Biblioteca de Películas")
-            if st.button("🔄 Cargar Bibliotecas", key="load_libraries"):
+            if st.button("🔄 Cargar Bibliotecas", key=f"{key_prefix}load_libraries"):
                 st.rerun()
             
             # Obtener bibliotecas disponibles
@@ -366,7 +371,7 @@ class StreamlitAppManager:
                     "Seleccionar biblioteca de películas:",
                     options=library_names,
                     index=default_index,
-                    key="movies_library_select",
+                    key=f"{key_prefix}movies_library_select",
                     help="Biblioteca de películas en Plex"
                 )
             else:
@@ -390,7 +395,7 @@ class StreamlitAppManager:
                     "Seleccionar biblioteca de series:",
                     options=library_names,
                     index=default_index,
-                    key="tv_library_select",
+                    key=f"{key_prefix}tv_library_select",
                     help="Biblioteca de series en Plex"
                 )
             else:
@@ -431,7 +436,7 @@ class StreamlitAppManager:
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("🧪 Probar Conexión", key="test_plex"):
+            if st.button("🧪 Probar Conexión", key=f"{key_prefix}test_plex"):
                 if self.plex_service.test_connection():
                     st.success("✅ Conexión exitosa")
                 else:
@@ -443,7 +448,7 @@ class StreamlitAppManager:
         col_refresh1, col_refresh2 = st.columns(2)
         
         with col_refresh1:
-            if st.button("🔄 Refrescar Películas", key="refresh_movies"):
+            if st.button("🔄 Refrescar Películas", key=f"{key_prefix}refresh_movies"):
                 with st.spinner("Refrescando biblioteca de películas..."):
                     if self.plex_refresh_service.refresh_movies_library():
                         st.success("✅ Biblioteca de películas refrescada")
@@ -451,7 +456,7 @@ class StreamlitAppManager:
                         st.error("❌ Error refrescando películas")
         
         with col_refresh2:
-            if st.button("🔄 Refrescar Series", key="refresh_tv"):
+            if st.button("🔄 Refrescar Series", key=f"{key_prefix}refresh_tv"):
                 with st.spinner("Refrescando biblioteca de series..."):
                     if self.plex_refresh_service.refresh_tv_shows_library():
                         st.success("✅ Biblioteca de series refrescada")
@@ -459,7 +464,7 @@ class StreamlitAppManager:
                         st.error("❌ Error refrescando series")
         
         # Refresh via API
-        if st.button("🚀 Refrescar Todas las Bibliotecas (API)", key="refresh_all_api"):
+        if st.button("🚀 Refrescar Todas las Bibliotecas (API)", key=f"{key_prefix}refresh_all_api"):
             with st.spinner("Refrescando todas las bibliotecas via API..."):
                 if self.plex_refresh_service.refresh_all_libraries_via_api():
                     st.success("✅ Todas las bibliotecas refrescadas via API")
@@ -467,7 +472,7 @@ class StreamlitAppManager:
                     st.error("❌ Error refrescando bibliotecas via API")
         
         # Información del servidor
-        if st.button("ℹ️ Info del Servidor Plex", key="plex_server_info"):
+        if st.button("ℹ️ Info del Servidor Plex", key=f"{key_prefix}plex_server_info"):
             server_info = self.plex_refresh_service.get_plex_server_info()
             if "error" in server_info:
                 st.error(f"❌ {server_info['error']}")
@@ -476,7 +481,7 @@ class StreamlitAppManager:
                 st.json(server_info)
         
         with col2:
-            if st.button("💾 Guardar Configuración", key="save_plex_config"):
+            if st.button("💾 Guardar Configuración", key=f"{key_prefix}save_plex_config"):
                 settings.set_plex_database_path(db_path)
                 settings.set_plex_movies_library(movies_lib)
                 settings.set_plex_tv_shows_library(tv_lib)
@@ -4112,13 +4117,17 @@ class StreamlitAppManager:
             "archivo .env — no aquí, para no acabar guardándolas en config.json."
         )
 
+        # El sidebar (siempre visible, ver render_sidebar) renderiza estas
+        # mismas pestañas con sus keys de siempre — key_prefix evita que
+        # esta copia a página completa choque con widgets duplicados en
+        # la misma ejecución (StreamlitDuplicateElementKey).
         tab1, tab2, tab3 = st.tabs(["🔍 Detección", "🎬 Reproductores y Debug", "🎬 Plex"])
         with tab1:
-            self._render_detection_tab()
+            self._render_detection_tab(key_prefix="cfgpage_")
         with tab2:
-            self._render_configuration_tab()
+            self._render_configuration_tab(key_prefix="cfgpage_")
         with tab3:
-            self._render_plex_tab()
+            self._render_plex_tab(key_prefix="cfgpage_")
 
     def _render_proposals_interface(self):
         """
