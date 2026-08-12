@@ -178,6 +178,25 @@ class Settings:
         """Obtiene la API key de TMDB"""
         return self.get_env("TMDB_API_KEY") or self.get("tmdb.api_key", "")
 
+    def get_smtp_host(self) -> str:
+        """Servidor SMTP para el email de propuestas (por defecto Gmail)"""
+        return self.get_env("SMTP_HOST", "smtp.gmail.com")
+
+    def get_smtp_port(self) -> int:
+        """Puerto SMTP (por defecto 587, STARTTLS)"""
+        try:
+            return int(self.get_env("SMTP_PORT", "587"))
+        except ValueError:
+            return 587
+
+    def get_smtp_user(self) -> str:
+        """Cuenta que envía el email de propuestas — solo desde .env, nunca en config.json"""
+        return self.get_env("SMTP_USER")
+
+    def get_smtp_password(self) -> str:
+        """Contraseña de aplicación de la cuenta SMTP — solo desde .env"""
+        return self.get_env("SMTP_PASSWORD")
+
     def get_telegram_bot_token(self) -> str:
         """Obtiene el token del bot de Telegram"""
         return self.get_env("TELEGRAM_BOT_TOKEN") or self.get("telegram.bot_token", "")
@@ -477,6 +496,111 @@ class Settings:
         if serie_normalizada in ignoradas:
             ignoradas.remove(serie_normalizada)
             self.set_ignored_series(ignoradas)
+
+    # Métodos para "Propuestas" (automatización): escaneo programado que
+    # detecta huérfanos/duplicados nuevos, avisa por email y dejar
+    # revisar/aplicar/descartar cada propuesta desde la app.
+    def get_automation_enabled(self) -> bool:
+        """Obtiene si el escaneo programado de propuestas está activado"""
+        return self.get("automation.enabled", False)
+
+    def set_automation_enabled(self, value: bool):
+        """Establece si el escaneo programado de propuestas está activado"""
+        self.set("automation.enabled", value)
+
+    def get_automation_movie_folders(self) -> List[str]:
+        """
+        Carpetas de películas que analiza el escaneo programado. V1 solo
+        cubre películas (huérfanos + duplicados) — series queda para una
+        fase posterior, no hay ajuste equivalente todavía.
+        """
+        return self.get("automation.movie_folders", [])
+
+    def set_automation_movie_folders(self, value: List[str]):
+        """Establece las carpetas de películas del escaneo programado"""
+        self.set("automation.movie_folders", value)
+
+    def get_automation_email_to(self) -> str:
+        """Dirección a la que se envía el aviso de propuestas nuevas"""
+        return self.get("automation.email_to", "")
+
+    def set_automation_email_to(self, value: str):
+        """Establece la dirección de aviso de propuestas"""
+        self.set("automation.email_to", value)
+
+    def get_automation_app_url(self) -> str:
+        """
+        URL base de la app (para el enlace del email — normalmente tu IP
+        de Tailscale, ej. http://100.x.x.x:8501), ya que el email no
+        puede adivinar por dónde vas a entrar a verla.
+        """
+        return self.get("automation.app_url", "")
+
+    def set_automation_app_url(self, value: str):
+        """Establece la URL base de la app para el enlace del email"""
+        self.set("automation.app_url", value)
+
+    def get_automation_size_premium_tolerance_pct(self) -> float:
+        """
+        % máximo de más que puede pesar la copia de mayor calidad para
+        que aun así se proponga quedarse con ella (borrar la otra).
+        Por defecto 50 (tu criterio: hasta un 50% más grande).
+        """
+        return self.get("automation.size_premium_tolerance_pct", 50)
+
+    def set_automation_size_premium_tolerance_pct(self, value: float):
+        self.set("automation.size_premium_tolerance_pct", value)
+
+    def get_automation_size_premium_max_gb(self) -> float:
+        """GB máximos de más que puede pesar la copia de mayor calidad (por defecto 10)"""
+        return self.get("automation.size_premium_max_gb", 10)
+
+    def set_automation_size_premium_max_gb(self, value: float):
+        self.set("automation.size_premium_max_gb", value)
+
+    # Descartes persistentes ("no, ese no, no me lo vuelvas a proponer") —
+    # mismo patrón que series ignoradas, pero con dos listas separadas
+    # porque huérfanos y duplicados se identifican de forma distinta.
+    def get_dismissed_orphan_proposals(self) -> List[str]:
+        """Rutas de archivo cuya propuesta de nombre se ha descartado"""
+        return self.get("automation.dismissed_orphans", [])
+
+    def add_dismissed_orphan_proposal(self, archivo: str):
+        descartados = self.get_dismissed_orphan_proposals()
+        if archivo not in descartados:
+            descartados.append(archivo)
+            self.set("automation.dismissed_orphans", descartados)
+
+    def remove_dismissed_orphan_proposal(self, archivo: str):
+        descartados = self.get_dismissed_orphan_proposals()
+        if archivo in descartados:
+            descartados.remove(archivo)
+            self.set("automation.dismissed_orphans", descartados)
+
+    def get_dismissed_duplicate_proposals(self) -> List[str]:
+        """Claves de par (ruta1|ruta2) cuya propuesta de borrado se ha descartado"""
+        return self.get("automation.dismissed_duplicates", [])
+
+    def add_dismissed_duplicate_proposal(self, par_key: str):
+        descartados = self.get_dismissed_duplicate_proposals()
+        if par_key not in descartados:
+            descartados.append(par_key)
+            self.set("automation.dismissed_duplicates", descartados)
+
+    def remove_dismissed_duplicate_proposal(self, par_key: str):
+        descartados = self.get_dismissed_duplicate_proposals()
+        if par_key in descartados:
+            descartados.remove(par_key)
+            self.set("automation.dismissed_duplicates", descartados)
+
+    # Claves de propuestas ya notificadas por email — para no mandar el
+    # mismo aviso cada noche mientras el usuario no las revise ni
+    # descarte; en cuanto haya una propuesta nueva de verdad, sí avisa.
+    def get_notified_proposal_keys(self) -> List[str]:
+        return self.get("automation.notified_keys", [])
+
+    def set_notified_proposal_keys(self, value: List[str]):
+        self.set("automation.notified_keys", value)
 
     # Métodos para sugerencia de nombres con IA (detector de huérfanos)
     def get_ai_enabled(self) -> bool:

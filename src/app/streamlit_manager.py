@@ -46,6 +46,8 @@ from src.services.Telegram.telegram_manager import TelegramManager
 from src.services.Telegram.telegram_uploader import TelegramUploader
 from src.services.Imdb.imdb_service import ImdbService
 from src.services.ai_naming_service import AINamingService
+from src.services.proposals_service import ProposalsService
+from src.services.email_service import EmailService
 
 
 class StreamlitAppManager:
@@ -71,6 +73,8 @@ class StreamlitAppManager:
         self.telegram_uploader = TelegramUploader()
         self.imdb_service = ImdbService()
         self.ai_naming_service = AINamingService()
+        self.proposals_service = ProposalsService(self.plex_service, self.ai_naming_service)
+        self.email_service = EmailService()
 
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -99,6 +103,10 @@ class StreamlitAppManager:
             st.session_state.series_sin_indexar = None
         if 'active_view' not in st.session_state:
             st.session_state.active_view = 'scan'
+        if 'propuestas_huerfanos' not in st.session_state:
+            st.session_state.propuestas_huerfanos = None
+        if 'propuestas_duplicados' not in st.session_state:
+            st.session_state.propuestas_duplicados = None
 
     def _nav_button(self, label: str, view: str, container) -> None:
         """
@@ -131,11 +139,12 @@ class StreamlitAppManager:
 
         # Grupo 2: utilidades ajenas al escaneo de vídeo
         st.caption("🛠️ Utilidades")
-        col4, col5, col6, col7 = st.columns(4)
+        col4, col5, col6, col7, col8 = st.columns(5)
         self._nav_button("📱 Telegram", "telegram", col4)
         self._nav_button("🎭 IMDB", "imdb", col5)
         self._nav_button("🗑️ Basura", "trash", col6)
-        self._nav_button("⚙️ Configuración", "settings", col7)
+        self._nav_button("🤖 Propuestas", "propuestas", col7)
+        self._nav_button("⚙️ Configuración", "settings", col8)
 
         st.markdown("---")
 
@@ -4111,6 +4120,223 @@ class StreamlitAppManager:
         with tab3:
             self._render_plex_tab()
 
+    def _render_proposals_interface(self):
+        """
+        Renderiza "Propuestas": nombres sugeridos por IA para huérfanos y
+        recomendaciones de qué copia borrar en duplicados, generadas por
+        ProposalsService (la misma lógica que usa scheduled_scan.py) y ya
+        filtradas contra los descartes persistentes. Aplicar/descartar
+        aquí actúa al momento sobre la lista en pantalla, sin esperar a
+        un nuevo escaneo.
+        """
+        st.header("🤖 Propuestas")
+        st.caption(
+            "Nombres sugeridos para huérfanos y copias recomendadas a borrar en "
+            "duplicados — revisa, aplica con un clic o descarta para siempre."
+        )
+
+        with st.expander("⚙️ Configurar automatización"):
+            self._render_automation_config()
+
+        if st.button("🔄 Generar propuestas ahora", type="primary"):
+            self._generar_propuestas_ahora()
+
+        if st.session_state.get('propuestas_huerfanos') is None:
+            st.info('💡 Pulsa "Generar propuestas ahora", o espera al próximo escaneo programado si ya lo has configurado.')
+            return
+
+        huerfanos = st.session_state.get('propuestas_huerfanos') or []
+        duplicados = st.session_state.get('propuestas_duplicados') or []
+
+        st.markdown("---")
+        st.subheader(f"🏷️ {len(huerfanos)} nombre(s) sugerido(s)")
+        if not huerfanos:
+            st.caption("Ninguna propuesta pendiente.")
+        for i, p in enumerate(huerfanos):
+            col1, col2 = st.columns([3, 2])
+            with col1:
+                st.write(f"**{p['nombre_actual']}**")
+                st.write(f"➡️ {p['nombre_sugerido']}")
+                st.caption(p['archivo'])
+                gb = p.get('tamaño', 0) / (1024 ** 3)
+                st.write(f"📊 {gb:.2f} GB")
+            with col2:
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("✅ Aplicar", key=f"prop_orph_apply_{i}"):
+                        self._aplicar_propuesta_huerfano(p)
+                with col_b:
+                    if st.button("❌ No, descartar", key=f"prop_orph_dismiss_{i}"):
+                        self._descartar_propuesta_huerfano(p)
+            st.markdown("---")
+
+        st.subheader(f"🗑️ {len(duplicados)} propuesta(s) de borrado")
+        if not duplicados:
+            st.caption("Ninguna propuesta pendiente.")
+        for i, p in enumerate(duplicados):
+            col1, col2 = st.columns([3, 2])
+            with col1:
+                gb_borrar = p['tamaño_a_borrar'] / (1024 ** 3)
+                gb_conservar = p['tamaño_a_conservar'] / (1024 ** 3)
+                st.write(f"🗑️ Borrar: **{p['nombre_a_borrar']}** ({gb_borrar:.2f} GB)")
+                st.write(f"✅ Conservar: **{p['nombre_a_conservar']}** ({gb_conservar:.2f} GB)")
+                st.caption(p['motivo'])
+            with col2:
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("✅ Aplicar", key=f"prop_dup_apply_{i}"):
+                        self._aplicar_propuesta_duplicado(p)
+                with col_b:
+                    if st.button("❌ No, descartar", key=f"prop_dup_dismiss_{i}"):
+                        self._descartar_propuesta_duplicado(p)
+            st.markdown("---")
+
+        descartados_h = settings.get_dismissed_orphan_proposals()
+        descartados_d = settings.get_dismissed_duplicate_proposals()
+        if descartados_h or descartados_d:
+            with st.expander(f"🙈 Descartadas ({len(descartados_h) + len(descartados_d)})", expanded=False):
+                for archivo in descartados_h:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(f"🏷️ {Path(archivo).name}")
+                    with col2:
+                        if st.button("↩️ Quitar", key=f"undismiss_orph_{archivo}"):
+                            settings.remove_dismissed_orphan_proposal(archivo)
+                            st.rerun()
+                for clave in descartados_d:
+                    ruta1, _, ruta2 = clave.partition('|')
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(f"🗑️ {Path(ruta1).name}  vs  {Path(ruta2).name}")
+                    with col2:
+                        if st.button("↩️ Quitar", key=f"undismiss_dup_{clave}"):
+                            settings.remove_dismissed_duplicate_proposal(clave)
+                            st.rerun()
+
+    def _render_automation_config(self):
+        """Configuración de Automatización: carpetas, email, umbrales — dentro de la propia pantalla de Propuestas"""
+        enabled = st.checkbox("Activar escaneo programado de propuestas", value=settings.get_automation_enabled())
+
+        st.write("**Carpetas de películas a analizar** (huérfanos + duplicados)")
+        carpetas = settings.get_automation_movie_folders()
+        for c in carpetas:
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.write(f"📁 {c}")
+            with col2:
+                if st.button("🗑️", key=f"automation_folder_remove_{c}"):
+                    settings.set_automation_movie_folders([x for x in carpetas if x != c])
+                    st.rerun()
+
+        nueva_carpeta = st.text_input("Añadir carpeta", key="automation_new_folder")
+        if st.button("➕ Añadir carpeta", key="automation_add_folder") and nueva_carpeta:
+            if nueva_carpeta not in carpetas:
+                settings.set_automation_movie_folders(carpetas + [nueva_carpeta])
+                st.rerun()
+
+        st.markdown("---")
+        email_to = st.text_input("Email de aviso", value=settings.get_automation_email_to())
+        app_url = st.text_input(
+            "URL de la app para el enlace del email",
+            value=settings.get_automation_app_url(),
+            placeholder="http://100.x.x.x:8501",
+            help="Normalmente tu IP de Tailscale — el email no puede adivinar por dónde vas a entrar."
+        )
+
+        if settings.get_smtp_user():
+            st.caption(f"✅ SMTP configurado ({settings.get_smtp_user()})")
+        else:
+            st.caption("⚠️ Falta SMTP_USER/SMTP_PASSWORD en tu .env — sin esto no se puede enviar el email.")
+
+        st.markdown("---")
+        st.write("**¿Cuándo compensa quedarse con la copia de mayor calidad?**")
+        col1, col2 = st.columns(2)
+        with col1:
+            pct = st.number_input(
+                "% máximo de más que puede pesar", min_value=0,
+                value=int(settings.get_automation_size_premium_tolerance_pct()), step=5
+            )
+        with col2:
+            gb = st.number_input(
+                "GB máximos de más", min_value=0.0,
+                value=float(settings.get_automation_size_premium_max_gb()), step=1.0
+            )
+
+        if st.button("💾 Guardar configuración de automatización"):
+            settings.set_automation_enabled(enabled)
+            settings.set_automation_email_to(email_to)
+            settings.set_automation_app_url(app_url)
+            settings.set_automation_size_premium_tolerance_pct(pct)
+            settings.set_automation_size_premium_max_gb(gb)
+            st.success("✅ Guardado")
+
+        st.markdown("---")
+        puede_probar = bool(settings.get_smtp_user() and settings.get_automation_email_to())
+        if st.button("📧 Enviar email de prueba", disabled=not puede_probar):
+            ok = self.email_service.enviar_aviso_propuestas(1, 1)
+            if ok:
+                st.success("✅ Email de prueba enviado")
+            else:
+                st.error("❌ Error enviando — revisa SMTP_USER/SMTP_PASSWORD en .env y el log")
+        if not puede_probar:
+            st.caption("Guarda antes un email de aviso y ten SMTP_USER/SMTP_PASSWORD en .env para poder probar.")
+
+    def _generar_propuestas_ahora(self):
+        """Genera las propuestas bajo demanda (misma lógica que scheduled_scan.py)"""
+        carpetas = settings.get_automation_movie_folders()
+        if not carpetas:
+            st.warning('⚠️ Configura al menos una carpeta en "⚙️ Configurar automatización" primero')
+            return
+
+        with st.spinner("🔍 Analizando carpetas configuradas..."):
+            huerfanos = self.proposals_service.generar_propuestas_huerfanos(carpetas)
+            duplicados = self.proposals_service.generar_propuestas_duplicados(carpetas)
+
+        st.session_state.propuestas_huerfanos = huerfanos
+        st.session_state.propuestas_duplicados = duplicados
+        st.success(f"✅ {len(huerfanos)} propuesta(s) de nombre, {len(duplicados)} propuesta(s) de borrado")
+
+    def _aplicar_propuesta_huerfano(self, p: Dict[str, Any]):
+        """Renombra el huérfano al nombre sugerido y lo quita de la lista de propuestas"""
+        try:
+            old_path = Path(p['archivo'])
+            new_path = old_path.parent / f"{p['nombre_sugerido']}{old_path.suffix}"
+            os.rename(str(old_path), str(new_path))
+            st.success(f"✅ Renombrado: {new_path.name}")
+            self._refresh_plex_after_rename()
+        except Exception as e:
+            st.error(f"❌ Error renombrando '{p['archivo']}': {e}")
+            return
+
+        st.session_state.propuestas_huerfanos = [
+            x for x in st.session_state.propuestas_huerfanos if x['clave'] != p['clave']
+        ]
+        st.rerun()
+
+    def _descartar_propuesta_huerfano(self, p: Dict[str, Any]):
+        """Marca la propuesta de nombre como descartada para siempre y la quita de la lista"""
+        settings.add_dismissed_orphan_proposal(p['clave'])
+        st.session_state.propuestas_huerfanos = [
+            x for x in st.session_state.propuestas_huerfanos if x['clave'] != p['clave']
+        ]
+        st.rerun()
+
+    def _aplicar_propuesta_duplicado(self, p: Dict[str, Any]):
+        """Mueve a debug el archivo recomendado a borrar y lo quita de la lista de propuestas"""
+        if self._mover_archivo_a_debug(p['archivo_a_borrar']):
+            st.session_state.propuestas_duplicados = [
+                x for x in st.session_state.propuestas_duplicados if x['clave'] != p['clave']
+            ]
+            st.rerun()
+
+    def _descartar_propuesta_duplicado(self, p: Dict[str, Any]):
+        """Marca la propuesta de borrado como descartada para siempre y la quita de la lista"""
+        settings.add_dismissed_duplicate_proposal(p['clave'])
+        st.session_state.propuestas_duplicados = [
+            x for x in st.session_state.propuestas_duplicados if x['clave'] != p['clave']
+        ]
+        st.rerun()
+
     def _render_trash_interface(self):
         """
         Renderiza "Basura": lo que la app ha ido moviendo a la carpeta de
@@ -4410,6 +4636,15 @@ class StreamlitAppManager:
     
     def run(self):
         """Ejecuta la aplicación completa"""
+        # Enlace directo desde el email de propuestas (?view=propuestas):
+        # solo se aplica una vez al cargar, para no pisar la navegación
+        # manual si el usuario cambia de pestaña después.
+        if not st.session_state.get('_deep_link_aplicado'):
+            vista_pedida = st.query_params.get('view')
+            if vista_pedida:
+                st.session_state.active_view = vista_pedida
+            st.session_state['_deep_link_aplicado'] = True
+
         # Verificar si hay un archivo pendiente de cargar desde la lista
         if hasattr(st.session_state, 'load_from_list_file') and st.session_state.load_from_list_file:
             logging.info(f"📂 Cargando escaneo desde lista: {st.session_state.load_from_list_file}")
@@ -4436,6 +4671,8 @@ class StreamlitAppManager:
             self._render_trash_interface()
         elif active_view == 'settings':
             self._render_settings_interface()
+        elif active_view == 'propuestas':
+            self._render_proposals_interface()
         else:
             # 'scan' (por defecto)
             self.render_scan_section()
