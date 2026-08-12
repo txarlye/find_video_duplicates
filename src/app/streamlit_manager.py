@@ -244,7 +244,8 @@ class StreamlitAppManager:
                 max_value=30,
                 value=settings.get_duration_tolerance_minutes(),
                 step=1,
-                help="Diferencia máxima en minutos permitida entre duplicados"
+                help="Diferencia máxima en minutos permitida entre duplicados",
+                key=f"{key_prefix}detection_duration_tolerance"
             )
             
             st.write(f"Tolerancia: {tolerancia} minutos")
@@ -429,7 +430,8 @@ class StreamlitAppManager:
                 max_value=30,
                 value=settings.get_plex_duration_tolerance_minutes(),
                 step=1,
-                help="Diferencia máxima en minutos permitida entre duplicados"
+                help="Diferencia máxima en minutos permitida entre duplicados",
+                key=f"{key_prefix}plex_duration_tolerance"
             )
         else:
             tolerance = settings.get_plex_duration_tolerance_minutes()
@@ -4164,44 +4166,66 @@ class StreamlitAppManager:
         st.subheader(f"🏷️ {len(huerfanos)} nombre(s) sugerido(s)")
         if not huerfanos:
             st.caption("Ninguna propuesta pendiente.")
-        for i, p in enumerate(huerfanos):
-            col1, col2 = st.columns([3, 2])
-            with col1:
-                st.write(f"**{p['nombre_actual']}**")
-                st.write(f"➡️ {p['nombre_sugerido']}")
-                st.caption(p['archivo'])
-                gb = p.get('tamaño', 0) / (1024 ** 3)
-                st.write(f"📊 {gb:.2f} GB")
-            with col2:
+        else:
+            # st.form agrupa todas las casillas en un único refresco: marcar
+            # varias no recarga nada hasta pulsar uno de los botones de abajo,
+            # a diferencia de un botón por fila (un refresco por clic, muy
+            # notable revisando desde el móvil).
+            with st.form("form_propuestas_huerfanos"):
+                st.caption("Marca las que quieras y aplica o descarta todas de golpe.")
+                for p in huerfanos:
+                    col1, col2 = st.columns([1, 6])
+                    with col1:
+                        st.checkbox("Seleccionar", key=f"sel_orph_{p['clave']}", label_visibility="collapsed")
+                    with col2:
+                        st.write(f"**{p['nombre_actual']}** ➡️ {p['nombre_sugerido']}")
+                        gb = p.get('tamaño', 0) / (1024 ** 3)
+                        st.caption(f"{p['archivo']} — {gb:.2f} GB")
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    if st.button("✅ Aplicar", key=f"prop_orph_apply_{i}"):
-                        self._aplicar_propuesta_huerfano(p)
+                    aplicar_h = st.form_submit_button("✅ Aplicar seleccionadas", type="primary")
                 with col_b:
-                    if st.button("❌ No, descartar", key=f"prop_orph_dismiss_{i}"):
-                        self._descartar_propuesta_huerfano(p)
-            st.markdown("---")
+                    descartar_h = st.form_submit_button("❌ Descartar seleccionadas (no volver a proponer)")
+
+            if aplicar_h or descartar_h:
+                elegidos = [p for p in huerfanos if st.session_state.get(f"sel_orph_{p['clave']}")]
+                if not elegidos:
+                    st.warning("⚠️ No has marcado ninguna")
+                elif aplicar_h:
+                    self._aplicar_propuestas_huerfanos_lote(elegidos)
+                else:
+                    self._descartar_propuestas_huerfanos_lote(elegidos)
 
         st.subheader(f"🗑️ {len(duplicados)} propuesta(s) de borrado")
         if not duplicados:
             st.caption("Ninguna propuesta pendiente.")
-        for i, p in enumerate(duplicados):
-            col1, col2 = st.columns([3, 2])
-            with col1:
-                gb_borrar = p['tamaño_a_borrar'] / (1024 ** 3)
-                gb_conservar = p['tamaño_a_conservar'] / (1024 ** 3)
-                st.write(f"🗑️ Borrar: **{p['nombre_a_borrar']}** ({gb_borrar:.2f} GB)")
-                st.write(f"✅ Conservar: **{p['nombre_a_conservar']}** ({gb_conservar:.2f} GB)")
-                st.caption(p['motivo'])
-            with col2:
+        else:
+            with st.form("form_propuestas_duplicados"):
+                st.caption("Marca las que quieras y aplica o descarta todas de golpe.")
+                for p in duplicados:
+                    col1, col2 = st.columns([1, 6])
+                    with col1:
+                        st.checkbox("Seleccionar", key=f"sel_dup_{p['clave']}", label_visibility="collapsed")
+                    with col2:
+                        gb_borrar = p['tamaño_a_borrar'] / (1024 ** 3)
+                        gb_conservar = p['tamaño_a_conservar'] / (1024 ** 3)
+                        st.write(f"🗑️ Borrar: **{p['nombre_a_borrar']}** ({gb_borrar:.2f} GB)")
+                        st.write(f"✅ Conservar: **{p['nombre_a_conservar']}** ({gb_conservar:.2f} GB)")
+                        st.caption(p['motivo'])
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    if st.button("✅ Aplicar", key=f"prop_dup_apply_{i}"):
-                        self._aplicar_propuesta_duplicado(p)
+                    aplicar_d = st.form_submit_button("✅ Aplicar seleccionadas", type="primary")
                 with col_b:
-                    if st.button("❌ No, descartar", key=f"prop_dup_dismiss_{i}"):
-                        self._descartar_propuesta_duplicado(p)
-            st.markdown("---")
+                    descartar_d = st.form_submit_button("❌ Descartar seleccionadas (no volver a proponer)")
+
+            if aplicar_d or descartar_d:
+                elegidos = [p for p in duplicados if st.session_state.get(f"sel_dup_{p['clave']}")]
+                if not elegidos:
+                    st.warning("⚠️ No has marcado ninguna")
+                elif aplicar_d:
+                    self._aplicar_propuestas_duplicados_lote(elegidos)
+                else:
+                    self._descartar_propuestas_duplicados_lote(elegidos)
 
         descartados_h = settings.get_dismissed_orphan_proposals()
         descartados_d = settings.get_dismissed_duplicate_proposals()
@@ -4374,45 +4398,61 @@ class StreamlitAppManager:
         st.session_state.propuestas_duplicados = duplicados
         st.success(f"✅ {len(huerfanos)} propuesta(s) de nombre, {len(duplicados)} propuesta(s) de borrado")
 
-    def _aplicar_propuesta_huerfano(self, p: Dict[str, Any]):
-        """Renombra el huérfano al nombre sugerido y lo quita de la lista de propuestas"""
-        try:
-            old_path = Path(p['archivo'])
-            new_path = old_path.parent / f"{p['nombre_sugerido']}{old_path.suffix}"
-            os.rename(str(old_path), str(new_path))
-            st.success(f"✅ Renombrado: {new_path.name}")
+    def _aplicar_propuestas_huerfanos_lote(self, seleccionados: List[Dict[str, Any]]):
+        """Renombra todos los huérfanos seleccionados al nombre sugerido, en un solo refresco"""
+        aplicados = 0
+        for p in seleccionados:
+            try:
+                old_path = Path(p['archivo'])
+                new_path = old_path.parent / f"{p['nombre_sugerido']}{old_path.suffix}"
+                os.rename(str(old_path), str(new_path))
+                aplicados += 1
+            except Exception as e:
+                st.error(f"❌ Error renombrando '{p['archivo']}': {e}")
+
+        if aplicados:
             self._refresh_plex_after_rename()
-        except Exception as e:
-            st.error(f"❌ Error renombrando '{p['archivo']}': {e}")
-            return
+            claves = {p['clave'] for p in seleccionados}
+            st.session_state.propuestas_huerfanos = [
+                x for x in st.session_state.propuestas_huerfanos if x['clave'] not in claves
+            ]
+            st.success(f"✅ {aplicados} renombrado(s)")
+            st.rerun()
 
+    def _descartar_propuestas_huerfanos_lote(self, seleccionados: List[Dict[str, Any]]):
+        """Descarta para siempre todas las propuestas de nombre seleccionadas"""
+        for p in seleccionados:
+            settings.add_dismissed_orphan_proposal(p['clave'])
+        claves = {p['clave'] for p in seleccionados}
         st.session_state.propuestas_huerfanos = [
-            x for x in st.session_state.propuestas_huerfanos if x['clave'] != p['clave']
+            x for x in st.session_state.propuestas_huerfanos if x['clave'] not in claves
         ]
+        st.success(f"🙈 {len(seleccionados)} descartada(s)")
         st.rerun()
 
-    def _descartar_propuesta_huerfano(self, p: Dict[str, Any]):
-        """Marca la propuesta de nombre como descartada para siempre y la quita de la lista"""
-        settings.add_dismissed_orphan_proposal(p['clave'])
-        st.session_state.propuestas_huerfanos = [
-            x for x in st.session_state.propuestas_huerfanos if x['clave'] != p['clave']
-        ]
-        st.rerun()
+    def _aplicar_propuestas_duplicados_lote(self, seleccionados: List[Dict[str, Any]]):
+        """Mueve a debug todos los archivos recomendados a borrar seleccionados, en un solo refresco"""
+        aplicados = 0
+        for p in seleccionados:
+            if self._mover_archivo_a_debug(p['archivo_a_borrar']):
+                aplicados += 1
 
-    def _aplicar_propuesta_duplicado(self, p: Dict[str, Any]):
-        """Mueve a debug el archivo recomendado a borrar y lo quita de la lista de propuestas"""
-        if self._mover_archivo_a_debug(p['archivo_a_borrar']):
+        if aplicados:
+            claves = {p['clave'] for p in seleccionados}
             st.session_state.propuestas_duplicados = [
-                x for x in st.session_state.propuestas_duplicados if x['clave'] != p['clave']
+                x for x in st.session_state.propuestas_duplicados if x['clave'] not in claves
             ]
             st.rerun()
 
-    def _descartar_propuesta_duplicado(self, p: Dict[str, Any]):
-        """Marca la propuesta de borrado como descartada para siempre y la quita de la lista"""
-        settings.add_dismissed_duplicate_proposal(p['clave'])
+    def _descartar_propuestas_duplicados_lote(self, seleccionados: List[Dict[str, Any]]):
+        """Descarta para siempre todas las propuestas de borrado seleccionadas"""
+        for p in seleccionados:
+            settings.add_dismissed_duplicate_proposal(p['clave'])
+        claves = {p['clave'] for p in seleccionados}
         st.session_state.propuestas_duplicados = [
-            x for x in st.session_state.propuestas_duplicados if x['clave'] != p['clave']
+            x for x in st.session_state.propuestas_duplicados if x['clave'] not in claves
         ]
+        st.success(f"🙈 {len(seleccionados)} descartada(s)")
         st.rerun()
 
     def _render_trash_interface(self):

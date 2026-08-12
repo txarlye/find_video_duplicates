@@ -51,10 +51,20 @@ def main():
     except Exception:
         pass  # No hay instancia ejecutándose, continuar normalmente
 
-    # Solo abrir navegador si no estamos en Docker
+    # Solo abrir navegador si no estamos en Docker. Sondeamos el health
+    # endpoint en vez de un time.sleep fijo — abre en cuanto está listo de
+    # verdad, ni antes (fallaría) ni de más tarde de lo necesario.
     if not is_docker:
         def open_browser():
-            time.sleep(10)  # Más tiempo para que Streamlit esté completamente listo
+            import requests as _requests
+            limite = time.time() + 30
+            while time.time() < limite:
+                try:
+                    if _requests.get(f"{base_url}/_stcore/health", timeout=1).status_code == 200:
+                        break
+                except Exception:
+                    pass
+                time.sleep(0.5)
             try:
                 webbrowser.open(base_url)
                 print(f"🌐 Navegador abierto en {base_url}")
@@ -65,16 +75,15 @@ def main():
         browser_thread.start()
 
     try:
-        # Ejecutar Streamlit directamente
-        # En Docker, usar modo headless
-        is_docker = os.environ.get('DOCKER_CONTAINER', False)
-        headless_mode = "true" if is_docker else "false"
-
+        # Siempre headless a nivel de Streamlit: si no, Streamlit abre su
+        # propio navegador además del que gestiona el hilo de arriba, y
+        # acabas con dos pestañas. El hilo de arriba es quien decide
+        # cuándo abrir (y no abre nada en Docker).
         subprocess.run([
             sys.executable, "-m", "streamlit", "run",
             "app_simple.py",
             "--server.port", "8501",
-            "--server.headless", headless_mode,
+            "--server.headless", "true",
             "--browser.gatherUsageStats", "false",
             "--server.address", server_address
         ])
