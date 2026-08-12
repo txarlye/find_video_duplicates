@@ -140,15 +140,19 @@ class Settings:
     def get_env(self, key: str, default: str = "") -> str:
         """
         Obtiene una variable de entorno
-        
+
         Args:
             key: Nombre de la variable de entorno
             default: Valor por defecto
-            
+
         Returns:
-            Valor de la variable de entorno
+            Valor de la variable de entorno. Si está definida en .env pero
+            vacía (ej. "SMTP_HOST=" tal cual se deja a propósito cuando no
+            hace falta cambiar el valor por defecto), cuenta igual que si
+            no existiera — os.getenv(key, default) solo aplica el default
+            cuando la clave falta del todo, no cuando está vacía.
         """
-        return os.getenv(key, default)
+        return os.getenv(key) or default
 
     def update_last_scan_path(self, path: str):
         """Actualiza la última ruta escaneada"""
