@@ -56,7 +56,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copiar el código real de la aplicación (respeta .dockerignore, que
 # excluye config.json, .env, venv/, tests, etc.)
-COPY main.py app_simple.py ./
+COPY main.py app_simple.py scheduled_scan.py ./
 COPY src/ ./src/
 
 # Directorios de datos persistentes (normalmente montados como volumen,
