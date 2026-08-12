@@ -69,18 +69,24 @@ docker stop find-video-duplicates
 
 ## 🤖 Escaneo programado de Propuestas (opcional)
 
-Utilidades → 🤖 Propuestas permite configurar carpetas + email de aviso.
-Para que el escaneo se dispare solo (no solo cuando abres la app), añade
-una tarea en el **Panel de control → Planificador de tareas** del
-Synology: tarea programada → Script definido por el usuario →
+Configúralo en **Utilidades → ⚙️ Configuración → 📅 Programación**:
+carpetas a analizar, hora, email de aviso. La propia app trae un
+programador interno — no hace falta nada más, dispara el escaneo solo a
+la hora configurada mientras el contenedor esté encendido.
+
+Si prefieres controlar el "cuándo" desde fuera del contenedor (para no
+depender de que siga vivo justo a esa hora), la pestaña Programación
+también trae las instrucciones exactas para tu caso; con Docker en
+Synology sería una tarea en **Panel de control → Planificador de
+tareas → Tarea programada → Script definido por el usuario**:
 
 ```bash
 docker exec find-video-duplicates python scheduled_scan.py
 ```
 
-Frecuencia sugerida: una vez al día. El script no mueve, renombra ni
-borra nada — solo detecta propuestas nuevas y, si las hay, manda el
-email (necesita `SMTP_USER`/`SMTP_PASSWORD` en el `.env` de la raíz).
+Ninguna de las dos vías mueve, renombra ni borra nada — solo detecta
+propuestas nuevas y, si las hay, manda el email (necesita
+`SMTP_USER`/`SMTP_PASSWORD` en el `.env` de la raíz).
 
 ## ⚠️ Notas
 

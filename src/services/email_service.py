@@ -48,7 +48,12 @@ class EmailService:
             partes.append(f"{n_duplicados} duplicado(s) con una copia recomendada a borrar")
         resumen = " y ".join(partes)
 
-        cuerpo = f"Tienes propuestas nuevas: {resumen}.\n"
+        mensaje_personalizado = settings.get_automation_email_message().strip()
+
+        cuerpo = ""
+        if mensaje_personalizado:
+            cuerpo += f"{mensaje_personalizado}\n\n"
+        cuerpo += f"Tienes propuestas nuevas: {resumen}.\n"
         if enlace:
             cuerpo += f"\nRevísalas aquí: {enlace}\n"
         cuerpo += "\nNo se ha movido ni renombrado nada todavía — cada propuesta se aplica o descarta a mano desde la app."

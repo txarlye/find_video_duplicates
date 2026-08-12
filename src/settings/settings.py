@@ -602,6 +602,27 @@ class Settings:
     def set_notified_proposal_keys(self, value: List[str]):
         self.set("automation.notified_keys", value)
 
+    def get_automation_schedule_time(self) -> str:
+        """Hora local (HH:MM) a la que se dispara el escaneo programado dentro de la app"""
+        return self.get("automation.schedule_time", "03:00")
+
+    def set_automation_schedule_time(self, value: str):
+        self.set("automation.schedule_time", value)
+
+    def get_automation_last_run_date(self) -> str:
+        """Fecha (YYYY-MM-DD) de la última vez que se ejecutó el escaneo programado — evita disparar dos veces el mismo día"""
+        return self.get("automation.last_run_date", "")
+
+    def set_automation_last_run_date(self, value: str):
+        self.set("automation.last_run_date", value)
+
+    def get_automation_email_message(self) -> str:
+        """Mensaje personalizado que se antepone al cuerpo del email de aviso (opcional)"""
+        return self.get("automation.email_message", "")
+
+    def set_automation_email_message(self, value: str):
+        self.set("automation.email_message", value)
+
     # Métodos para sugerencia de nombres con IA (detector de huérfanos)
     def get_ai_enabled(self) -> bool:
         """Obtiene si la sugerencia de nombres con IA está activada"""
