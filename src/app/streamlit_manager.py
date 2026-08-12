@@ -4292,6 +4292,11 @@ class StreamlitAppManager:
             st.caption(f"✅ SMTP configurado ({settings.get_smtp_user()})")
         else:
             st.caption("⚠️ Falta SMTP_USER/SMTP_PASSWORD en tu .env — sin esto no se puede enviar el email.")
+        st.caption(
+            "💡 Con Gmail, SMTP_PASSWORD tiene que ser una **contraseña de aplicación** "
+            "de 16 caracteres (myaccount.google.com/apppasswords) — tu contraseña normal "
+            "de Gmail no funciona aquí y da error de credenciales."
+        )
 
         st.markdown("---")
         st.write("**¿Cuándo compensa quedarse con la copia de mayor calidad?**")
