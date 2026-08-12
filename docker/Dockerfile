@@ -31,11 +31,17 @@ ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
+# El programador interno de Propuestas (Configuración → 📅 Programación)
+# dispara el escaneo a la hora local del contenedor — sin esto, Debian
+# usa UTC y la hora configurada no coincidiría con tu hora real.
+# Sobrescribible con TZ=... en docker-compose si compartes la imagen.
+ENV TZ=Europe/Madrid
+
 # Crear usuario no-root para seguridad
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Instalar dependencias del sistema (incluye ffmpeg, que usa la app para
-# extraer fotogramas de comparación — sin él esa función se desactiva sola)
+# extraer fotogramas de comparación, y tzdata para que TZ tenga efecto)
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
@@ -43,6 +49,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     curl \
     ffmpeg \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Crear directorio de trabajo

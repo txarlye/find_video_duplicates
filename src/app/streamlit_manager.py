@@ -48,6 +48,7 @@ from src.services.Imdb.imdb_service import ImdbService
 from src.services.ai_naming_service import AINamingService
 from src.services.proposals_service import ProposalsService
 from src.services.email_service import EmailService
+from src.services.scan_scheduler import ensure_scheduler_running
 
 
 class StreamlitAppManager:
@@ -75,6 +76,7 @@ class StreamlitAppManager:
         self.ai_naming_service = AINamingService()
         self.proposals_service = ProposalsService(self.plex_service, self.ai_naming_service)
         self.email_service = EmailService()
+        ensure_scheduler_running(self.proposals_service, self.email_service)
 
         # Inicializar estado de sesión
         self._initialize_session_state()
@@ -4121,13 +4123,15 @@ class StreamlitAppManager:
         # mismas pestañas con sus keys de siempre — key_prefix evita que
         # esta copia a página completa choque con widgets duplicados en
         # la misma ejecución (StreamlitDuplicateElementKey).
-        tab1, tab2, tab3 = st.tabs(["🔍 Detección", "🎬 Reproductores y Debug", "🎬 Plex"])
+        tab1, tab2, tab3, tab4 = st.tabs(["🔍 Detección", "🎬 Reproductores y Debug", "🎬 Plex", "📅 Programación"])
         with tab1:
             self._render_detection_tab(key_prefix="cfgpage_")
         with tab2:
             self._render_configuration_tab(key_prefix="cfgpage_")
         with tab3:
             self._render_plex_tab(key_prefix="cfgpage_")
+        with tab4:
+            self._render_automation_config()
 
     def _render_proposals_interface(self):
         """
@@ -4141,11 +4145,10 @@ class StreamlitAppManager:
         st.header("🤖 Propuestas")
         st.caption(
             "Nombres sugeridos para huérfanos y copias recomendadas a borrar en "
-            "duplicados — revisa, aplica con un clic o descarta para siempre."
+            "duplicados — revisa, aplica con un clic o descarta para siempre. "
+            "La programación (carpetas, hora, email) se configura en "
+            "**Utilidades → ⚙️ Configuración → 📅 Programación**."
         )
-
-        with st.expander("⚙️ Configurar automatización", expanded=True):
-            self._render_automation_config()
 
         if st.button("🔄 Generar propuestas ahora", type="primary"):
             self._generar_propuestas_ahora()
@@ -4223,8 +4226,17 @@ class StreamlitAppManager:
                             st.rerun()
 
     def _render_automation_config(self):
-        """Configuración de Automatización: carpetas, email, umbrales — dentro de la propia pantalla de Propuestas"""
+        """Configuración de Automatización: carpetas, hora, email, umbrales — Utilidades → Configuración → 📅 Programación"""
+        import datetime as _dt
+
         enabled = st.checkbox("Activar escaneo programado de propuestas", value=settings.get_automation_enabled())
+
+        if enabled:
+            ultima = settings.get_automation_last_run_date()
+            st.caption(
+                f"🟢 Programador interno activo — comprueba cada minuto si es la hora configurada. "
+                f"Última ejecución: {ultima or 'todavía ninguna'}."
+            )
 
         st.write("**Carpetas de películas a analizar** (huérfanos + duplicados)")
         carpetas = settings.get_automation_movie_folders()
@@ -4244,12 +4256,36 @@ class StreamlitAppManager:
                 st.rerun()
 
         st.markdown("---")
+        st.write("**¿A qué hora?**")
+        hora_actual = settings.get_automation_schedule_time()
+        try:
+            hora_h, hora_m = (int(x) for x in hora_actual.split(':'))
+            valor_hora = _dt.time(hora_h, hora_m)
+        except Exception:
+            valor_hora = _dt.time(3, 0)
+        hora_elegida = st.time_input(
+            "Hora del escaneo (hora local del servidor donde corre la app)",
+            value=valor_hora,
+            step=300,
+        )
+        st.caption(
+            "Se comprueba cada minuto mientras la app esté encendida — si el contenedor está "
+            "apagado justo a esa hora, ese día no se dispara. Para no depender de eso, más abajo "
+            "tienes la alternativa de una tarea externa (Synology, cron...)."
+        )
+
+        st.markdown("---")
         email_to = st.text_input("Email de aviso", value=settings.get_automation_email_to())
         app_url = st.text_input(
             "URL de la app para el enlace del email",
             value=settings.get_automation_app_url(),
             placeholder="http://100.x.x.x:8501",
             help="Normalmente tu IP de Tailscale — el email no puede adivinar por dónde vas a entrar."
+        )
+        mensaje_personalizado = st.text_area(
+            "Mensaje personalizado (opcional, se antepone al cuerpo del email)",
+            value=settings.get_automation_email_message(),
+            placeholder="Ej: Buenos días, esto es lo que encontré esta noche...",
         )
 
         if settings.get_smtp_user():
@@ -4273,8 +4309,10 @@ class StreamlitAppManager:
 
         if st.button("💾 Guardar configuración de automatización"):
             settings.set_automation_enabled(enabled)
+            settings.set_automation_schedule_time(hora_elegida.strftime("%H:%M"))
             settings.set_automation_email_to(email_to)
             settings.set_automation_app_url(app_url)
+            settings.set_automation_email_message(mensaje_personalizado)
             settings.set_automation_size_premium_tolerance_pct(pct)
             settings.set_automation_size_premium_max_gb(gb)
             st.success("✅ Guardado")
@@ -4290,11 +4328,37 @@ class StreamlitAppManager:
         if not puede_probar:
             st.caption("Guarda antes un email de aviso y ten SMTP_USER/SMTP_PASSWORD en .env para poder probar.")
 
+        with st.expander("🕐 Prefiero una tarea programada externa (Synology, cron...)"):
+            st.caption(
+                "El programador interno de arriba ya dispara el escaneo solo, sin nada más que "
+                "configurar. Esto es solo para quien prefiera controlar el 'cuándo' desde fuera "
+                "del contenedor (p.ej. para que no dependa de que el contenedor siga vivo justo "
+                "a esa hora)."
+            )
+            if os.environ.get('DOCKER_CONTAINER'):
+                st.write("Detectado que corres dentro de Docker. En el Synology, crea una tarea programada:")
+                st.markdown(
+                    "**Panel de control → Planificador de tareas → Crear → Tarea programada → "
+                    "Script definido por el usuario**, con este comando:"
+                )
+                st.code("docker exec find-video-duplicates python scheduled_scan.py", language="bash")
+            else:
+                st.write("No pareces estar corriendo en Docker ahora mismo. El comando sería:")
+                st.code(f"{sys.executable} {Path(__file__).parent.parent.parent / 'scheduled_scan.py'}", language="bash")
+                st.caption(
+                    "Prográmalo con el Planificador de tareas de Windows, cron (Linux/macOS), o el "
+                    "Planificador de tareas del Synology si lo ejecutas ahí sin Docker."
+                )
+            st.caption(
+                "Con la tarea externa puedes dejar desactivado el programador interno de arriba "
+                "si quieres — scheduled_scan.py hace exactamente lo mismo, solo que disparado desde fuera."
+            )
+
     def _generar_propuestas_ahora(self):
         """Genera las propuestas bajo demanda (misma lógica que scheduled_scan.py)"""
         carpetas = settings.get_automation_movie_folders()
         if not carpetas:
-            st.warning('⚠️ Configura al menos una carpeta en "⚙️ Configurar automatización" primero')
+            st.warning('⚠️ Configura al menos una carpeta en "Configuración → 📅 Programación" primero')
             return
 
         with st.spinner("🔍 Analizando carpetas configuradas..."):

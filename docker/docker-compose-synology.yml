@@ -56,6 +56,12 @@ services:
       # config.json persistente en el volumen de datos, no en la imagen
       - CONFIG_PATH=/app/data/config.json
 
+      # Zona horaria para que la hora del programador interno de Propuestas
+      # (Configuración → 📅 Programación) coincida con tu hora real. Por
+      # defecto Europe/Madrid (ya viene así en la imagen); cambia aquí si
+      # no te vale.
+      - TZ=${TZ:-Europe/Madrid}
+
     networks:
       - find-video-network
 
