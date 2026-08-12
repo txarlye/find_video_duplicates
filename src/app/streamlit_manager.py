@@ -4144,7 +4144,7 @@ class StreamlitAppManager:
             "duplicados — revisa, aplica con un clic o descarta para siempre."
         )
 
-        with st.expander("⚙️ Configurar automatización"):
+        with st.expander("⚙️ Configurar automatización", expanded=True):
             self._render_automation_config()
 
         if st.button("🔄 Generar propuestas ahora", type="primary"):
