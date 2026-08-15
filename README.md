@@ -72,6 +72,25 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 
 ![Papelera/Purgatorio: nada se borra de verdad, solo se mueve aquí — y desde la app solo se puede restaurar, no vaciar](.img/basura.png)
 
+### 🤖 Propuestas (revisión asistida, con aviso por email)
+- Escaneo programado (hora configurable, o bajo demanda con un botón) que
+  revisa las carpetas configuradas y genera dos tipos de propuesta:
+  - **Huérfanos**: nombre sugerido por IA, igual que en la pestaña
+    Huérfanos pero centralizado aquí
+  - **Duplicados**: qué copia borrar, **solo cuando Plex tiene la
+    resolución de ambos archivos indexada** — compara calidad vs. tamaño
+    con un umbral configurable ("¿compensa X% / Y GB más por mejor
+    resolución?") y nunca arriesga una recomendación sin datos fiables
+- Revisión en lote: casillas + un único botón "Aplicar/Descartar
+  seleccionadas" (un solo refresco para varias propuestas, no uno por
+  clic — pensado para revisar desde el móvil)
+- Descartar una propuesta es **permanente** ("no, ese no, no me lo
+  vuelvas a proponer"), con lista reversible desde la propia pantalla
+- Aviso por email (SMTP, Gmail con contraseña de aplicación por defecto)
+  con enlace directo a esta pantalla — el programador interno vive dentro
+  de la propia app, sin depender de crear una tarea en el NAS (aunque
+  también se puede, ver más abajo)
+
 ### 🎬 IMDB / TMDB / OMDb
 - Sinopsis, pósteres y datos (rating, director, actores, género)
 - TMDB como fuente primaria (mejor cobertura en español), con OMDb como
@@ -87,6 +106,13 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 - Conexión de **solo lectura** a la base de datos de Plex
 - Cruce de duplicados, huérfanos y series contra tu biblioteca real
 - Refresco de biblioteca desde la propia app tras renombrar/mover archivos
+
+### ⚙️ Configuración (pantalla dentro de la app)
+- Página completa en Utilidades con Detección, Reproductores/Debug, Plex
+  y **Programación** (carpetas/hora/email de Propuestas) — antes repartido
+  en pestañas del sidebar, ahora también accesible como pantalla propia
+- Las API keys/tokens **no están aquí a propósito**: viven solo en `.env`,
+  nunca en un campo de la UI que pueda acabar guardado en `config.json`
 
 ## 🚀 Instalación
 
@@ -118,21 +144,46 @@ La app se abre en `http://localhost:8501`.
 rutas reales, la base de datos de Plex y las API keys — sin eso la app
 arranca pero no tiene nada que escanear.
 
+### 🐳 Alternativa: Docker (Synology u otro NAS, sin instalar Python)
+
+```
+build_docker_image.bat
+```
+
+Construye la imagen y te deja instrucciones para copiarla a tu NAS
+(`docker load` + `docker-compose up`). La imagen **nunca lleva datos
+personales horneados dentro** — `config.json` y `.env` se montan como
+volumen en tiempo de ejecución, así que la misma imagen sirve tanto para
+ti como para compartirla. Guía completa en [docker/README.md](docker/README.md).
+
 ## 📁 Estructura del Proyecto
 
 ```
 find_video_duplicates/
 ├── main.py                          # Punto de entrada (abre navegador, Tailscale-friendly)
 ├── app_simple.py                    # Entry point de Streamlit
+├── scheduled_scan.py                # Entrypoint sin interfaz para Propuestas (tarea externa opcional)
+├── build_docker_image.bat           # Construye la imagen Docker desde la raíz del repo
 ├── requirements.txt
 ├── README.md
 ├── SETUP.md                         # Configuración paso a paso (rutas, Plex, Tailscale)
+├── .env.example                     # Plantilla de secretos — cópiala a .env
+├── .dockerignore
+│
+├── docker/                          # Receta Docker (versionada, sin secretos ni datos personales)
+│   ├── Dockerfile                   # Contexto = raíz del repo, código siempre actual
+│   ├── docker-compose-synology.yml
+│   ├── env.template                 # Plantilla de docker/.env (rutas, puerto, TZ)
+│   └── README.md
 │
 ├── src/
 │   ├── app/
-│   │   └── streamlit_manager.py     # Toda la UI: escaneo, huérfanos, series, basura...
+│   │   └── streamlit_manager.py     # Toda la UI: escaneo, huérfanos, series, basura, propuestas...
 │   ├── services/
 │   │   ├── ai_naming_service.py     # IA (Ollama/OpenAI/Gemini) + contraste TMDB/OMDb
+│   │   ├── proposals_service.py     # Genera propuestas (nombres IA + qué duplicado borrar)
+│   │   ├── email_service.py         # Aviso por email (SMTP) de propuestas nuevas
+│   │   ├── scan_scheduler.py        # Programador interno (hilo en segundo plano, hora configurable)
 │   │   ├── plex_service.py
 │   │   ├── plex_refresh_service.py
 │   │   ├── scan_data_manager.py     # Guardado/carga de progreso de escaneos
@@ -181,16 +232,46 @@ pestaña ⚙️ Configuración de la propia app. Ambos ficheros están en
 4. **Series**: pestaña 📺, mismo flujo pero por episodios y series enteras.
 5. **Basura**: pestaña 🗑️, revisa qué se ha ido acumulando en la papelera
    antes de vaciarla tú a mano en el NAS.
-6. **Telegram/IMDB**: subida opcional a un canal con carátula y sinopsis.
+6. **Propuestas**: pestaña 🤖, revisa lo que la app te sugiere (nombres de
+   huérfanos, duplicados a borrar), marca casillas y aplica/descarta en
+   lote. Configura carpetas/hora/email en ⚙️ Configuración → 📅 Programación.
+7. **Telegram/IMDB**: subida opcional a un canal con carátula y sinopsis.
 
 ## 🔒 Seguridad
 
 - La app **nunca borra archivos directamente**: todo pasa primero por la
   carpeta de debug/papelera configurada. El modo debug está siempre
   activo y, de momento, no se puede desactivar desde la interfaz.
-- La conexión a Plex es **de solo lectura**.
+- La conexión a Plex es **de solo lectura**: `PlexService` solo abre la
+  base de datos con `mode=ro` y, si esa conexión falla, **nunca** cae a
+  una conexión editable como red de seguridad — antes sí lo hacía, y se
+  corrigió porque es una vía real de corrupción (ver más abajo).
+- ⚠️ **SQLite y rutas de red no son buena combinación.** La base de datos
+  de Plex normalmente vive en una carpeta de red (SMB/CIFS), y SQLite no
+  garantiza el bloqueo de archivos correcto ahí — si algo más (otra
+  herramienta, un script propio) abre esa misma base de datos en modo
+  escritura mientras Plex la tiene abierta, puede corromperla (error
+  típico: `database disk image is malformed`, Plex sin arrancar y en
+  bucle de reinicio). Esta app siempre se conecta en solo lectura, pero
+  si escribes tus propios scripts contra esa ruta, ábrela también en
+  modo `ro` (`sqlite3.connect(f"file:{ruta}?mode=ro", uri=True)`). Ver la
+  solución si ya te ha pasado en **[🐛 Solución de problemas](#-solución-de-problemas)**.
 - Las claves de API y tokens viven solo en `.env` / `config.json`, ambos
-  excluidos de git — nunca se hardcodean en el código.
+  excluidos de git — nunca se hardcodean en el código, ni tampoco en
+  campos editables de la UI (por diseño, para que no acaben en
+  `config.json` por accidente).
+- **La app no tiene login propio.** Si la expones por Tailscale (recomendado,
+  ver [SETUP.md](SETUP.md#5-acceso-remoto-por-tailscale-sin-abrir-puertos)),
+  la única barrera es pertenecer a tu tailnet — cualquiera fuera de ella
+  no puede alcanzarla ni probando IPs, porque las direcciones `100.x.x.x`
+  no son enrutables desde fuera de tu propia red Tailscale. El riesgo real
+  es que se comprometa tu cuenta de Tailscale, no que adivinen la IP.
+- Con Docker (`docker-compose-synology.yml`), el puerto solo se publica en
+  tu IP de Tailscale, nunca en `0.0.0.0` — ni tu propia LAN sin Tailscale
+  puede alcanzarlo.
+- Email de Propuestas: `SMTP_PASSWORD` debe ser una **contraseña de
+  aplicación** de Gmail (16 caracteres, myaccount.google.com/apppasswords),
+  no tu contraseña normal — esta última da error de credenciales.
 
 ## 🐛 Solución de problemas
 
@@ -204,6 +285,27 @@ Otros problemas frecuentes:
   streamlit` en Linux/Mac).
 - **"Mutagen no disponible"**: `pip install mutagen>=1.47.0`.
 - **Error 401 en OMDb/TMDB**: revisa que la API key en `.env` sea correcta.
+- **Plex no arranca, log con "database disk image is malformed"**: la
+  base de datos de Plex se ha corrompido (ver el aviso en
+  [🔒 Seguridad](#-seguridad) sobre SQLite en rutas de red). Se recupera
+  con las copias de seguridad automáticas que el propio Plex genera
+  periódicamente, en la misma carpeta que la base de datos activa
+  (`Plug-in Support/Databases/`), con la fecha en el nombre:
+  `com.plexapp.plugins.library.db-YYYY-MM-DD` y su pareja
+  `com.plexapp.plugins.library.blobs.db-YYYY-MM-DD`.
+
+  1. **Para Plex** (Container Manager / Docker → detener el contenedor).
+  2. **No borres nada** — renombra los archivos actuales (añádeles algo
+     como `.corrupto`): `com.plexapp.plugins.library.db`, `-wal`, `-shm`,
+     `com.plexapp.plugins.library.blobs.db` y sus `-wal`/`-shm` si existen.
+  3. **Copia** (no muevas) la pareja fechada más reciente y quítales la
+     fecha del nombre al copiarlas:
+     `com.plexapp.plugins.library.db-YYYY-MM-DD` → `com.plexapp.plugins.library.db`
+     `com.plexapp.plugins.library.blobs.db-YYYY-MM-DD` → `com.plexapp.plugins.library.blobs.db`
+  4. Arranca Plex de nuevo.
+
+  Perderás la actividad (visto/no visto, añadidos) desde la fecha de esa
+  copia hasta ahora, pero el resto de la biblioteca se recupera intacta.
 
 ## 🤝 Contribuir
 

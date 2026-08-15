@@ -36,49 +36,43 @@ class PlexService:
         return self._db_path
     
     def _get_connection(self) -> sqlite3.Connection:
-        """Obtiene una conexión a la base de datos con manejo robusto de errores"""
+        """
+        Obtiene una conexión de SOLO LECTURA a la base de datos de Plex,
+        con reintentos ante errores transitorios de E/S.
+
+        A propósito NUNCA cae a una conexión de lectura-escritura: la
+        versión anterior de este método sí lo hacía si el modo de solo
+        lectura fallaba, lo cual es peligroso — esta base de datos suele
+        vivir en una ruta de red (SMB/CIFS), donde SQLite no garantiza el
+        bloqueo de archivos correcto entre procesos, y una conexión
+        editable de una app externa mientras Plex la tiene abierta y
+        escribiendo es una vía real de corrupción ("database disk image
+        is malformed"). Mejor fallar aquí que arriesgar la base de datos.
+        """
         db_path = self._get_db_path()
-        
-        # Crear nueva conexión cada vez para evitar problemas de concurrencia
+
         max_retries = 3
+        ultimo_error: Optional[Exception] = None
         for attempt in range(max_retries):
             try:
-                # Intentar conexión de solo lectura primero
                 conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
                 conn.row_factory = sqlite3.Row
-                
-                # Verificar que la conexión funciona
+
                 cursor = conn.cursor()
                 cursor.execute("SELECT 1")
                 cursor.fetchone()
                 cursor.close()
-                
+
                 return conn
-                
-            except sqlite3.OperationalError as e:
-                if "disk I/O error" in str(e) and attempt < max_retries - 1:
-                    import time
-                    time.sleep(0.5)  # Esperar antes de reintentar
-                    continue
-                else:
-                    # Fallback a conexión normal
-                    try:
-                        conn = sqlite3.connect(str(db_path))
-                        conn.row_factory = sqlite3.Row
-                        return conn
-                    except Exception:
-                        if attempt == max_retries - 1:
-                            raise
-                        time.sleep(0.5)
-                        continue
+
             except Exception as e:
-                if attempt == max_retries - 1:
-                    raise
-                import time
-                time.sleep(0.5)
-                continue
-        
-        raise Exception("No se pudo establecer conexión con la base de datos después de múltiples intentos")
+                ultimo_error = e
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(0.5)
+                    continue
+
+        raise ultimo_error
     
     def close_connection(self):
         """Cierra la conexión a la base de datos"""
