@@ -1,10 +1,11 @@
-# 🎬 Detector de Películas y Series Duplicadas
+# 🛠️ Utilidades Synology & Plex
 
 Aplicación web (FastAPI + React) para organizar una biblioteca de vídeo
 local: detecta **películas y series duplicadas**, encuentra **archivos sin
-indexar en Plex** (con ayuda de IA para renombrarlos), y contrasta todo
-contra **Plex, TMDB/OMDb/IMDB y Telegram**. Interfaz adaptativa a móvil,
-pensada para un único contenedor accesible solo por LAN o Tailscale.
+indexar en Plex** (con ayuda de IA para renombrarlos), sube vídeos a
+**Telegram** con carátula y sinopsis, y contrasta todo contra **Plex,
+TMDB/OMDb/IMDB**. Interfaz adaptativa a móvil, pensada para un único
+contenedor accesible solo por LAN o Tailscale.
 
 > 📖 **¿Primera vez?** Antes de nada, sigue [SETUP.md](SETUP.md) para
 > apuntar la app a tu propio NAS (rutas, base de datos de Plex, API keys y
@@ -87,8 +88,12 @@ pensada para un único contenedor accesible solo por LAN o Tailscale.
   vuelvas a proponer"), con lista reversible desde la propia pantalla
 - Aviso por email (SMTP, Gmail con contraseña de aplicación por defecto)
   con enlace directo a esta pantalla — el programador interno vive dentro
-  de la propia app, sin depender de crear una tarea en el NAS (aunque
-  también se puede, ver más abajo)
+  de la propia app, sin depender de crear nada en el NAS
+- Alternativa opcional: un botón en ⚙️ Configuración crea la misma tarea
+  directamente en el **Planificador de tareas de tu Synology** (requiere
+  un usuario DSM dedicado en `.env`, ver [SETUP.md](SETUP.md)) — para
+  quien prefiera que el disparo no dependa de que el contenedor esté
+  encendido justo a esa hora
 
 ### 🎬 IMDB / TMDB / OMDb
 - Sinopsis, pósteres y datos (rating, director, actores, género)
@@ -109,9 +114,43 @@ pensada para un único contenedor accesible solo por LAN o Tailscale.
 ### ⚙️ Configuración (pantalla dentro de la app)
 - Un único recurso con pestañas para Detección, Reproductores/Debug, Plex,
   Telegram (solo lectura), **Programación** (carpetas/hora/email de
-  Propuestas) e IA (proveedor/modelo para sugerencia de nombres)
+  Propuestas, más el botón opcional de tarea en el Planificador de
+  Synology) e IA (proveedor/modelo para sugerencia de nombres)
 - Las API keys/tokens **no están aquí a propósito**: viven solo en `.env`,
   nunca en un campo de la UI que pueda acabar guardado en `config.json`
+
+### ℹ️ Acerca de (pantalla dentro de la app)
+- Qué hace cada pantalla, cómo configurarlo todo, y cómo restaurar la
+  base de datos de Plex desde sus copias de seguridad si algo fallara —
+  pensada para no tener que salir de la app ni volver a este README una
+  vez instalada
+
+## 🛠️ Tecnología
+
+**Backend** — Python 3.11, [FastAPI](https://fastapi.tiangolo.com/) +
+[Uvicorn](https://www.uvicorn.org/). Un router por recurso
+(`src/api/routers/`), Pydantic para validar request/response. Las
+operaciones largas (escaneos, subidas, sugerencias en lote) corren en
+un `ThreadPoolExecutor` propio (`src/api/jobs.py`) y empujan progreso
+en tiempo real por **WebSocket** (`/ws/jobs/{id}`, con `/api/jobs/{id}`
+como respaldo por HTTP si el WS no llega) — nada de recargar la página
+para ver si ha terminado.
+
+**Frontend** — [React](https://react.dev/) + [Vite](https://vitejs.dev/)
++ TypeScript, [Mantine v7](https://mantine.dev/) como librería de
+componentes (incluye el modo oscuro/claro), [TanStack
+Query](https://tanstack.com/query) para todo el estado de servidor
+(caché, refetch, loading/error), [React Router](https://reactrouter.com/)
+para la navegación por pantallas. Sin Redux/Zustand: el estado de
+cliente (fila seleccionada, par actual...) es `useState` normal, no
+hay suficiente estado compartido entre pantallas para justificar más.
+
+**Despliegue** — un único contenedor Docker: FastAPI sirve tanto la
+API (`/api/*`, `/ws/*`) como el build estático de React (todo lo
+demás, con fallback a `index.html` para que las rutas de React Router
+funcionen al entrar directo o recargar) — sin nginx aparte. Cómo
+construir y desplegar la imagen, más abajo en "🐳 Alternativa: Docker +
+Portainer".
 
 ## 🚀 Instalación
 
