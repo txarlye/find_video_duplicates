@@ -25,6 +25,7 @@ from src.api.routers import trash as trash_router
 from src.api.routers import settings as settings_router
 from src.api.routers import proposals as proposals_router
 from src.api.routers import orphans as orphans_router
+from src.api.routers import series as series_router
 from src.api.routers import jobs as jobs_router
 from src.api.routers import video as video_router
 from src.services.plex_service import PlexService
@@ -53,6 +54,7 @@ app.include_router(trash_router.router)
 app.include_router(settings_router.router)
 app.include_router(proposals_router.router)
 app.include_router(orphans_router.router)
+app.include_router(series_router.router)
 app.include_router(jobs_router.router)
 app.include_router(video_router.router)
 

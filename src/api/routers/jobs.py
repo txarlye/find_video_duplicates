@@ -43,6 +43,13 @@ async def ws_job(websocket: WebSocket, job_id: str):
             nuevo_estado = await queue.get()
             await websocket.send_json(nuevo_estado.to_dict())
             if nuevo_estado.status in ("done", "error", "cancelled"):
+                # Cierre explícito: sin esto, el cliente ve la conexión
+                # cortarse sin frame de cierre (p.ej. websockets de Python
+                # lo trata como ConnectionClosedError) en vez de un cierre
+                # limpio — solo se veía en jobs que tardan más que el
+                # tiempo de conexión del WS (con el resultado ya listo al
+                # conectar, el otro camino de arriba sí cerraba bien).
+                await websocket.close()
                 break
     except WebSocketDisconnect:
         pass
