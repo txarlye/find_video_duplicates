@@ -17,7 +17,7 @@ export function App() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={3}>🎬 Detector de Duplicados</Title>
+            <Title order={3}>Utilidades Synology &amp; Plex</Title>
           </Group>
           <ColorSchemeToggle />
         </Group>

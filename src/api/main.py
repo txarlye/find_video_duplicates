@@ -35,7 +35,7 @@ from src.services.scan_scheduler import ensure_scheduler_running
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Detector de Duplicados API", version="0.1.0")
+app = FastAPI(title="Utilidades Synology & Plex API", version="0.1.0")
 
 # CORS solo hace falta en desarrollo (Vite en :5173 llamando a la API en
 # :8000) — en producción todo se sirve desde el mismo origen (ver mount

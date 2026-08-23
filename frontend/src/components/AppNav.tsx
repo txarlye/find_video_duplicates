@@ -2,6 +2,7 @@ import { NavLink, Stack } from '@mantine/core'
 import {
   IconBrandTelegram,
   IconFileSearch,
+  IconInfoCircle,
   IconMovie,
   IconRobot,
   IconSettings,
@@ -24,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Basura', path: '/basura', icon: <IconTrash size={18} /> },
   { label: 'Configuración', path: '/configuracion', icon: <IconSettings size={18} /> },
   { label: 'Telegram', path: '/telegram', icon: <IconBrandTelegram size={18} /> },
+  { label: 'Acerca de', path: '/acerca-de', icon: <IconInfoCircle size={18} /> },
 ]
 
 export function AppNav({ onNavigate }: { onNavigate?: () => void }) {

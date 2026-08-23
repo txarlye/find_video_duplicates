@@ -7,6 +7,7 @@ import { OrphansPage } from './features/orphans/OrphansPage'
 import { SeriesPage } from './features/series/SeriesPage'
 import { TelegramPage } from './features/telegram/TelegramPage'
 import { DuplicatesPage } from './features/duplicates/DuplicatesPage'
+import { AboutPage } from './features/about/AboutPage'
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: 'huerfanos', element: <OrphansPage /> },
       { path: 'series', element: <SeriesPage /> },
       { path: 'telegram', element: <TelegramPage /> },
+      { path: 'acerca-de', element: <AboutPage /> },
     ],
   },
 ])
