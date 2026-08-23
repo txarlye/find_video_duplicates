@@ -1,0 +1,77 @@
+# Copia docker/env.template a docker/.env y ajusta las rutas antes de
+# arrancar (docker-compose lee ese docker/.env para rellenar las
+# ${VARIABLES} de este archivo — es distinto del ../.env de la raíz,
+# que se inyecta dentro del contenedor vía env_file para los secretos).
+#
+#   docker load -i find-video-duplicates.tar   # si te pasaron el .tar
+#   docker-compose -f docker-compose-synology.yml up -d
+
+services:
+  find-video-duplicates:
+    image: find-video-duplicates:latest
+    container_name: find-video-duplicates
+    restart: unless-stopped
+
+    # Descomenta esto si prefieres construir la imagen directamente en
+    # el Synology (repo clonado) en vez de cargar un .tar ya construido:
+    # build:
+    #   context: ..
+    #   dockerfile: docker/Dockerfile
+
+    ports:
+      # Solo escucha en la IP indicada (por defecto localhost).
+      # Pon TAILSCALE_IP=100.x.x.x en docker/.env para exponerlo por tu tailnet.
+      - "${TAILSCALE_IP:-127.0.0.1}:${API_PORT:-8000}:8000"
+
+    volumes:
+      # Películas (solo lectura)
+      - "${MOVIES_PATH:-./test}:/movies:ro"
+
+      # Base de datos Plex (solo lectura) — luego configura
+      # "/plex-db/com.plexapp.plugins.library.db" como ruta de Plex
+      # desde la propia app (pestaña Configuración)
+      - "${PLEX_DB_PATH:-./test}:/plex-db:ro"
+
+      # Datos persistentes. config.json (rutas, IA, series ignoradas...)
+      # vive dentro de esta carpeta gracias a CONFIG_PATH más abajo, así
+      # que sobrevive a recrear el contenedor y nunca viaja horneado en
+      # la imagen.
+      - "${DATA_PATH:-./data}:/app/data"
+      - "${LOGS_PATH:-./logs}:/app/logs"
+      - "${SCAN_DATA_PATH:-./scan_data}:/app/scan_data"
+
+    env_file:
+      # Secretos (TELEGRAM_*, OMDB_API_KEY, TMDB_API_KEY, IMDB_API_KEY,
+      # OPENAI_API_KEY, GEMINI_API_KEY) — nunca en claro aquí.
+      - ../.env
+
+    environment:
+      - DOCKER_CONTAINER=true
+
+      # 0.0.0.0 dentro del contenedor; el filtrado real de quién puede
+      # llegar ocurre en el mapeo de puertos de arriba, no aquí.
+      - API_SERVER_ADDRESS=0.0.0.0
+      - API_PORT=8000
+
+      # config.json persistente en el volumen de datos, no en la imagen
+      - CONFIG_PATH=/app/data/config.json
+
+      # Zona horaria para que la hora del programador interno de Propuestas
+      # (Configuración → 📅 Programación) coincida con tu hora real. Por
+      # defecto Europe/Madrid (ya viene así en la imagen); cambia aquí si
+      # no te vale.
+      - TZ=${TZ:-Europe/Madrid}
+
+    networks:
+      - find-video-network
+
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+networks:
+  find-video-network:
+    driver: bridge
