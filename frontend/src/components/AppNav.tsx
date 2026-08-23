@@ -25,7 +25,7 @@ const STREAMLIT_PORT = 8501
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Duplicados', icon: <IconMovie size={18} />, legacyStreamlitView: 'scan' },
-  { label: 'Huérfanos', icon: <IconFileSearch size={18} />, legacyStreamlitView: 'orphans' },
+  { label: 'Huérfanos', path: '/huerfanos', icon: <IconFileSearch size={18} /> },
   { label: 'Series', icon: <IconVideo size={18} />, legacyStreamlitView: 'series' },
   { label: 'Propuestas', path: '/propuestas', icon: <IconRobot size={18} /> },
   { label: 'Basura', path: '/basura', icon: <IconTrash size={18} /> },

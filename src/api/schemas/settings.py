@@ -95,3 +95,27 @@ class AutomationUpdate(BaseModel):
 
 class AutomationFoldersUpdate(BaseModel):
     folders: List[str]
+
+
+class AiNamingSettings(BaseModel):
+    enabled: bool
+    provider: str  # ollama | openai | gemini
+    mode: str  # suggest | auto
+    ollama_url: str
+    ollama_model: str
+    openai_model: str
+    gemini_model: str
+    openai_key_configured: bool
+    gemini_key_configured: bool
+    tmdb_configured: bool
+    omdb_configured: bool
+
+
+class AiNamingUpdate(BaseModel):
+    enabled: bool
+    provider: str
+    mode: str
+    ollama_url: str
+    ollama_model: str
+    openai_model: str
+    gemini_model: str

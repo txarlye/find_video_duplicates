@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/client'
 import type {
   ActionResult,
+  AiNamingSettings,
+  AiNamingUpdate,
   AutomationSettings,
   AutomationUpdate,
   DetectionSettings,
@@ -118,4 +120,18 @@ export function useSaveAutomationFolders() {
 
 export function useTestAutomationEmail() {
   return useMutation({ mutationFn: () => api.post<ActionResult>('/settings/automation/test-email') })
+}
+
+// ---------- IA para sugerencia de nombres (Huérfanos/Propuestas) ----------
+
+export function useAiNamingQuery() {
+  return useQuery({ queryKey: ['settings', 'ai-naming'], queryFn: () => api.get<AiNamingSettings>('/settings/ai-naming') })
+}
+
+export function useSaveAiNaming() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AiNamingUpdate) => api.put<AiNamingSettings>('/settings/ai-naming', body),
+    onSuccess: (data) => qc.setQueryData(['settings', 'ai-naming'], data),
+  })
 }

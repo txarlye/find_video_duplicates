@@ -13,12 +13,12 @@ llamadas a la IA y cualquier deriva entre lo que ves y lo que aplicas).
 """
 
 import os
-import shutil
 from pathlib import Path
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from src.api.common import mover_a_debug, refrescar_plex
 from src.api.deps import get_settings, get_proposals_service, get_plex_refresh_service, get_scan_data_manager
 from src.api.schemas.proposals import (
     ProposalsResponse,
@@ -32,41 +32,6 @@ from src.api.schemas.proposals import (
 )
 
 router = APIRouter(prefix="/api/proposals", tags=["proposals"])
-
-
-def _mover_a_debug(ruta: str, settings, scan_data_manager) -> None:
-    """Misma lógica que _mover_archivo_a_debug de streamlit_manager.py, sin llamadas a st.*"""
-    origen = Path(ruta)
-    if not origen.exists():
-        raise FileNotFoundError(f"El archivo ya no existe: {ruta}")
-
-    if settings.get_debug_enabled():
-        debug_path = Path(settings.get_debug_folder())
-        debug_path.mkdir(parents=True, exist_ok=True)
-        destino = debug_path / origen.name
-        contador = 1
-        while destino.exists():
-            destino = debug_path / f"{origen.stem}_{contador}{origen.suffix}"
-            contador += 1
-        shutil.move(str(origen), str(destino))
-        scan_data_manager.record_trash_move(str(destino), str(origen))
-    else:
-        os.remove(str(origen))
-
-
-def _refrescar_plex(settings, plex_refresh_service) -> None:
-    """Mismo criterio best-effort que _refresh_plex_after_rename — nunca rompe la petición si falla"""
-    try:
-        if not plex_refresh_service.is_configured():
-            return
-        movies_library = settings.get_plex_movies_library()
-        tv_library = settings.get_plex_tv_shows_library()
-        if movies_library:
-            plex_refresh_service.refresh_library_by_name(movies_library)
-        if tv_library and tv_library != movies_library:
-            plex_refresh_service.refresh_library_by_name(tv_library)
-    except Exception:
-        pass
 
 
 @router.post("/generate", response_model=ProposalsResponse)
@@ -100,7 +65,7 @@ def aplicar_huerfanos(
             errores.append(f"{p.archivo}: {e}")
 
     if aplicados:
-        _refrescar_plex(settings, plex_refresh_service)
+        refrescar_plex(settings, plex_refresh_service)
 
     return BatchResult(aplicados=aplicados, errores=errores)
 
@@ -122,7 +87,7 @@ def aplicar_duplicados(
     errores: List[str] = []
     for p in body.items:
         try:
-            _mover_a_debug(p.archivo_a_borrar, settings, scan_data_manager)
+            mover_a_debug(p.archivo_a_borrar, settings, scan_data_manager)
             aplicados += 1
         except Exception as e:
             errores.append(f"{p.archivo_a_borrar}: {e}")

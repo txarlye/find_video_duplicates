@@ -30,6 +30,8 @@ from src.api.schemas.settings import (
     AutomationSettings,
     AutomationUpdate,
     AutomationFoldersUpdate,
+    AiNamingSettings,
+    AiNamingUpdate,
 )
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -204,6 +206,37 @@ def guardar_carpetas_automatizacion(body: AutomationFoldersUpdate, settings=Depe
 def probar_email_automatizacion(email_service=Depends(get_email_service)):
     ok = email_service.enviar_aviso_propuestas(1, 1)
     return ActionResult(ok=ok, detail=None if ok else "Revisa SMTP_USER/SMTP_PASSWORD en .env y el log")
+
+
+# ---------- Sugerencia de nombres con IA (usado por Huérfanos/Propuestas) ----------
+
+@router.get("/ai-naming", response_model=AiNamingSettings)
+def obtener_ai_naming(settings=Depends(get_settings)):
+    return AiNamingSettings(
+        enabled=settings.get_ai_enabled(),
+        provider=settings.get_ai_provider(),
+        mode=settings.get_ai_mode(),
+        ollama_url=settings.get_ai_ollama_url(),
+        ollama_model=settings.get_ai_ollama_model(),
+        openai_model=settings.get_ai_openai_model(),
+        gemini_model=settings.get_ai_gemini_model(),
+        openai_key_configured=bool(settings.get_openai_api_key()),
+        gemini_key_configured=bool(settings.get_gemini_api_key()),
+        tmdb_configured=bool(settings.get_tmdb_api_key()),
+        omdb_configured=bool(settings.get_omdb_api_key()),
+    )
+
+
+@router.put("/ai-naming", response_model=AiNamingSettings)
+def guardar_ai_naming(body: AiNamingUpdate, settings=Depends(get_settings)):
+    settings.set_ai_enabled(body.enabled)
+    settings.set_ai_provider(body.provider)
+    settings.set_ai_mode(body.mode)
+    settings.set_ai_ollama_url(body.ollama_url)
+    settings.set_ai_ollama_model(body.ollama_model)
+    settings.set_ai_openai_model(body.openai_model)
+    settings.set_ai_gemini_model(body.gemini_model)
+    return obtener_ai_naming(settings)
 
 
 # ---------- Rutas recientes (usado por las pantallas de escaneo) ----------

@@ -3,6 +3,7 @@ import { App } from './App'
 import { TrashPage } from './features/trash/TrashPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { ProposalsPage } from './features/proposals/ProposalsPage'
+import { OrphansPage } from './features/orphans/OrphansPage'
 
 export const router = createBrowserRouter([
   {
@@ -13,6 +14,7 @@ export const router = createBrowserRouter([
       { path: 'basura', element: <TrashPage /> },
       { path: 'configuracion', element: <SettingsPage /> },
       { path: 'propuestas', element: <ProposalsPage /> },
+      { path: 'huerfanos', element: <OrphansPage /> },
     ],
   },
 ])

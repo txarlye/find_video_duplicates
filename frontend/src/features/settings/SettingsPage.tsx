@@ -4,6 +4,7 @@ import { PlayersForm } from './PlayersForm'
 import { PlexForm } from './PlexForm'
 import { TelegramForm } from './TelegramForm'
 import { AutomationForm } from './AutomationForm'
+import { AiNamingForm } from './AiNamingForm'
 
 export function SettingsPage() {
   return (
@@ -24,6 +25,7 @@ export function SettingsPage() {
           <Tabs.Tab value="plex">🎬 Plex</Tabs.Tab>
           <Tabs.Tab value="telegram">📱 Telegram</Tabs.Tab>
           <Tabs.Tab value="programacion">📅 Programación</Tabs.Tab>
+          <Tabs.Tab value="ia">🤖 IA</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="deteccion" pt="md">
@@ -40,6 +42,9 @@ export function SettingsPage() {
         </Tabs.Panel>
         <Tabs.Panel value="programacion" pt="md">
           <AutomationForm />
+        </Tabs.Panel>
+        <Tabs.Panel value="ia" pt="md">
+          <AiNamingForm />
         </Tabs.Panel>
       </Tabs>
     </Stack>

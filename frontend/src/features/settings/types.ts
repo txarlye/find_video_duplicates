@@ -63,3 +63,22 @@ export type AutomationUpdate = Omit<
   AutomationSettings,
   'movie_folders' | 'smtp_configured' | 'smtp_user' | 'last_run_date'
 >
+
+export interface AiNamingSettings {
+  enabled: boolean
+  provider: 'ollama' | 'openai' | 'gemini'
+  mode: 'suggest' | 'auto'
+  ollama_url: string
+  ollama_model: string
+  openai_model: string
+  gemini_model: string
+  openai_key_configured: boolean
+  gemini_key_configured: boolean
+  tmdb_configured: boolean
+  omdb_configured: boolean
+}
+
+export type AiNamingUpdate = Omit<
+  AiNamingSettings,
+  'openai_key_configured' | 'gemini_key_configured' | 'tmdb_configured' | 'omdb_configured'
+>

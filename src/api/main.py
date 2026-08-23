@@ -12,6 +12,7 @@ build estático de frontend/ en la raíz "/" (si existe — en desarrollo
 sin build todavía, simplemente no se monta y solo responde la API).
 """
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -19,9 +20,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src.api.jobs import job_manager
 from src.api.routers import trash as trash_router
 from src.api.routers import settings as settings_router
 from src.api.routers import proposals as proposals_router
+from src.api.routers import orphans as orphans_router
+from src.api.routers import jobs as jobs_router
+from src.api.routers import video as video_router
 from src.services.plex_service import PlexService
 from src.services.ai_naming_service import AINamingService
 from src.services.proposals_service import ProposalsService
@@ -47,6 +52,9 @@ app.add_middleware(
 app.include_router(trash_router.router)
 app.include_router(settings_router.router)
 app.include_router(proposals_router.router)
+app.include_router(orphans_router.router)
+app.include_router(jobs_router.router)
+app.include_router(video_router.router)
 
 
 @app.get("/api/health")
@@ -67,6 +75,12 @@ def _iniciar_programador_propuestas():
     proposals_service = ProposalsService(plex_service, ai_naming_service)
     email_service = EmailService()
     ensure_scheduler_running(proposals_service, email_service)
+
+
+@app.on_event("startup")
+async def _conectar_job_manager_al_loop():
+    """El JobManager necesita el loop de asyncio activo para poder empujar progreso por WebSocket desde los hilos del pool"""
+    job_manager.set_loop(asyncio.get_running_loop())
 
 
 _frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
