@@ -1,7 +1,9 @@
-# Copia docker/env.template a docker/.env y ajusta las rutas antes de
-# arrancar (docker-compose lee ese docker/.env para rellenar las
-# ${VARIABLES} de este archivo — es distinto del ../.env de la raíz,
-# que se inyecta dentro del contenedor vía env_file para los secretos).
+# Copia env.template a .env (en la MISMA carpeta que este compose) y
+# rellena rutas + secretos ahí — un único fichero: docker-compose ya lo
+# carga solo por estar al lado (para las ${VARIABLES} de aquí abajo) y
+# además se referencia explícito en env_file para inyectarlo dentro del
+# contenedor. Pensado para Container Manager de Synology / Portainer,
+# donde todo un proyecto vive en una sola carpeta plana.
 #
 #   docker load -i find-video-duplicates.tar   # si te pasaron el .tar
 #   docker-compose -f docker-compose-synology.yml up -d
@@ -20,7 +22,7 @@ services:
 
     ports:
       # Solo escucha en la IP indicada (por defecto localhost).
-      # Pon TAILSCALE_IP=100.x.x.x en docker/.env para exponerlo por tu tailnet.
+      # Pon TAILSCALE_IP=100.x.x.x en .env para exponerlo por tu tailnet.
       - "${TAILSCALE_IP:-127.0.0.1}:${API_PORT:-8000}:8000"
 
     volumes:
@@ -41,9 +43,11 @@ services:
       - "${SCAN_DATA_PATH:-./scan_data}:/app/scan_data"
 
     env_file:
-      # Secretos (TELEGRAM_*, OMDB_API_KEY, TMDB_API_KEY, IMDB_API_KEY,
-      # OPENAI_API_KEY, GEMINI_API_KEY) — nunca en claro aquí.
-      - ../.env
+      # Mismo .env de arriba (rutas/puerto/Tailscale) — también trae los
+      # secretos (TELEGRAM_*, OMDB_API_KEY, TMDB_API_KEY, IMDB_API_KEY,
+      # OPENAI_API_KEY, GEMINI_API_KEY, SMTP_*, SYNOLOGY_*), inyectados
+      # dentro del contenedor. Nunca en claro en este fichero.
+      - .env
 
     environment:
       - DOCKER_CONTAINER=true

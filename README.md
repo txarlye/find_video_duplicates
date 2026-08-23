@@ -205,27 +205,28 @@ regenerable):
 - `docker-compose.yml` — el stack, para pegar directamente en Portainer o usar con `docker-compose up`
 - `env.template` — plantilla de variables (rutas, puerto, Tailscale)
 
-**Instalación en el Synology (o cualquier host con Portainer):**
+**Instalación en el Synology (Container Manager, Portainer, o cualquier
+host con Docker):**
 
-1. Copia `.imagen_docker/find-video-duplicates.tar` al NAS y cárgala:
-   `docker load -i find-video-duplicates.tar`
-2. Copia `.imagen_docker/env.template` a `.env` **junto al** `docker-compose.yml`
-   en el NAS, y ajusta `MOVIES_PATH`, `PLEX_DB_PATH`, `DATA_PATH`,
-   `LOGS_PATH`, `SCAN_DATA_PATH` a rutas reales del NAS.
-3. Un nivel por encima de esa carpeta, crea también un `.env` con tus
+1. Copia el contenido de `.imagen_docker/` (los tres ficheros) a una
+   carpeta del NAS — con Container Manager, esa carpeta es la del
+   propio "Proyecto" que crees.
+2. Carga la imagen: `docker load -i find-video-duplicates.tar`
+3. Copia `env.template` a `.env`, **en esa misma carpeta** (junto al
+   `docker-compose.yml`, no un nivel por encima), y rellena tanto las
+   rutas (`MOVIES_PATH`, `PLEX_DB_PATH`, `DATA_PATH`...) como tus
    claves (`TELEGRAM_*`, `TMDB_API_KEY`, `OMDB_API_KEY`,
-   `OPENAI_API_KEY`/`GEMINI_API_KEY`, `SMTP_USER`/`SMTP_PASSWORD`) —
-   copia [`.env.example`](.env.example) si no lo tienes. El compose lo
-   inyecta dentro del contenedor vía `env_file: ../.env`, nunca en
-   claro en el propio `docker-compose.yml`.
-4. En Portainer: **Stacks → Add stack**, pega el contenido de
-   `docker-compose.yml` (o usa **Web editor** apuntando al fichero), y
-   despliega. También puedes hacerlo a mano con
+   `OPENAI_API_KEY`/`GEMINI_API_KEY`, `SMTP_USER`/`SMTP_PASSWORD`...) —
+   todo en un único fichero, nunca en claro en el `docker-compose.yml`.
+4. En Container Manager: **Proyecto → Crear**, apunta a esa carpeta
+   (con el `docker-compose.yml` y el `.env` dentro) y créalo. En
+   Portainer: **Stacks → Add stack**, pega el contenido de
+   `docker-compose.yml`. También puedes hacerlo a mano con
    `docker-compose -f docker-compose.yml up -d`.
-5. Acceso: con `TAILSCALE_IP` vacío en el `.env` del compose, solo
-   entras desde el propio NAS (`localhost:8000`). Poniendo ahí la IP
-   Tailscale del NAS (`100.x.x.x`), entras desde cualquier dispositivo
-   de tu tailnet — nunca se publica en `0.0.0.0`/toda la LAN.
+5. Acceso: con `TAILSCALE_IP` vacío en el `.env`, solo entras desde el
+   propio NAS (`localhost:8000`). Poniendo ahí la IP Tailscale del NAS
+   (`100.x.x.x`), entras desde cualquier dispositivo de tu tailnet —
+   nunca se publica en `0.0.0.0`/toda la LAN.
 6. La primera vez, entra a **⚙️ Configuración** dentro de la propia app
    para terminar de ajustar Plex, carpeta de debug, etc. — queda
    guardado en el volumen de datos (`DATA_PATH/config.json`), no en la

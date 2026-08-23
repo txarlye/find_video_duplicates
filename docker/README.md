@@ -18,7 +18,10 @@ o "genéricos" al construirla.
   y actual, nunca una copia congelada.
 - `docker-compose-synology.yml` — cómo ejecutarla (puertos, volúmenes,
   variables).
-- `env.template` — plantilla de `docker/.env` (rutas y puerto).
+- `env.template` — plantilla de `.env`: rutas, puerto, Tailscale **y**
+  los secretos de la app (Telegram, TMDB, OMDb, IA, SMTP...) — un único
+  fichero, pensado para que todo un despliegue viva en una sola carpeta
+  (Container Manager de Synology, Portainer...).
 
 ## 🚀 Construir la imagen
 
@@ -44,18 +47,19 @@ docker save find-video-duplicates:latest -o find-video-duplicates.tar
 1. Copia el contenido de [`.imagen_docker/`](../.imagen_docker/) a una
    carpeta del NAS: `find-video-duplicates.tar`, `docker-compose.yml` y
    `env.template` (o clona el repo entero y constrúyela directamente
-   ahí, ver más abajo).
+   ahí, ver más abajo). Con Container Manager, esa carpeta es la del
+   propio "Proyecto" que crees.
 2. `docker load -i find-video-duplicates.tar`
-3. Copia `env.template` a `.env` (en esa misma carpeta) y ajusta las
-   rutas reales (`MOVIES_PATH`, `PLEX_DB_PATH`...).
-4. En la raíz del repo (un nivel arriba) tiene que existir también un
-   `.env` con tus claves (Telegram, TMDB, OMDb...) — copia `.env.example`
-   si no lo tienes.
-5. `docker-compose -f docker-compose.yml up -d` — o, si usas Portainer,
-   **Stacks → Add stack** y pega el contenido de `docker-compose.yml`.
-6. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
+3. Copia `env.template` a `.env`, **en esa misma carpeta** (junto al
+   compose, no un nivel por encima), y rellena tanto las rutas
+   (`MOVIES_PATH`, `PLEX_DB_PATH`...) como tus claves (Telegram, TMDB,
+   OMDb, IA, SMTP...) — todo en un único fichero.
+4. En Container Manager: **Proyecto → Crear**, apuntando a esa carpeta.
+   Con Portainer: **Stacks → Add stack**, pega el contenido de
+   `docker-compose.yml`. A mano: `docker-compose -f docker-compose.yml up -d`.
+5. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
    puesto en `TAILSCALE_IP`).
-7. Ve a **⚙️ Configuración** dentro de la app para terminar de ajustar
+6. Ve a **⚙️ Configuración** dentro de la app para terminar de ajustar
    Plex, carpeta de debug, etc. — esos cambios quedan guardados en
    `data/config.json` (el volumen persistente), no en la imagen, así que
    sobreviven a actualizar o recrear el contenedor.
@@ -93,7 +97,10 @@ docker exec find-video-duplicates python scheduled_scan.py
 
 Ninguna de las dos vías mueve, renombra ni borra nada — solo detecta
 propuestas nuevas y, si las hay, manda el email (necesita
-`SMTP_USER`/`SMTP_PASSWORD` en el `.env` de la raíz).
+`SMTP_USER`/`SMTP_PASSWORD` en el `.env`). También hay una tercera vía:
+un botón en esa misma pantalla crea la tarea externa directamente en el
+Planificador de DSM por ti (necesita `SYNOLOGY_*` en el `.env` — ver
+[SETUP.md](../SETUP.md)).
 
 ## ⚠️ Notas
 

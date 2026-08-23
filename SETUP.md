@@ -99,6 +99,8 @@ usar — todo es opcional salvo lo que necesites:
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHANNEL_ID` | Subida de vídeos a un canal, **hasta 50MB por archivo** | @BotFather / @userinfobot en Telegram |
 | `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` / `TELEGRAM_PHONE` | Subida de archivos **más grandes de 50MB** (usa tu cuenta personal vía Telethon, no el bot) | [my.telegram.org](https://my.telegram.org) → API development tools |
 | `OPENAI_API_KEY` / `GEMINI_API_KEY` | Solo si eliges OpenAI o Gemini como proveedor de IA para nombrar huérfanos | platform.openai.com / aistudio.google.com |
+| `SMTP_USER` / `SMTP_PASSWORD` | Email de aviso de Propuestas nuevas | Con Gmail, `SMTP_PASSWORD` debe ser una contraseña de aplicación (myaccount.google.com/apppasswords), no tu contraseña normal |
+| `SYNOLOGY_HOST` / `SYNOLOGY_PORT` / `SYNOLOGY_USER` / `SYNOLOGY_PASSWORD` | Botón "Crear tarea en el Planificador de Synology" (opcional — el programador interno ya funciona sin esto) | Usa un usuario DSM **dedicado y restringido**, nunca tu cuenta de administrador principal |
 
 **Sobre los límites de tamaño en Telegram**: el Bot API de Telegram
 (`TELEGRAM_BOT_TOKEN`) tiene un límite real de 50MB por archivo tanto
