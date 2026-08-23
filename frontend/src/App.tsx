@@ -2,6 +2,7 @@ import { AppShell, Burger, Group, Title } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Outlet } from 'react-router-dom'
 import { AppNav } from './components/AppNav'
+import { ColorSchemeToggle } from './components/ColorSchemeToggle'
 
 export function App() {
   const [opened, { toggle, close }] = useDisclosure()
@@ -13,9 +14,12 @@ export function App() {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-          <Title order={3}>🎬 Detector de Duplicados</Title>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Title order={3}>🎬 Detector de Duplicados</Title>
+          </Group>
+          <ColorSchemeToggle />
         </Group>
       </AppShell.Header>
 
