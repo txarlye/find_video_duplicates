@@ -25,7 +25,9 @@ import { useJobProgress } from '../../api/ws'
 import { usePlayersQuery, usePlexQuery } from '../settings/useSettings'
 import {
   useBulkMoveDuplicates,
+  useCreateEdition,
   useDeleteDuplicates,
+  useEditionSuggestions,
   useLoadDuplicatesScan,
   usePlexMetadataForPair,
   useSaveDuplicatesScan,
@@ -47,6 +49,11 @@ function duracionEscaneoFmt(segundos: number) {
   return `${h}h ${m}m ${s}s`
 }
 
+function stem(nombre: string) {
+  const i = nombre.lastIndexOf('.')
+  return i > 0 ? nombre.slice(0, i) : nombre
+}
+
 function FileCard({
   info,
   otherCreado,
@@ -57,6 +64,8 @@ function FileCard({
   plex,
   videoInfo,
   loadingVideoInfo,
+  onCreateEdition,
+  creatingEdition,
 }: {
   info: FileInfo
   otherCreado: string | null
@@ -67,12 +76,19 @@ function FileCard({
   plex?: { encontrado: boolean; datos: Record<string, unknown> | null }
   videoInfo?: VideoInfo
   loadingVideoInfo?: boolean
+  onCreateEdition: (editionName: string) => void
+  creatingEdition?: boolean
 }) {
   const esMasNuevo = info.creado && otherCreado && info.creado > otherCreado
   const esMasViejo = info.creado && otherCreado && info.creado < otherCreado
 
   const duracionEnVivo = videoInfo?.duration_formatted && videoInfo.duration_formatted !== 'N/A' ? videoInfo.duration_formatted : null
   const duracion = duracionEnVivo ?? duracionEscaneoFmt(info.duracion) ?? 'N/A'
+
+  const [editionOpen, setEditionOpen] = useState(false)
+  const [editionName, setEditionName] = useState('')
+  const movieTitle = (plex?.datos?.title as string | undefined) ?? stem(info.nombre)
+  const suggestions = useEditionSuggestions(movieTitle, editionOpen)
 
   return (
     <Stack gap={4}>
@@ -113,7 +129,49 @@ function FileCard({
         <Button size="xs" variant={inBasket ? 'filled' : 'default'} onClick={onAddBasket} disabled={!info.existe}>
           {inBasket ? '🧺 En la cesta' : '➕ Añadir a la cesta'}
         </Button>
+        <Button size="xs" variant="subtle" onClick={() => setEditionOpen((v) => !v)} disabled={!info.existe}>
+          {editionOpen ? '🙈 Cancelar' : '🎬 Convertir en edición de Plex'}
+        </Button>
       </Group>
+      {editionOpen && (
+        <Stack gap={4}>
+          <Text size="xs" c="dimmed">
+            Para cuando esto no es un duplicado real, sino otra versión (extendida, de director...) —
+            renombra el archivo a la convención de Plex en vez de moverlo a debug.
+          </Text>
+          {!!suggestions.data?.sugerencias.length && (
+            <Group gap={4} wrap="wrap">
+              {suggestions.data.sugerencias.map((s) => (
+                <Badge
+                  key={s}
+                  variant={editionName === s ? 'filled' : 'light'}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setEditionName(s)}
+                >
+                  {s}
+                </Badge>
+              ))}
+            </Group>
+          )}
+          <Group gap="xs" wrap="nowrap">
+            <TextInput
+              size="xs"
+              placeholder="Nombre de la edición (ej. Extended Cut)"
+              value={editionName}
+              onChange={(e) => setEditionName(e.currentTarget.value)}
+              style={{ flex: 1 }}
+            />
+            <Button
+              size="xs"
+              loading={creatingEdition}
+              disabled={!editionName.trim()}
+              onClick={() => onCreateEdition(editionName.trim())}
+            >
+              Crear
+            </Button>
+          </Group>
+        </Stack>
+      )}
     </Stack>
   )
 }
@@ -142,6 +200,7 @@ export function DuplicatesPage() {
   const bulkMove = useBulkMoveDuplicates()
   const saveScan = useSaveDuplicatesScan()
   const loadScan = useLoadDuplicatesScan()
+  const createEdition = useCreateEdition()
   const { data: savedScans, isLoading: loadingSaved } = useSavedDuplicatesScans(showSaved)
 
   const scanState = useJobProgress<ScanResult>(scanJobId)
@@ -214,6 +273,28 @@ export function DuplicatesPage() {
         }
       },
     })
+  }
+
+  const onCrearEdicion = (archivo: string, movieTitle: string, editionName: string) => {
+    if (!par) return
+    createEdition.mutate(
+      { archivo, movie_title: movieTitle, edition_name: editionName },
+      {
+        onSuccess: (result) => {
+          if (result.ok) {
+            notifications.show({ color: 'green', message: `✅ Edición creada: ${result.nueva_ruta}` })
+            setPares((prev) => {
+              const nueva = prev.filter((p) => p.clave !== par.clave)
+              setIndex((i) => Math.min(i, Math.max(0, nueva.length - 1)))
+              return nueva
+            })
+          } else {
+            notifications.show({ color: 'red', message: `⚠️ ${result.detail}` })
+          }
+        },
+        onError: (e) => notifications.show({ color: 'red', message: `⚠️ ${(e as Error).message}` }),
+      },
+    )
   }
 
   const onQuitarSeleccionados = () => {
@@ -440,6 +521,11 @@ export function DuplicatesPage() {
                 plex={plexMeta?.file1}
                 videoInfo={videoInfo1.data}
                 loadingVideoInfo={videoInfo1.isLoading}
+                onCreateEdition={(editionName) => {
+                  const title = (plexMeta?.file1.datos?.title as string | undefined) ?? stem(par.peli1.nombre)
+                  onCrearEdicion(par.peli1.ruta, title, editionName)
+                }}
+                creatingEdition={createEdition.isPending}
               />
               <FileCard
                 info={par.peli2}
@@ -451,6 +537,11 @@ export function DuplicatesPage() {
                 plex={plexMeta?.file2}
                 videoInfo={videoInfo2.data}
                 loadingVideoInfo={videoInfo2.isLoading}
+                onCreateEdition={(editionName) => {
+                  const title = (plexMeta?.file2.datos?.title as string | undefined) ?? stem(par.peli2.nombre)
+                  onCrearEdicion(par.peli2.ruta, title, editionName)
+                }}
+                creatingEdition={createEdition.isPending}
               />
             </SimpleGrid>
 

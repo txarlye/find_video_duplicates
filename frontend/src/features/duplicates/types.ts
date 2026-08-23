@@ -63,3 +63,13 @@ export interface VideoInfo {
   container: string
   fps: number | null
 }
+
+export interface EditionSuggestionsResponse {
+  sugerencias: string[]
+}
+
+export interface CreateEditionResult {
+  ok: boolean
+  nueva_ruta: string | null
+  detail: string | null
+}

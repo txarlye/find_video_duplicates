@@ -87,3 +87,20 @@ class LoadResult(BaseModel):
     pares: List[DuplicatePair]
     total_guardado: int
     no_existentes: int
+
+
+class EditionSuggestionsResponse(BaseModel):
+    sugerencias: List[str]
+
+
+class CreateEditionRequest(BaseModel):
+    archivo: str
+    movie_title: str
+    edition_name: str
+    create_subfolder: bool = False
+
+
+class CreateEditionResult(BaseModel):
+    ok: bool
+    nueva_ruta: Optional[str] = None
+    detail: Optional[str] = None

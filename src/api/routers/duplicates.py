@@ -5,18 +5,20 @@ Router de Duplicados — puerto de _process_scan/_render_duplicates/
 _render_movie_controls/_process_pair_deletion/_get_plex_metadata_for_pair
 (streamlit_manager.py ~524-2686).
 
-No se porta el asistente de "crear edición de Plex" (renombrar según
-la convención "Película {edition-Nombre}" en vez de borrar): son
-varios cientos de líneas repartidas en funciones parcialmente
-duplicadas entre sí en el original, para una funcionalidad secundaria
-frente al flujo principal de "revisar par y borrar/mover la copia que
-sobra". Con Plex ya configurado, borrar el duplicado sigue dejando la
-biblioteca correcta; queda como posible ampliación futura si hace
-falta de verdad.
+"Crear edición de Plex" (renombrar según la convención
+"Película {edition-Nombre}" en vez de borrar, para cuando dos
+"duplicados" son en realidad dos versiones distintas de la misma
+película — extendida vs. teatral, etc.) sí se porta, pero no tal cual:
+el original tenía un asistente de varios cientos de líneas repartidas
+en funciones parcialmente duplicadas entre sí. Aquí es un único
+endpoint sobre PlexEditionCreator (ya existía, puro Python, sin usar
+desde ningún sitio) — solo renombra el archivo, no toca la base de
+datos de Plex para nada (el propio Plex detecta la convención en su
+siguiente escaneo).
 
-Tampoco se porta el botón de "abrir en reproductor externo": lanzaba
-un reproductor en la máquina donde corría Streamlit, algo que deja de
-tener sentido en un contenedor Docker sin GUI — el reproductor
+Sí se sigue sin portar el botón de "abrir en reproductor externo":
+lanzaba un reproductor en la máquina donde corría Streamlit, algo que
+deja de tener sentido en un contenedor Docker sin GUI — el reproductor
 embebido (streaming con range-requests, ver routers/video.py) cubre
 el mismo caso de uso desde cualquier dispositivo en la LAN/Tailscale.
 """
@@ -29,14 +31,23 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.common import mover_a_debug, refrescar_plex
-from src.api.deps import get_plex_refresh_service, get_plex_service, get_scan_data_manager, get_settings
+from src.api.deps import (
+    get_plex_edition_creator,
+    get_plex_refresh_service,
+    get_plex_service,
+    get_scan_data_manager,
+    get_settings,
+)
 from src.api.jobs import job_manager
 from src.api.schemas.duplicates import (
     BulkMoveRequest,
     BulkMoveResult,
+    CreateEditionRequest,
+    CreateEditionResult,
     DeleteRequest,
     DeleteResult,
     DuplicatePair,
+    EditionSuggestionsResponse,
     FileInfo,
     LoadRequest,
     LoadResult,
@@ -149,6 +160,37 @@ def borrar(body: DeleteRequest, settings=Depends(get_settings), scan_data_manage
         except Exception as e:
             errores.append(f"{archivo}: {e}")
     return DeleteResult(movidos=movidos, errores=errores)
+
+
+@router.get("/edition-suggestions", response_model=EditionSuggestionsResponse)
+def sugerencias_edicion(movie_title: str, plex_edition_creator=Depends(get_plex_edition_creator)):
+    return EditionSuggestionsResponse(sugerencias=plex_edition_creator.get_edition_suggestions(movie_title))
+
+
+@router.post("/create-edition", response_model=CreateEditionResult)
+def crear_edicion(
+    body: CreateEditionRequest,
+    settings=Depends(get_settings),
+    plex_refresh_service=Depends(get_plex_refresh_service),
+    plex_edition_creator=Depends(get_plex_edition_creator),
+):
+    if not plex_edition_creator.validate_edition_name(body.edition_name):
+        return CreateEditionResult(ok=False, detail="Nombre de edición no válido (evita < > : \" | ? * \\ /)")
+
+    if body.archivo.startswith("\\\\"):
+        nueva_ruta = plex_edition_creator.create_edition_file_unc_safe(
+            body.archivo, body.movie_title, body.edition_name, body.create_subfolder
+        )
+    else:
+        nueva_ruta = plex_edition_creator.create_edition_file(
+            body.archivo, body.movie_title, body.edition_name, body.create_subfolder
+        )
+
+    if not nueva_ruta:
+        return CreateEditionResult(ok=False, detail="No se pudo crear la edición — revisa que el archivo exista y que el destino no esté ya ocupado")
+
+    refrescar_plex(settings, plex_refresh_service)
+    return CreateEditionResult(ok=True, nueva_ruta=nueva_ruta)
 
 
 @router.post("/bulk-move", response_model=BulkMoveResult)

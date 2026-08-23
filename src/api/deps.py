@@ -20,6 +20,7 @@ from src.services.Telegram.telegram_uploader import TelegramUploader
 from src.services.Imdb.imdb_service import ImdbService
 from src.services.video_info_service import VideoInfoService
 from src.services.synology_scheduler_service import SynologySchedulerService
+from src.services.Plex.plex_edition_creator import PlexEditionCreator
 
 
 def get_settings():
@@ -79,3 +80,8 @@ def get_video_info_service() -> VideoInfoService:
 @lru_cache
 def get_synology_scheduler_service() -> SynologySchedulerService:
     return SynologySchedulerService()
+
+
+@lru_cache
+def get_plex_edition_creator() -> PlexEditionCreator:
+    return PlexEditionCreator()

@@ -1,6 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
-import type { BulkMoveResult, DeleteResult, DuplicatePair, LoadResult, PlexMetadataResponse, SavedScan, VideoInfo } from './types'
+import type {
+  BulkMoveResult,
+  CreateEditionResult,
+  DeleteResult,
+  DuplicatePair,
+  EditionSuggestionsResponse,
+  LoadResult,
+  PlexMetadataResponse,
+  SavedScan,
+  VideoInfo,
+} from './types'
 
 export function useScanDuplicates() {
   return useMutation({ mutationFn: (folder: string) => api.post<{ job_id: string }>('/duplicates/scan', { folder }) })
@@ -38,6 +48,21 @@ export function useSavedDuplicatesScans(enabled: boolean) {
 
 export function useLoadDuplicatesScan() {
   return useMutation({ mutationFn: (file_path: string) => api.post<LoadResult>('/duplicates/load', { file_path }) })
+}
+
+export function useEditionSuggestions(movieTitle: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['duplicates', 'edition-suggestions', movieTitle],
+    queryFn: () => api.get<EditionSuggestionsResponse>(`/duplicates/edition-suggestions?movie_title=${encodeURIComponent(movieTitle as string)}`),
+    enabled: enabled && !!movieTitle,
+  })
+}
+
+export function useCreateEdition() {
+  return useMutation({
+    mutationFn: (body: { archivo: string; movie_title: string; edition_name: string }) =>
+      api.post<CreateEditionResult>('/duplicates/create-edition', body),
+  })
 }
 
 /**
