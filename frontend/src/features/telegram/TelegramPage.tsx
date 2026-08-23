@@ -191,9 +191,10 @@ export function TelegramPage() {
                         <Checkbox
                           checked={selected.has(v.path)}
                           onChange={(e) => {
+                            const checked = e.currentTarget.checked
                             setSelected((prev) => {
                               const next = new Set(prev)
-                              if (e.currentTarget.checked) next.add(v.path)
+                              if (checked) next.add(v.path)
                               else next.delete(v.path)
                               return next
                             })

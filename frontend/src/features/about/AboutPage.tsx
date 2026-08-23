@@ -6,12 +6,12 @@ export function AboutPage() {
     <Stack gap="xl" maw={860}>
       <div>
         <Title order={2}>ℹ️ Acerca de</Title>
-        <Text c="dimmed">Utilidades Synology &amp; Plex</Text>
+        <Text c="dimmed">🗃️ Utilidades Synology &amp; Plex</Text>
       </div>
 
       <Stack gap="xs">
         <Text>
-          Hecha por <strong>Carlos</strong> para gestionar su propia biblioteca de vídeo en un
+          Hecha por <strong>Txarlye</strong> para gestionar su propia biblioteca de vídeo en un
           Synology junto con Plex: detectar duplicados, encontrar archivos sin indexar, subirlos a
           Telegram y mantener todo ordenado sin tener que hacerlo a mano carpeta por carpeta.
         </Text>

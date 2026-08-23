@@ -382,9 +382,10 @@ export function DuplicatesPage() {
                             <Checkbox
                               checked={quitarSeleccion.has(p.clave)}
                               onChange={(e) => {
+                                const checked = e.currentTarget.checked
                                 setQuitarSeleccion((prev) => {
                                   const next = new Set(prev)
-                                  if (e.currentTarget.checked) next.add(p.clave)
+                                  if (checked) next.add(p.clave)
                                   else next.delete(p.clave)
                                   return next
                                 })

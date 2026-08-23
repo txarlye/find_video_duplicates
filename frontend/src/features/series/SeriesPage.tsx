@@ -315,9 +315,10 @@ export function SeriesPage() {
                             <Checkbox
                               checked={selectedDup.has(ep.archivo)}
                               onChange={(e) => {
+                                const checked = e.currentTarget.checked
                                 setSelectedDup((prev) => {
                                   const next = new Set(prev)
-                                  if (e.currentTarget.checked) next.add(ep.archivo)
+                                  if (checked) next.add(ep.archivo)
                                   else next.delete(ep.archivo)
                                   return next
                                 })
@@ -386,7 +387,10 @@ export function SeriesPage() {
                                       size="xs"
                                       placeholder="Nuevo nombre (sin extensión)"
                                       value={rowUi[ep.archivo] ?? stem(ep.nombre)}
-                                      onChange={(e) => setRowUi((prev) => ({ ...prev, [ep.archivo]: e.currentTarget.value }))}
+                                      onChange={(e) => {
+                                        const value = e.currentTarget.value
+                                        setRowUi((prev) => ({ ...prev, [ep.archivo]: value }))
+                                      }}
                                       w={220}
                                     />
                                     <Button size="xs" loading={rename.isPending} onClick={() => onRenombrar(ep)}>
