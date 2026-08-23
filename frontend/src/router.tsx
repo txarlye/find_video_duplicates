@@ -5,6 +5,7 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { ProposalsPage } from './features/proposals/ProposalsPage'
 import { OrphansPage } from './features/orphans/OrphansPage'
 import { SeriesPage } from './features/series/SeriesPage'
+import { TelegramPage } from './features/telegram/TelegramPage'
 
 export const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
       { path: 'propuestas', element: <ProposalsPage /> },
       { path: 'huerfanos', element: <OrphansPage /> },
       { path: 'series', element: <SeriesPage /> },
+      { path: 'telegram', element: <TelegramPage /> },
     ],
   },
 ])

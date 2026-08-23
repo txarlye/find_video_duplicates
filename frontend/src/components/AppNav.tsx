@@ -6,7 +6,6 @@ import {
   IconMovie,
   IconRobot,
   IconSettings,
-  IconStar,
   IconTrash,
   IconVideo,
 } from '@tabler/icons-react'
@@ -30,8 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Propuestas', path: '/propuestas', icon: <IconRobot size={18} /> },
   { label: 'Basura', path: '/basura', icon: <IconTrash size={18} /> },
   { label: 'Configuración', path: '/configuracion', icon: <IconSettings size={18} /> },
-  { label: 'Telegram', icon: <IconBrandTelegram size={18} />, legacyStreamlitView: 'telegram' },
-  { label: 'IMDB', icon: <IconStar size={18} />, legacyStreamlitView: 'imdb' },
+  { label: 'Telegram', path: '/telegram', icon: <IconBrandTelegram size={18} /> },
 ]
 
 function streamlitUrl(view: string) {

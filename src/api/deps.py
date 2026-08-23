@@ -15,6 +15,9 @@ from src.services.plex_refresh_service import PlexRefreshService
 from src.services.ai_naming_service import AINamingService
 from src.services.proposals_service import ProposalsService
 from src.services.email_service import EmailService
+from src.services.telegram_service import TelegramService
+from src.services.Telegram.telegram_uploader import TelegramUploader
+from src.services.Imdb.imdb_service import ImdbService
 
 
 def get_settings():
@@ -49,3 +52,18 @@ def get_proposals_service() -> ProposalsService:
 @lru_cache
 def get_email_service() -> EmailService:
     return EmailService()
+
+
+@lru_cache
+def get_telegram_service() -> TelegramService:
+    return TelegramService()
+
+
+@lru_cache
+def get_telegram_uploader() -> TelegramUploader:
+    return TelegramUploader()
+
+
+@lru_cache
+def get_imdb_service() -> ImdbService:
+    return ImdbService()
