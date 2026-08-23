@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from src.api.routers import trash as trash_router
+from src.api.routers import settings as settings_router
 from src.services.plex_service import PlexService
 from src.services.ai_naming_service import AINamingService
 from src.services.proposals_service import ProposalsService
@@ -43,6 +44,7 @@ app.add_middleware(
 )
 
 app.include_router(trash_router.router)
+app.include_router(settings_router.router)
 
 
 @app.get("/api/health")

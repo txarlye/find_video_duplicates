@@ -232,7 +232,11 @@ class Settings:
     def get_similarity_threshold(self) -> float:
         """Obtiene el umbral de similitud"""
         return self.get("detection.similarity_threshold", 0.8)
-    
+
+    def set_similarity_threshold(self, value: float):
+        """Establece el umbral de similitud"""
+        self.set("detection.similarity_threshold", value)
+
     def get_duration_filter_enabled(self) -> bool:
         """Obtiene si el filtro por duración está activado"""
         return self.get("detection.duration_filter_enabled", True)

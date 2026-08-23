@@ -29,7 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Series', icon: <IconVideo size={18} />, legacyStreamlitView: 'series' },
   { label: 'Propuestas', icon: <IconRobot size={18} />, legacyStreamlitView: 'propuestas' },
   { label: 'Basura', path: '/basura', icon: <IconTrash size={18} /> },
-  { label: 'Configuración', icon: <IconSettings size={18} />, legacyStreamlitView: 'settings' },
+  { label: 'Configuración', path: '/configuracion', icon: <IconSettings size={18} /> },
   { label: 'Telegram', icon: <IconBrandTelegram size={18} />, legacyStreamlitView: 'telegram' },
   { label: 'IMDB', icon: <IconStar size={18} />, legacyStreamlitView: 'imdb' },
 ]
