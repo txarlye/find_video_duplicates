@@ -27,8 +27,18 @@ contenedor accesible solo por LAN o Tailscale.
 - Navegación por pares, con guardado/carga del progreso de un escaneo
 - Metadatos de Plex por par (título, año, estudio, duración) y aviso si
   Plex ya las reconoce como la misma película
+- **Convertir en Edición de Plex**: cuando dos "duplicados" son en
+  realidad dos versiones distintas de la misma película (extendida vs.
+  teatral, Director's Cut...), un botón por archivo renombra el
+  archivo a la convención de Plex (`Película {edition-Nombre}.ext`) en
+  vez de moverlo a debug — con sugerencias rápidas (Director's Cut,
+  Extendida, 4K...) y refresco automático de la biblioteca
+- Lista con checkboxes para descartar de golpe pares que a simple
+  vista no son duplicados reales, sin tener que revisarlos uno a uno
 
 ![Comparando un par de duplicados: fotograma navegable, reproductor embebido opcional, y tamaño/duración/resolución reales antes de eliminar](.img/manejo%20de%20duplicados.png)
+
+![Convirtiendo una versión extendida en Edición de Plex en vez de borrarla](.img/ediciones_plex.png)
 
 ### 🧩 Huérfanos (películas sin indexar en Plex)
 - Detecta archivos en disco que Plex no tiene indexados
