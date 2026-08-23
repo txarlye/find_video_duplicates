@@ -143,17 +143,59 @@ La app se abre en `http://localhost:8000`.
 rutas reales, la base de datos de Plex y las API keys — sin eso la app
 arranca pero no tiene nada que escanear.
 
-### 🐳 Alternativa: Docker (Synology u otro NAS, sin instalar Python)
+### 🐳 Alternativa: Docker + Portainer (Synology u otro NAS, sin instalar Python)
 
-```
+Construye la imagen con uno de estos dos scripts (mismo resultado,
+elige el de tu plataforma):
+
+```bash
+# Windows
 build_docker_image.bat
+
+# Linux/Mac/Git Bash
+./build_docker_image.sh
 ```
 
-Construye la imagen y te deja instrucciones para copiarla a tu NAS
-(`docker load` + `docker-compose up`). La imagen **nunca lleva datos
-personales horneados dentro** — `config.json` y `.env` se montan como
-volumen en tiempo de ejecución, así que la misma imagen sirve tanto para
-ti como para compartirla. Guía completa en [docker/README.md](docker/README.md).
+Los dos construyen la imagen desde la raíz del repo (`docker/Dockerfile`,
+incluye el build del frontend React) y la dejan en
+**[`.imagen_docker/`](.imagen_docker/)** (carpeta local, no se sube a
+git salvo el `.tar` — ese sí queda fuera por ser un binario grande y
+regenerable):
+
+- `find-video-duplicates.tar` — la imagen exportada, lista para `docker load`
+- `docker-compose.yml` — el stack, para pegar directamente en Portainer o usar con `docker-compose up`
+- `env.template` — plantilla de variables (rutas, puerto, Tailscale)
+
+**Instalación en el Synology (o cualquier host con Portainer):**
+
+1. Copia `.imagen_docker/find-video-duplicates.tar` al NAS y cárgala:
+   `docker load -i find-video-duplicates.tar`
+2. Copia `.imagen_docker/env.template` a `.env` **junto al** `docker-compose.yml`
+   en el NAS, y ajusta `MOVIES_PATH`, `PLEX_DB_PATH`, `DATA_PATH`,
+   `LOGS_PATH`, `SCAN_DATA_PATH` a rutas reales del NAS.
+3. Un nivel por encima de esa carpeta, crea también un `.env` con tus
+   claves (`TELEGRAM_*`, `TMDB_API_KEY`, `OMDB_API_KEY`,
+   `OPENAI_API_KEY`/`GEMINI_API_KEY`, `SMTP_USER`/`SMTP_PASSWORD`) —
+   copia [`.env.example`](.env.example) si no lo tienes. El compose lo
+   inyecta dentro del contenedor vía `env_file: ../.env`, nunca en
+   claro en el propio `docker-compose.yml`.
+4. En Portainer: **Stacks → Add stack**, pega el contenido de
+   `docker-compose.yml` (o usa **Web editor** apuntando al fichero), y
+   despliega. También puedes hacerlo a mano con
+   `docker-compose -f docker-compose.yml up -d`.
+5. Acceso: con `TAILSCALE_IP` vacío en el `.env` del compose, solo
+   entras desde el propio NAS (`localhost:8000`). Poniendo ahí la IP
+   Tailscale del NAS (`100.x.x.x`), entras desde cualquier dispositivo
+   de tu tailnet — nunca se publica en `0.0.0.0`/toda la LAN.
+6. La primera vez, entra a **⚙️ Configuración** dentro de la propia app
+   para terminar de ajustar Plex, carpeta de debug, etc. — queda
+   guardado en el volumen de datos (`DATA_PATH/config.json`), no en la
+   imagen, así que sobrevive a recrear el contenedor.
+
+La imagen **nunca lleva datos personales horneados dentro** —
+`config.json` y `.env` se montan como volumen en tiempo de ejecución,
+así que la misma imagen sirve tanto para ti como para compartirla. Guía
+más detallada en [docker/README.md](docker/README.md).
 
 ## 📁 Estructura del Proyecto
 
@@ -161,7 +203,8 @@ ti como para compartirla. Guía completa en [docker/README.md](docker/README.md)
 find_video_duplicates/
 ├── main.py                          # Punto de entrada (abre navegador, Tailscale-friendly)
 ├── scheduled_scan.py                # Entrypoint sin interfaz para Propuestas (tarea externa opcional)
-├── build_docker_image.bat           # Construye la imagen Docker desde la raíz del repo
+├── build_docker_image.bat           # Construye la imagen Docker (Windows)
+├── build_docker_image.sh            # Igual, para Linux/Mac/Git Bash
 ├── requirements.txt
 ├── README.md
 ├── SETUP.md                         # Configuración paso a paso (rutas, Plex, Tailscale)
@@ -173,6 +216,10 @@ find_video_duplicates/
 │   ├── docker-compose-synology.yml
 │   ├── env.template                 # Plantilla de docker/.env (rutas, puerto, TZ)
 │   └── README.md
+│
+├── .imagen_docker/                  # Salida de build_docker_image.{bat,sh}: imagen
+│   │                                 # exportada (.tar, no versionado) + compose/env.template
+│   │                                 # listos para copiar a Portainer/Synology
 │
 ├── frontend/                        # UI (React + Vite + Mantine), servida por FastAPI en producción
 │   └── src/

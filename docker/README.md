@@ -22,33 +22,37 @@ o "genéricos" al construirla.
 
 ## 🚀 Construir la imagen
 
-Desde la raíz del repo, en Windows:
+Desde la raíz del repo:
 
-```
-build_docker_image.bat
+```bash
+build_docker_image.bat   # Windows
+./build_docker_image.sh  # Linux/Mac/Git Bash
 ```
 
-Construye `find-video-duplicates:latest` y pregunta si quieres exportarla
-también como `docker/find-video-duplicates.tar` para copiarla a mano al
-NAS. A mano sería:
+Los dos construyen `find-video-duplicates:latest` y la exportan a
+[`.imagen_docker/`](../.imagen_docker/) (carpeta no versionada salvo el
+`docker-compose.yml`/`env.template` que copian ahí) junto con
+`find-video-duplicates.tar`, listos para copiar al NAS. A mano sería:
 
 ```bash
 docker build -f docker/Dockerfile -t find-video-duplicates:latest .
-docker save find-video-duplicates:latest -o docker/find-video-duplicates.tar
+docker save find-video-duplicates:latest -o find-video-duplicates.tar
 ```
 
 ## 🚀 Ejecutarla en el Synology
 
-1. Copia a una carpeta del NAS: `find-video-duplicates.tar`,
-   `docker-compose-synology.yml` y `env.template` (o clona el repo entero
-   y constrúyela directamente ahí, ver más abajo).
+1. Copia el contenido de [`.imagen_docker/`](../.imagen_docker/) a una
+   carpeta del NAS: `find-video-duplicates.tar`, `docker-compose.yml` y
+   `env.template` (o clona el repo entero y constrúyela directamente
+   ahí, ver más abajo).
 2. `docker load -i find-video-duplicates.tar`
 3. Copia `env.template` a `.env` (en esa misma carpeta) y ajusta las
    rutas reales (`MOVIES_PATH`, `PLEX_DB_PATH`...).
 4. En la raíz del repo (un nivel arriba) tiene que existir también un
    `.env` con tus claves (Telegram, TMDB, OMDb...) — copia `.env.example`
    si no lo tienes.
-5. `docker-compose -f docker-compose-synology.yml up -d`
+5. `docker-compose -f docker-compose.yml up -d` — o, si usas Portainer,
+   **Stacks → Add stack** y pega el contenido de `docker-compose.yml`.
 6. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
    puesto en `TAILSCALE_IP`).
 7. Ve a **⚙️ Configuración** dentro de la app para terminar de ajustar
