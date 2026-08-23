@@ -18,6 +18,7 @@ from src.services.email_service import EmailService
 from src.services.telegram_service import TelegramService
 from src.services.Telegram.telegram_uploader import TelegramUploader
 from src.services.Imdb.imdb_service import ImdbService
+from src.services.video_info_service import VideoInfoService
 
 
 def get_settings():
@@ -67,3 +68,8 @@ def get_telegram_uploader() -> TelegramUploader:
 @lru_cache
 def get_imdb_service() -> ImdbService:
     return ImdbService()
+
+
+@lru_cache
+def get_video_info_service() -> VideoInfoService:
+    return VideoInfoService()

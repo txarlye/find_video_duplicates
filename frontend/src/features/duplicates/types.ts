@@ -53,3 +53,13 @@ export interface LoadResult {
   total_guardado: number
   no_existentes: number
 }
+
+export interface VideoInfo {
+  duration_seconds: number | null
+  duration_formatted: string
+  resolution: string
+  video_codec: string
+  audio: string
+  container: string
+  fps: number | null
+}

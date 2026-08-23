@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
-import type { BulkMoveResult, DeleteResult, DuplicatePair, LoadResult, PlexMetadataResponse, SavedScan } from './types'
+import type { BulkMoveResult, DeleteResult, DuplicatePair, LoadResult, PlexMetadataResponse, SavedScan, VideoInfo } from './types'
 
 export function useScanDuplicates() {
   return useMutation({ mutationFn: (folder: string) => api.post<{ job_id: string }>('/duplicates/scan', { folder }) })
@@ -38,4 +38,19 @@ export function useSavedDuplicatesScans(enabled: boolean) {
 
 export function useLoadDuplicatesScan() {
   return useMutation({ mutationFn: (file_path: string) => api.post<LoadResult>('/duplicates/load', { file_path }) })
+}
+
+/**
+ * Duración/resolución/códec "en vivo" (ffprobe) para un archivo — el
+ * dato del escaneo (mutagen) puede fallar/quedarse en 0 para según qué
+ * MKV, así que el detalle del par siempre pide esto en vez de fiarse
+ * del valor precalculado.
+ */
+export function useVideoInfo(ruta: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['duplicates', 'video-info', ruta],
+    queryFn: () => api.get<VideoInfo>(`/video/info?path=${encodeURIComponent(ruta as string)}`),
+    enabled: enabled && !!ruta,
+    retry: false,
+  })
 }

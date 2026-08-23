@@ -29,15 +29,16 @@ import {
   useSaveDuplicatesScan,
   useSavedDuplicatesScans,
   useScanDuplicates,
+  useVideoInfo,
 } from './useDuplicates'
-import type { DuplicatePair, FileInfo, PlexMetadataResponse, ScanResult } from './types'
+import type { DuplicatePair, FileInfo, PlexMetadataResponse, ScanResult, VideoInfo } from './types'
 
 function gb(bytes: number) {
   return (bytes / 1024 ** 3).toFixed(2)
 }
 
-function duracionFmt(segundos: number) {
-  if (!segundos) return 'N/A'
+function duracionEscaneoFmt(segundos: number) {
+  if (!segundos) return null
   const h = Math.floor(segundos / 3600)
   const m = Math.floor((segundos % 3600) / 60)
   const s = Math.floor(segundos % 60)
@@ -52,6 +53,8 @@ function FileCard({
   onAddBasket,
   inBasket,
   plex,
+  videoInfo,
+  loadingVideoInfo,
 }: {
   info: FileInfo
   otherCreado: string | null
@@ -60,9 +63,14 @@ function FileCard({
   onAddBasket: () => void
   inBasket: boolean
   plex?: { encontrado: boolean; datos: Record<string, unknown> | null }
+  videoInfo?: VideoInfo
+  loadingVideoInfo?: boolean
 }) {
   const esMasNuevo = info.creado && otherCreado && info.creado > otherCreado
   const esMasViejo = info.creado && otherCreado && info.creado < otherCreado
+
+  const duracionEnVivo = videoInfo?.duration_formatted && videoInfo.duration_formatted !== 'N/A' ? videoInfo.duration_formatted : null
+  const duracion = duracionEnVivo ?? duracionEscaneoFmt(info.duracion) ?? 'N/A'
 
   return (
     <Stack gap={4}>
@@ -73,7 +81,16 @@ function FileCard({
         </Alert>
       )}
       <Text size="sm">📊 {gb(info.tamaño)} GB</Text>
-      <Text size="sm">⏱️ {duracionFmt(info.duracion)}</Text>
+      <Text size="sm">⏱️ {loadingVideoInfo ? 'calculando…' : duracion}</Text>
+      <Text size="sm">
+        🎞️ {loadingVideoInfo ? 'calculando…' : `${videoInfo?.resolution ?? 'N/A'} — ${videoInfo?.video_codec ?? 'N/A'}`}
+      </Text>
+      {videoInfo && (
+        <Text size="xs" c="dimmed">
+          🔊 {videoInfo.audio} · 📦 {videoInfo.container}
+          {videoInfo.fps ? ` · ${videoInfo.fps} fps` : ''}
+        </Text>
+      )}
       <Text size="xs" c="dimmed">
         {info.ruta}
       </Text>
@@ -144,6 +161,9 @@ export function DuplicatesPage() {
   }, [scanState])
 
   const par = pares[index]
+
+  const videoInfo1 = useVideoInfo(par?.peli1.ruta, !!par?.peli1.existe)
+  const videoInfo2 = useVideoInfo(par?.peli2.ruta, !!par?.peli2.existe)
 
   useEffect(() => {
     setShowPlayers(false)
@@ -341,6 +361,8 @@ export function DuplicatesPage() {
                 onAddBasket={() => toggleBasket(par.peli1.ruta)}
                 inBasket={basket.has(par.peli1.ruta)}
                 plex={plexMeta?.file1}
+                videoInfo={videoInfo1.data}
+                loadingVideoInfo={videoInfo1.isLoading}
               />
               <FileCard
                 info={par.peli2}
@@ -350,6 +372,8 @@ export function DuplicatesPage() {
                 onAddBasket={() => toggleBasket(par.peli2.ruta)}
                 inBasket={basket.has(par.peli2.ruta)}
                 plex={plexMeta?.file2}
+                videoInfo={videoInfo2.data}
+                loadingVideoInfo={videoInfo2.isLoading}
               />
             </SimpleGrid>
 

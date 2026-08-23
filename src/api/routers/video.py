@@ -12,20 +12,46 @@ propio streaming interno), pero aquí servimos el archivo nosotros, así
 que hace falta soportar Range requests a mano — sin esto, el elemento
 <video> del navegador no puede buscar (seek) dentro de un archivo de
 varios GB, solo reproducir desde el principio.
+
+Y /info — puerto de _duracion_resolucion_en_vivo de streamlit_manager.py:
+duración/resolución/códec "en vivo" vía ffprobe (VideoInfoService, ya
+puro, sin cambios). No basta con la duración calculada en el escaneo
+(MovieDetector la saca con mutagen, que falla para algunos MKV
+HEVC/HDR y deja "N/A" aunque ffprobe sí pueda leerlos) — por eso el
+detalle del par pide esto al abrir cada película, en vez de fiarse del
+dato precalculado del escaneo.
 """
 
 import mimetypes
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
+from src.api.deps import get_video_info_service
 from src.settings.settings import settings
 from src.utils.video import VideoFrameExtractor
 
 router = APIRouter(prefix="/api/video", tags=["video"])
 
 CHUNK_SIZE = 1024 * 1024  # 1 MB
+
+
+@router.get("/info")
+def obtener_info_video(path: str = Query(...), video_info_service=Depends(get_video_info_service)):
+    info = video_info_service.get_video_info(path)
+    if not info:
+        raise HTTPException(status_code=404, detail="No se pudo leer información del vídeo")
+
+    return {
+        "duration_seconds": info.get("duration"),
+        "duration_formatted": video_info_service.format_duration(info.get("duration")),
+        "resolution": info.get("resolution") or "N/A",
+        "video_codec": info.get("video_codec") or "N/A",
+        "audio": video_info_service.format_audio_info(info.get("audio_codecs", []), info.get("audio_channels", [])),
+        "container": info.get("container") or "N/A",
+        "fps": info.get("fps"),
+    }
 
 
 @router.get("/frame")
