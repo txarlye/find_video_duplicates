@@ -57,11 +57,12 @@ export interface AutomationSettings {
   smtp_configured: boolean
   smtp_user: string | null
   last_run_date: string | null
+  synology_configured: boolean
 }
 
 export type AutomationUpdate = Omit<
   AutomationSettings,
-  'movie_folders' | 'smtp_configured' | 'smtp_user' | 'last_run_date'
+  'movie_folders' | 'smtp_configured' | 'smtp_user' | 'last_run_date' | 'synology_configured'
 >
 
 export interface AiNamingSettings {

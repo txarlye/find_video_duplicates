@@ -114,6 +114,14 @@ export function AboutPage() {
             <Code>100.x.x.x</Code> que te da en vez de <Code>localhost</Code>. Con Docker, esa IP va
             en <Code>TAILSCALE_IP</Code> dentro de <Code>docker/.env</Code>.
           </List.Item>
+          <List.Item>
+            Tarea programada en el Planificador de Synology (opcional): en{' '}
+            <strong>📅 Programación</strong> ya hay un programador interno que no necesita nada de
+            esto. Si además quieres el botón que la crea directamente en tu DSM, añade{' '}
+            <Code>SYNOLOGY_HOST</Code>/<Code>SYNOLOGY_PORT</Code>/<Code>SYNOLOGY_USER</Code>/
+            <Code>SYNOLOGY_PASSWORD</Code> — usa un usuario DSM dedicado y restringido, nunca tu
+            cuenta de administrador principal.
+          </List.Item>
         </List>
       </div>
 

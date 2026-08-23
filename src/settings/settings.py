@@ -201,6 +201,31 @@ class Settings:
         """Contraseña de aplicación de la cuenta SMTP — solo desde .env"""
         return self.get_env("SMTP_PASSWORD")
 
+    def get_synology_host(self) -> str:
+        """IP/host del NAS para crear la tarea programada en su Planificador — solo desde .env"""
+        return self.get_env("SYNOLOGY_HOST")
+
+    def get_synology_port(self) -> int:
+        """Puerto de DSM (por defecto 5001, HTTPS)"""
+        try:
+            return int(self.get_env("SYNOLOGY_PORT", "5001"))
+        except ValueError:
+            return 5001
+
+    def get_synology_user(self) -> str:
+        """
+        Usuario DSM para la API del Planificador de tareas — debe ser un
+        usuario dedicado y restringido (grupo administrators, requisito
+        de la propia API de DSM), nunca la cuenta de administrador
+        principal: es la única credencial de esta app con alcance de
+        administrador sobre el NAS.
+        """
+        return self.get_env("SYNOLOGY_USER")
+
+    def get_synology_password(self) -> str:
+        """Contraseña del usuario DSM dedicado — solo desde .env"""
+        return self.get_env("SYNOLOGY_PASSWORD")
+
     def get_telegram_bot_token(self) -> str:
         """Obtiene el token del bot de Telegram"""
         return self.get_env("TELEGRAM_BOT_TOKEN") or self.get("telegram.bot_token", "")

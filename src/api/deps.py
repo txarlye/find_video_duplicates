@@ -19,6 +19,7 @@ from src.services.telegram_service import TelegramService
 from src.services.Telegram.telegram_uploader import TelegramUploader
 from src.services.Imdb.imdb_service import ImdbService
 from src.services.video_info_service import VideoInfoService
+from src.services.synology_scheduler_service import SynologySchedulerService
 
 
 def get_settings():
@@ -73,3 +74,8 @@ def get_imdb_service() -> ImdbService:
 @lru_cache
 def get_video_info_service() -> VideoInfoService:
     return VideoInfoService()
+
+
+@lru_cache
+def get_synology_scheduler_service() -> SynologySchedulerService:
+    return SynologySchedulerService()

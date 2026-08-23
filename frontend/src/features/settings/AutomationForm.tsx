@@ -20,9 +20,11 @@ import { IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
   useAutomationQuery,
+  useCreateSynologyTask,
   useSaveAutomation,
   useSaveAutomationFolders,
   useTestAutomationEmail,
+  useTestSynologyConnection,
 } from './useSettings'
 import type { AutomationUpdate } from './types'
 
@@ -31,13 +33,22 @@ export function AutomationForm() {
   const save = useSaveAutomation()
   const saveFolders = useSaveAutomationFolders()
   const testEmail = useTestAutomationEmail()
+  const testSynology = useTestSynologyConnection()
+  const createSynologyTask = useCreateSynologyTask()
 
   const [form, setForm] = useState<AutomationUpdate | null>(null)
   const [newFolder, setNewFolder] = useState('')
 
   useEffect(() => {
     if (!data) return
-    const { movie_folders: _movieFolders, smtp_configured: _smtpConfigured, smtp_user: _smtpUser, last_run_date: _lastRunDate, ...rest } = data
+    const {
+      movie_folders: _movieFolders,
+      smtp_configured: _smtpConfigured,
+      smtp_user: _smtpUser,
+      last_run_date: _lastRunDate,
+      synology_configured: _synologyConfigured,
+      ...rest
+    } = data
     setForm(rest)
   }, [data])
 
@@ -211,8 +222,68 @@ export function AutomationForm() {
               El programador interno de arriba ya dispara el escaneo solo, sin nada más que configurar.
               Esto es solo para quien prefiera controlar el "cuándo" desde fuera del contenedor.
             </Text>
+
+            {data.synology_configured ? (
+              <Stack gap="xs" mb="md">
+                <Text size="sm">
+                  🔧 Credenciales de Synology configuradas — puedo crear la tarea directamente en el
+                  Planificador de tareas de tu DSM, a la hora de arriba.
+                </Text>
+                <Group>
+                  <Button
+                    size="xs"
+                    variant="default"
+                    loading={testSynology.isPending}
+                    onClick={() =>
+                      testSynology.mutate(undefined, {
+                        onSuccess: (r) =>
+                          notifications.show({
+                            color: r.ok ? 'green' : 'red',
+                            message: r.ok ? '✅ Conexión con DSM correcta' : `❌ ${r.detail}`,
+                          }),
+                      })
+                    }
+                  >
+                    🔌 Probar conexión con el NAS
+                  </Button>
+                  <Button
+                    size="xs"
+                    loading={createSynologyTask.isPending}
+                    onClick={() =>
+                      createSynologyTask.mutate(undefined, {
+                        onSuccess: (r) =>
+                          notifications.show({
+                            color: r.ok ? 'green' : 'red',
+                            message: r.ok
+                              ? '✅ Tarea creada/actualizada en el Planificador de DSM'
+                              : `❌ ${r.detail}`,
+                          }),
+                      })
+                    }
+                  >
+                    ➕ Crear/actualizar tarea en el Planificador de Synology
+                  </Button>
+                </Group>
+                <Text size="xs" c="dimmed">
+                  Usa la API interna del Planificador de tareas de DSM (no documentada oficialmente por
+                  Synology) — si algo falla, el mensaje de arriba trae el detalle que devuelve DSM.
+                </Text>
+              </Stack>
+            ) : (
+              <Alert color="blue" variant="light" mb="md">
+                <Text size="sm">
+                  Para crear la tarea automáticamente desde aquí, añade{' '}
+                  <Code>SYNOLOGY_HOST</Code>/<Code>SYNOLOGY_PORT</Code>/<Code>SYNOLOGY_USER</Code>/
+                  <Code>SYNOLOGY_PASSWORD</Code> a tu <Code>.env</Code> — usa un usuario DSM{' '}
+                  <strong>dedicado y restringido</strong> (grupo administrators, requisito de la propia
+                  API), nunca tu cuenta de administrador principal: es la única credencial de esta app
+                  con alcance de administrador sobre el NAS.
+                </Text>
+              </Alert>
+            )}
+
             <Text size="sm" mb="xs">
-              Con Docker en Synology, crea una tarea programada en{' '}
+              O crea la tarea tú mismo en{' '}
               <strong>Panel de control → Planificador de tareas → Tarea programada → Script definido por
               el usuario</strong>:
             </Text>

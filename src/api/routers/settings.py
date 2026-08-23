@@ -16,7 +16,14 @@ sin terminar).
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.api.deps import get_settings, get_plex_service, get_plex_refresh_service, get_email_service
+from src.api.deps import (
+    get_settings,
+    get_plex_service,
+    get_plex_refresh_service,
+    get_email_service,
+    get_synology_scheduler_service,
+)
+from src.services.synology_scheduler_service import SynologySchedulerError
 from src.api.schemas.settings import (
     DetectionSettings,
     DetectionUpdate,
@@ -181,6 +188,9 @@ def obtener_automatizacion(settings=Depends(get_settings)):
         smtp_configured=bool(settings.get_smtp_user()),
         smtp_user=settings.get_smtp_user() or None,
         last_run_date=settings.get_automation_last_run_date() or None,
+        synology_configured=bool(
+            settings.get_synology_host() and settings.get_synology_user() and settings.get_synology_password()
+        ),
     )
 
 
@@ -206,6 +216,24 @@ def guardar_carpetas_automatizacion(body: AutomationFoldersUpdate, settings=Depe
 def probar_email_automatizacion(email_service=Depends(get_email_service)):
     ok = email_service.enviar_aviso_propuestas(1, 1)
     return ActionResult(ok=ok, detail=None if ok else "Revisa SMTP_USER/SMTP_PASSWORD en .env y el log")
+
+
+@router.post("/automation/synology-task/test", response_model=ActionResult)
+def probar_conexion_synology(synology_scheduler_service=Depends(get_synology_scheduler_service)):
+    try:
+        synology_scheduler_service.test_connection()
+        return ActionResult(ok=True, detail=None)
+    except SynologySchedulerError as e:
+        return ActionResult(ok=False, detail=str(e))
+
+
+@router.post("/automation/synology-task/create", response_model=ActionResult)
+def crear_tarea_synology(settings=Depends(get_settings), synology_scheduler_service=Depends(get_synology_scheduler_service)):
+    try:
+        synology_scheduler_service.crear_tarea_propuestas(settings.get_automation_schedule_time())
+        return ActionResult(ok=True, detail=None)
+    except SynologySchedulerError as e:
+        return ActionResult(ok=False, detail=str(e))
 
 
 # ---------- Sugerencia de nombres con IA (usado por Huérfanos/Propuestas) ----------

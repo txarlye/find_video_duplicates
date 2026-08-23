@@ -122,6 +122,14 @@ export function useTestAutomationEmail() {
   return useMutation({ mutationFn: () => api.post<ActionResult>('/settings/automation/test-email') })
 }
 
+export function useTestSynologyConnection() {
+  return useMutation({ mutationFn: () => api.post<ActionResult>('/settings/automation/synology-task/test') })
+}
+
+export function useCreateSynologyTask() {
+  return useMutation({ mutationFn: () => api.post<ActionResult>('/settings/automation/synology-task/create') })
+}
+
 // ---------- IA para sugerencia de nombres (Huérfanos/Propuestas) ----------
 
 export function useAiNamingQuery() {

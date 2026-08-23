@@ -81,6 +81,7 @@ class AutomationSettings(BaseModel):
     smtp_configured: bool
     smtp_user: Optional[str] = None
     last_run_date: Optional[str] = None
+    synology_configured: bool = False
 
 
 class AutomationUpdate(BaseModel):
