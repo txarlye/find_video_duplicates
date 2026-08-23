@@ -49,7 +49,12 @@ def _run_scan(folder: str, *, progress_cb, is_cancelled, settings, plex_service)
     def mostrar_archivo(_archivo):
         contador["n"] += 1
         if contador["n"] % 25 == 0:
-            progress_cb(25, f"{contador['n']} archivo(s) escaneados...")
+            # Crece de verdad (no queda clavado) hasta 40, por debajo del
+            # 45 de "Buscando episodios duplicados" — no se sabe el total
+            # hasta terminar, así que esto es progreso real aunque no sea
+            # un porcentaje exacto del todo.
+            porcentaje = min(40, 10 + contador["n"] // 20)
+            progress_cb(porcentaje, f"{contador['n']} archivo(s) escaneados...")
 
     detector.mostrar_archivo = mostrar_archivo
     episodios = detector.escanear_carpeta()

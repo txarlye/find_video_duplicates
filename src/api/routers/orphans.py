@@ -51,7 +51,14 @@ def _run_scan(folder: str, *, progress_cb, is_cancelled, plex_service) -> Dict[s
     def mostrar_archivo(_archivo):
         contador["n"] += 1
         if contador["n"] % 25 == 0:
-            progress_cb(30, f"{contador['n']} archivo(s) escaneados...")
+            # No se sabe el total hasta terminar (rglob va descubriendo
+            # archivos sobre la marcha) — crece con diminishing returns
+            # hacia 65 (por debajo del 70 de la siguiente fase) para que
+            # la barra avance de verdad en carpetas grandes, en vez de
+            # quedarse clavada en un número fijo mientras solo cambia el
+            # texto.
+            porcentaje = min(65, 10 + contador["n"] // 20)
+            progress_cb(porcentaje, f"{contador['n']} archivo(s) escaneados...")
 
     detector.mostrar_archivo = mostrar_archivo
     peliculas = detector.escanear_carpeta()

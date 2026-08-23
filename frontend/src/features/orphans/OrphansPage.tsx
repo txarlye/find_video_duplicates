@@ -262,6 +262,12 @@ export function OrphansPage() {
         </Stack>
       </Paper>
 
+      {totalEscaneados !== null && items.length === 0 && (
+        <Alert color="green" icon={<IconInfoCircle />}>
+          ✅ Los {totalEscaneados} archivo(s) escaneados están indexados en Plex — ningún huérfano.
+        </Alert>
+      )}
+
       {items.length > 0 && (
         <>
           <Group justify="space-between">
