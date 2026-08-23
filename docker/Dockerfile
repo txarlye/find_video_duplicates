@@ -14,7 +14,20 @@
 # y .env se excluyen del build vía .dockerignore y se montan como
 # volúmenes en tiempo de ejecución (ver docker-compose-synology.yml).
 # Por eso la misma imagen sirve tanto para ti como para compartirla.
+#
+# Durante la migración de Streamlit a FastAPI+React (ver plan), esta
+# imagen corre AMBOS procesos a la vez (docker/entrypoint.sh) — se
+# simplifica a uno solo cuando la migración termine.
 
+# ---- Stage 1: build del frontend (React + Vite) ----
+FROM node:20-slim AS frontend-build
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ---- Stage 2: la app de Python (Streamlit + API), como antes ----
 FROM python:3.11-slim
 
 # Metadatos
@@ -63,8 +76,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copiar el código real de la aplicación (respeta .dockerignore, que
 # excluye config.json, .env, venv/, tests, etc.)
-COPY main.py app_simple.py scheduled_scan.py ./
+COPY main.py main_api.py app_simple.py scheduled_scan.py entrypoint.sh ./
 COPY src/ ./src/
+RUN chmod +x ./entrypoint.sh
+
+# Frontend ya construido en el stage 1 — FastAPI lo sirve directamente
+# (src/api/main.py monta frontend/dist/ si existe), sin nginx.
+COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 # Directorios de datos persistentes (normalmente montados como volumen,
 # pero deben existir igualmente por si alguien corre la imagen sin ellos)
@@ -73,11 +91,12 @@ RUN mkdir -p /app/data /app/logs /app/scan_data && \
 
 USER appuser
 
-EXPOSE 8501
+EXPOSE 8501 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+    CMD curl -f http://localhost:8501/_stcore/health && curl -f http://localhost:8000/api/health || exit 1
 
+# Durante la migración: ambos procesos a la vez (ver docker/entrypoint.sh).
 # main.py ya detecta DOCKER_CONTAINER=true y arranca en modo headless,
 # sin intentar abrir un navegador — mismo script que se usa en local.
-CMD ["python", "main.py"]
+CMD ["./entrypoint.sh"]

@@ -29,6 +29,13 @@ logs/
 *.session
 *.session-journal
 
+# El build de frontend/ se genera siempre fresco dentro de la imagen
+# (stage Node del Dockerfile) — nunca copiar uno local, podría estar
+# desactualizado o con binarios nativos de node_modules del host que no
+# valen dentro del contenedor Linux.
+frontend/node_modules/
+frontend/dist/
+
 # Documentación y metadatos del editor/IDE, no del runtime
 .vscode/
 .idea/

@@ -23,6 +23,10 @@ services:
       # Pon TAILSCALE_IP=100.x.x.x en docker/.env para exponerlo por tu tailnet.
       - "${TAILSCALE_IP:-127.0.0.1}:${HOST_PORT:-8501}:8501"
 
+      # API nueva (FastAPI + React) — temporal mientras dura la
+      # migración de Streamlit (ver plan); se retira al terminar.
+      - "${TAILSCALE_IP:-127.0.0.1}:${API_PORT:-8000}:8000"
+
     volumes:
       # Películas (solo lectura)
       - "${MOVIES_PATH:-./test}:/movies:ro"
@@ -52,6 +56,11 @@ services:
       - STREAMLIT_SERVER_HEADLESS=true
       - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
       - STREAMLIT_TELEMETRY_ENABLED=false
+
+      # API nueva — 0.0.0.0 dentro del contenedor; el filtrado real de
+      # quién puede llegar ocurre en el mapeo de puertos de arriba, no aquí.
+      - API_SERVER_ADDRESS=0.0.0.0
+      - API_PORT=8000
 
       # config.json persistente en el volumen de datos, no en la imagen
       - CONFIG_PATH=/app/data/config.json

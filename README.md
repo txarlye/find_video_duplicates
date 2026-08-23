@@ -9,6 +9,11 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 > apuntar la app a tu propio NAS (rutas, base de datos de Plex, API keys y
 > acceso remoto por Tailscale).
 
+> 🚧 **En migración de Streamlit a FastAPI + React**, pantalla a
+> pantalla — mientras dura, la app corre en dos puertos a la vez
+> (`:8501` Streamlit, con lo aún no migrado; `:8000` la interfaz nueva,
+> adaptativa a móvil). Ver [docker/README.md](docker/README.md).
+
 ## ✨ Funcionalidades
 
 ### 🔍 Duplicados de películas

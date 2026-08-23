@@ -2,6 +2,14 @@
 
 Instalación en un Synology (u otro NAS/servidor con Docker) sin necesitar Python instalado.
 
+> 🚧 **En migración**: la app se está pasando de Streamlit a una API
+> (FastAPI) + interfaz nueva (React), pantalla a pantalla. Mientras
+> dura, el contenedor corre **los dos procesos a la vez** — Streamlit en
+> `:8501` (como siempre) y la interfaz nueva en `:8000`. Las pantallas
+> que ya se migraron viven en la nueva (`:8000`); el resto sigue en
+> Streamlit (`:8501`), con un enlace directo desde el menú de la nueva
+> interfaz. Al terminar la migración esto se simplifica a un solo puerto.
+
 La imagen **nunca lleva datos personales horneados dentro**: `config.json`
 y `.env` se excluyen del build (`.dockerignore`) y se montan como volumen
 en tiempo de ejecución. Por eso la misma imagen sirve tanto para ti como
@@ -46,8 +54,9 @@ docker save find-video-duplicates:latest -o docker/find-video-duplicates.tar
    `.env` con tus claves (Telegram, TMDB, OMDb...) — copia `.env.example`
    si no lo tienes.
 5. `docker-compose -f docker-compose-synology.yml up -d`
-6. Abre `http://<IP-del-NAS>:8501` (o la IP de Tailscale que hayas
-   puesto en `TAILSCALE_IP`).
+6. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
+   puesto en `TAILSCALE_IP`) para la interfaz nueva — o `:8501` para la
+   app de Streamlit de siempre, con las pantallas aún no migradas.
 7. Ve a **Utilidades → ⚙️ Configuración** dentro de la app para terminar
    de ajustar Plex, carpeta de debug, etc. — esos cambios quedan
    guardados en `data/config.json` (el volumen persistente), no en la

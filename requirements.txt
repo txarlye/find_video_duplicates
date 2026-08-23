@@ -12,10 +12,15 @@
 # DEPENDENCIAS PRINCIPALES
 # ========================================
 
-# Interfaz de usuario Streamlit
+# Interfaz de usuario Streamlit (en migración a FastAPI + React — ver
+# el plan de migración; se retira al terminar el último paso)
 streamlit>=1.28.0
 streamlit-option-menu>=0.3.6
 streamlit-aggrid>=0.3.4
+
+# API nueva (FastAPI + React, ver src/api/ y frontend/)
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
 
 # Análisis de datos y manipulación
 pandas>=2.0.0

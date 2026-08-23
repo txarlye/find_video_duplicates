@@ -28,6 +28,8 @@ if errorlevel 1 (
 
 echo Construyendo imagen "find-video-duplicates:latest" desde la raiz del repo...
 echo (contexto = esta carpeta, receta = docker\Dockerfile)
+echo Incluye un build del frontend nuevo (React) - necesita internet para
+echo el "npm ci" y tarda mas que antes la primera vez.
 echo.
 
 docker build -f docker\Dockerfile -t find-video-duplicates:latest .

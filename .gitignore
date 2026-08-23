@@ -276,3 +276,9 @@ docker/logs/
 docker/scan_data/
 docker/config/
 docker/test/
+
+# Frontend (React + Vite) — el código fuente sí se versiona, node_modules
+# y el build (dist/) no: se regeneran con npm install / npm run build,
+# y dentro de la imagen Docker el stage de Node los genera siempre frescos.
+frontend/node_modules/
+frontend/dist/
