@@ -39,7 +39,7 @@ class EmailService:
             return False
 
         app_url = settings.get_automation_app_url().rstrip('/')
-        enlace = f"{app_url}/?view=propuestas" if app_url else None
+        enlace = f"{app_url}/propuestas" if app_url else None
 
         partes = []
         if n_huerfanos:

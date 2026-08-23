@@ -8,7 +8,7 @@ Integrada como utilidad de la aplicación Streamlit
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Optional, Tuple, Set
 from collections import defaultdict
 from difflib import SequenceMatcher
 
@@ -223,20 +223,45 @@ class MovieDetector:
         
         return titulo.strip()
     
+    _PATRON_MARCADOR_SECUELA = re.compile(r'^(ii|iii|iv|v|vi|vii|viii|ix|x|\d+)$')
+
+    def _marcador_secuela(self, titulo_normalizado: str) -> Optional[str]:
+        """
+        Última palabra del título si es un indicador de entrega/secuela
+        suelto (numeral romano o número: "ii", "2", "3"...), o None si
+        no termina en uno de estos. Una palabra normal que resulte ser
+        un número escrito ("eleven" en "Ocean's Eleven") no cuenta —
+        solo dígitos o numerales romanos exactos.
+        """
+        palabras = titulo_normalizado.split()
+        if not palabras:
+            return None
+        ultima = palabras[-1]
+        return ultima if self._PATRON_MARCADOR_SECUELA.match(ultima) else None
+
     def similitud_titulos(self, titulo1: str, titulo2: str) -> float:
         """
         Calcula la similitud entre dos títulos
-        
+
         Args:
             titulo1: Primer título
             titulo2: Segundo título
-            
+
         Returns:
             Porcentaje de similitud (0-1)
         """
         titulo1_norm = self.normalizar_titulo(titulo1)
         titulo2_norm = self.normalizar_titulo(titulo2)
-        
+
+        # Si un título termina en "ii"/"2"/etc. y el otro termina en un
+        # numeral distinto (o en ninguno), son entregas distintas de la
+        # saga aunque el resto del texto sea casi idéntico — "Porky's" y
+        # "Porky's II" no deben salir como duplicados el uno del otro.
+        marcador1 = self._marcador_secuela(titulo1_norm)
+        marcador2 = self._marcador_secuela(titulo2_norm)
+        if (marcador1 or marcador2) and marcador1 != marcador2:
+            return 0.0
+
         return SequenceMatcher(None, titulo1_norm, titulo2_norm).ratio()
     
     def analizar_archivo(self, archivo: Path) -> Dict:

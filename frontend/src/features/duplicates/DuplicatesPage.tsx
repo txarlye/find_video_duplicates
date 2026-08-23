@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Accordion,
   Alert,
   Badge,
   Button,
@@ -10,6 +11,7 @@ import {
   Progress,
   SimpleGrid,
   Stack,
+  Table,
   Text,
   TextInput,
   Title,
@@ -127,6 +129,7 @@ export function DuplicatesPage() {
   const [selection, setSelection] = useState<Record<string, 1 | 2 | null>>({})
   const [basket, setBasket] = useState<Set<string>>(new Set())
   const [destino, setDestino] = useState('')
+  const [quitarSeleccion, setQuitarSeleccion] = useState<Set<string>>(new Set())
   const [showPlayers, setShowPlayers] = useState(false)
   const [plexMeta, setPlexMeta] = useState<PlexMetadataResponse | null>(null)
 
@@ -196,7 +199,11 @@ export function DuplicatesPage() {
       onSuccess: (result) => {
         if (result.movidos) {
           notifications.show({ color: 'green', message: '✅ Movido a debug' })
-          setPares((prev) => prev.filter((p) => p.clave !== par.clave))
+          setPares((prev) => {
+            const nueva = prev.filter((p) => p.clave !== par.clave)
+            setIndex((i) => Math.min(i, Math.max(0, nueva.length - 1)))
+            return nueva
+          })
           setBasket((prev) => {
             const next = new Set(prev)
             next.delete(archivo)
@@ -207,6 +214,18 @@ export function DuplicatesPage() {
         }
       },
     })
+  }
+
+  const onQuitarSeleccionados = () => {
+    if (!quitarSeleccion.size) return
+    const n = quitarSeleccion.size
+    setPares((prev) => {
+      const nueva = prev.filter((p) => !quitarSeleccion.has(p.clave))
+      setIndex((i) => Math.min(i, Math.max(0, nueva.length - 1)))
+      return nueva
+    })
+    setQuitarSeleccion(new Set())
+    notifications.show({ color: 'gray', message: `🙈 ${n} par(es) quitado(s) de la lista (no se ha tocado ningún archivo)` })
   }
 
   const toggleBasket = (ruta: string) => {
@@ -332,6 +351,63 @@ export function DuplicatesPage() {
             </Group>
           </Group>
         </Paper>
+      )}
+
+      {pares.length > 0 && (
+        <Accordion variant="contained">
+          <Accordion.Item value="quitar-varios">
+            <Accordion.Control>
+              ☑️ Quitar varios pares de la lista de golpe ({pares.length} en total)
+            </Accordion.Control>
+            <Accordion.Panel>
+              <Stack gap="sm">
+                <Text size="sm" c="dimmed">
+                  Esto solo saca el par de esta lista de revisión, no toca ningún archivo en disco.
+                  Para borrar/mover archivos usa "Mover seleccionada a debug" en cada par.
+                </Text>
+                <div style={{ overflowX: 'auto' }}>
+                  <Table>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th></Table.Th>
+                        <Table.Th>Par</Table.Th>
+                        <Table.Th>Película 1</Table.Th>
+                        <Table.Th>Película 2</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {pares.map((p, i) => (
+                        <Table.Tr key={p.clave}>
+                          <Table.Td>
+                            <Checkbox
+                              checked={quitarSeleccion.has(p.clave)}
+                              onChange={(e) => {
+                                setQuitarSeleccion((prev) => {
+                                  const next = new Set(prev)
+                                  if (e.currentTarget.checked) next.add(p.clave)
+                                  else next.delete(p.clave)
+                                  return next
+                                })
+                              }}
+                            />
+                          </Table.Td>
+                          <Table.Td>{i + 1}</Table.Td>
+                          <Table.Td>{p.peli1.nombre}</Table.Td>
+                          <Table.Td>{p.peli2.nombre}</Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </div>
+                <Group>
+                  <Button size="xs" color="red" disabled={!quitarSeleccion.size} onClick={onQuitarSeleccionados}>
+                    🗑️ Quitar {quitarSeleccion.size} par(es) de la lista
+                  </Button>
+                </Group>
+              </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
       )}
 
       {pares.length > 0 && par && (
