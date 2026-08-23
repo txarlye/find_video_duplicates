@@ -219,10 +219,15 @@ host con Docker):**
    `OPENAI_API_KEY`/`GEMINI_API_KEY`, `SMTP_USER`/`SMTP_PASSWORD`...) —
    todo en un único fichero, nunca en claro en el `docker-compose.yml`.
 4. En Container Manager: **Proyecto → Crear**, apunta a esa carpeta
-   (con el `docker-compose.yml` y el `.env` dentro) y créalo. En
-   Portainer: **Stacks → Add stack**, pega el contenido de
-   `docker-compose.yml`. También puedes hacerlo a mano con
-   `docker-compose -f docker-compose.yml up -d`.
+   (con el `docker-compose.yml` y el `.env` dentro) y créalo. También
+   puedes hacerlo a mano con `docker-compose -f docker-compose.yml up -d`.
+
+   Con **Portainer** (Stacks → Add stack, método "Web editor"): pega el
+   contenido de `docker-compose.yml`, y en su sección **"Environment
+   variables"** usa el botón **"Load variables from .env file"** para
+   subir el mismo `.env` (o pégalo a mano ahí) — Portainer con Web
+   editor no lee un `.env` del disco del NAS por sí solo, genera el
+   suyo propio a partir de esa sección.
 5. Acceso: con `TAILSCALE_IP` vacío en el `.env`, solo entras desde el
    propio NAS (`localhost:8000`). Poniendo ahí la IP Tailscale del NAS
    (`100.x.x.x`), entras desde cualquier dispositivo de tu tailnet —

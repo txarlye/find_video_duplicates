@@ -1,9 +1,10 @@
 # Copia env.template a .env (en la MISMA carpeta que este compose) y
-# rellena rutas + secretos ahí — un único fichero: docker-compose ya lo
-# carga solo por estar al lado (para las ${VARIABLES} de aquí abajo) y
-# además se referencia explícito en env_file para inyectarlo dentro del
-# contenedor. Pensado para Container Manager de Synology / Portainer,
-# donde todo un proyecto vive en una sola carpeta plana.
+# rellena rutas + secretos ahí. Todo pasa por ${VARIABLES} de sustitución
+# de Compose (abajo hay una por cada secreto) — nada de env_file con
+# ruta a un fichero: con Container Manager/CLI, Compose ya carga solo el
+# .env de al lado; con Portainer (Web editor/Upload), la sección
+# "Environment variables" de su UI hace el mismo papel sin que haga
+# falta que exista ningún fichero en el disco del NAS.
 #
 #   docker load -i find-video-duplicates.tar   # si te pasaron el .tar
 #   docker-compose -f docker-compose-synology.yml up -d
@@ -42,13 +43,6 @@ services:
       - "${LOGS_PATH:-./logs}:/app/logs"
       - "${SCAN_DATA_PATH:-./scan_data}:/app/scan_data"
 
-    env_file:
-      # Mismo .env de arriba (rutas/puerto/Tailscale) — también trae los
-      # secretos (TELEGRAM_*, OMDB_API_KEY, TMDB_API_KEY, IMDB_API_KEY,
-      # OPENAI_API_KEY, GEMINI_API_KEY, SMTP_*, SYNOLOGY_*), inyectados
-      # dentro del contenedor. Nunca en claro en este fichero.
-      - .env
-
     environment:
       - DOCKER_CONTAINER=true
 
@@ -65,6 +59,29 @@ services:
       # defecto Europe/Madrid (ya viene así en la imagen); cambia aquí si
       # no te vale.
       - TZ=${TZ:-Europe/Madrid}
+
+      # Secretos — cada uno pasa por sustitución de Compose desde el
+      # .env de al lado (Container Manager/CLI) o desde la sección
+      # "Environment variables" de Portainer. Vacíos = esa integración
+      # simplemente no se activa, no hace falta rellenarlos todos.
+      - IMDB_API_KEY=${IMDB_API_KEY:-}
+      - OMDB_API_KEY=${OMDB_API_KEY:-}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID:-}
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID:-}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-}
+      - TELEGRAM_PHONE=${TELEGRAM_PHONE:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SYNOLOGY_HOST=${SYNOLOGY_HOST:-}
+      - SYNOLOGY_PORT=${SYNOLOGY_PORT:-5001}
+      - SYNOLOGY_USER=${SYNOLOGY_USER:-}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD:-}
 
     networks:
       - find-video-network

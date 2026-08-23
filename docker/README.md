@@ -55,8 +55,13 @@ docker save find-video-duplicates:latest -o find-video-duplicates.tar
    (`MOVIES_PATH`, `PLEX_DB_PATH`...) como tus claves (Telegram, TMDB,
    OMDb, IA, SMTP...) — todo en un único fichero.
 4. En Container Manager: **Proyecto → Crear**, apuntando a esa carpeta.
-   Con Portainer: **Stacks → Add stack**, pega el contenido de
-   `docker-compose.yml`. A mano: `docker-compose -f docker-compose.yml up -d`.
+   A mano: `docker-compose -f docker-compose.yml up -d`.
+
+   Con **Portainer** (Web editor): pega `docker-compose.yml`, y en su
+   sección "Environment variables" usa **"Load variables from .env
+   file"** para subir el mismo `.env` (o pégalo a mano) — con Web
+   editor, Portainer no lee un `.env` del disco por sí solo, genera el
+   suyo propio a partir de esa sección.
 5. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
    puesto en `TAILSCALE_IP`).
 6. Ve a **⚙️ Configuración** dentro de la app para terminar de ajustar
