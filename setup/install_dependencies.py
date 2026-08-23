@@ -42,8 +42,9 @@ def verify_installation():
     print("🔍 Verificando instalación...")
     
     required_modules = [
-        "streamlit",
-        "pandas", 
+        "fastapi",
+        "uvicorn",
+        "pandas",
         "requests",
         "dotenv"
     ]

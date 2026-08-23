@@ -11,9 +11,9 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Verificar si Streamlit está instalado
-if ! python3 -c "import streamlit" &> /dev/null; then
-    echo "❌ Streamlit no está instalado"
+# Verificar si FastAPI está instalado
+if ! python3 -c "import fastapi" &> /dev/null; then
+    echo "❌ Dependencias no instaladas"
     echo "💡 Instalando dependencias..."
     pip3 install -r requirements.txt
     if [ $? -ne 0 ]; then

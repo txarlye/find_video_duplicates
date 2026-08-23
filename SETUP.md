@@ -118,7 +118,7 @@ necesitas ninguna de las dos claves de arriba (`OPENAI_API_KEY`/
 
 Por defecto la app solo escucha en `127.0.0.1` (tu propio PC/NAS). Si
 quieres usarla desde el móvil o desde otro equipo sin exponer el puerto
-8501 a internet, la forma recomendada es [Tailscale](https://tailscale.com/):
+8000 a internet, la forma recomendada es [Tailscale](https://tailscale.com/):
 
 1. Instala Tailscale en el equipo donde corre la app (el que ejecuta
    `python main.py`) y en los dispositivos desde los que quieras acceder,
@@ -129,19 +129,19 @@ quieres usarla desde el móvil o desde otro equipo sin exponer el puerto
 
    ```bash
    # Windows (PowerShell)
-   $env:STREAMLIT_SERVER_ADDRESS = "100.x.x.x"
+   $env:API_SERVER_ADDRESS = "100.x.x.x"
    python main.py
 
    # Linux/Mac
-   STREAMLIT_SERVER_ADDRESS=100.x.x.x python main.py
+   API_SERVER_ADDRESS=100.x.x.x python main.py
    ```
 
 4. Desde cualquier dispositivo de tu tailnet, entra a
-   `http://100.x.x.x:8501`.
+   `http://100.x.x.x:8000`.
 
 Esto **no** abre nada a internet: solo es alcanzable dentro de tu tailnet
-privada. Si no defines `STREAMLIT_SERVER_ADDRESS`, la app sigue
-escuchando únicamente en `127.0.0.1` como hasta ahora.
+privada. Si no defines `API_SERVER_ADDRESS`, la app sigue escuchando
+únicamente en `127.0.0.1` como hasta ahora.
 
 ## 6. Arrancar la aplicación
 
@@ -172,4 +172,4 @@ primera vez).
   siempre si son máquinas distintas.
 - **No puedo entrar desde el móvil**: confirma que ambos dispositivos
   están en la misma tailnet (`tailscale status`) y que exportaste
-  `STREAMLIT_SERVER_ADDRESS` **antes** de lanzar `main.py` en esa sesión.
+  `API_SERVER_ADDRESS` **antes** de lanzar `main.py` en esa sesión.

@@ -1,18 +1,14 @@
 # 🎬 Detector de Películas y Series Duplicadas
 
-Aplicación en Python con Streamlit para organizar una biblioteca de vídeo
+Aplicación web (FastAPI + React) para organizar una biblioteca de vídeo
 local: detecta **películas y series duplicadas**, encuentra **archivos sin
 indexar en Plex** (con ayuda de IA para renombrarlos), y contrasta todo
-contra **Plex, TMDB/OMDb/IMDB y Telegram**.
+contra **Plex, TMDB/OMDb/IMDB y Telegram**. Interfaz adaptativa a móvil,
+pensada para un único contenedor accesible solo por LAN o Tailscale.
 
 > 📖 **¿Primera vez?** Antes de nada, sigue [SETUP.md](SETUP.md) para
 > apuntar la app a tu propio NAS (rutas, base de datos de Plex, API keys y
 > acceso remoto por Tailscale).
-
-> 🚧 **En migración de Streamlit a FastAPI + React**, pantalla a
-> pantalla — mientras dura, la app corre en dos puertos a la vez
-> (`:8501` Streamlit, con lo aún no migrado; `:8000` la interfaz nueva,
-> adaptativa a móvil). Ver [docker/README.md](docker/README.md).
 
 ## ✨ Funcionalidades
 
@@ -28,10 +24,8 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 - Tamaño, duración y resolución reales (no solo lo calculado en el
   escaneo) justo antes de decidir qué eliminar
 - Navegación por pares, con guardado/carga del progreso de un escaneo
-- Integración con **Ediciones de Plex**: cuando dos "duplicados" son en
-  realidad versiones distintas de la misma película (Director's Cut,
-  Extendida...), la app puede convertir uno de los dos en una Edición de
-  Plex en lugar de borrarlo
+- Metadatos de Plex por par (título, año, estudio, duración) y aviso si
+  Plex ya las reconoce como la misma película
 
 ![Comparando un par de duplicados: fotograma navegable, reproductor embebido opcional, y tamaño/duración/resolución reales antes de eliminar](.img/manejo%20de%20duplicados.png)
 
@@ -113,9 +107,9 @@ contra **Plex, TMDB/OMDb/IMDB y Telegram**.
 - Refresco de biblioteca desde la propia app tras renombrar/mover archivos
 
 ### ⚙️ Configuración (pantalla dentro de la app)
-- Página completa en Utilidades con Detección, Reproductores/Debug, Plex
-  y **Programación** (carpetas/hora/email de Propuestas) — antes repartido
-  en pestañas del sidebar, ahora también accesible como pantalla propia
+- Un único recurso con pestañas para Detección, Reproductores/Debug, Plex,
+  Telegram (solo lectura), **Programación** (carpetas/hora/email de
+  Propuestas) e IA (proveedor/modelo para sugerencia de nombres)
 - Las API keys/tokens **no están aquí a propósito**: viven solo en `.env`,
   nunca en un campo de la UI que pueda acabar guardado en `config.json`
 
@@ -143,7 +137,7 @@ python setup/install_dependencies.py
 python main.py
 ```
 
-La app se abre en `http://localhost:8501`.
+La app se abre en `http://localhost:8000`.
 
 **Después de instalar**, sigue [SETUP.md](SETUP.md) para configurar tus
 rutas reales, la base de datos de Plex y las API keys — sin eso la app
@@ -166,7 +160,6 @@ ti como para compartirla. Guía completa en [docker/README.md](docker/README.md)
 ```
 find_video_duplicates/
 ├── main.py                          # Punto de entrada (abre navegador, Tailscale-friendly)
-├── app_simple.py                    # Entry point de Streamlit
 ├── scheduled_scan.py                # Entrypoint sin interfaz para Propuestas (tarea externa opcional)
 ├── build_docker_image.bat           # Construye la imagen Docker desde la raíz del repo
 ├── requirements.txt
@@ -181,9 +174,18 @@ find_video_duplicates/
 │   ├── env.template                 # Plantilla de docker/.env (rutas, puerto, TZ)
 │   └── README.md
 │
+├── frontend/                        # UI (React + Vite + Mantine), servida por FastAPI en producción
+│   └── src/
+│       ├── features/                # Una carpeta por pantalla (duplicates, orphans, series, ...)
+│       ├── components/              # Componentes compartidos (navegación, tabla, fotograma...)
+│       └── api/                     # Cliente HTTP + hook de progreso por WebSocket
+│
 ├── src/
-│   ├── app/
-│   │   └── streamlit_manager.py     # Toda la UI: escaneo, huérfanos, series, basura, propuestas...
+│   ├── api/                         # Backend FastAPI
+│   │   ├── main.py                  # App, routers, montaje del frontend build
+│   │   ├── jobs.py                  # Jobs en segundo plano con progreso por WebSocket
+│   │   ├── routers/                 # Un router por recurso (duplicates, orphans, series, ...)
+│   │   └── schemas/                 # Modelos Pydantic de request/response
 │   ├── services/
 │   │   ├── ai_naming_service.py     # IA (Ollama/OpenAI/Gemini) + contraste TMDB/OMDb
 │   │   ├── proposals_service.py     # Genera propuestas (nombres IA + qué duplicado borrar)
@@ -193,8 +195,7 @@ find_video_duplicates/
 │   │   ├── plex_refresh_service.py
 │   │   ├── scan_data_manager.py     # Guardado/carga de progreso de escaneos
 │   │   ├── video_info_service.py
-│   │   ├── Plex/                    # Detección/creación de Ediciones de Plex
-│   │   ├── Imdb/                    # Búsqueda de películas en IMDB/TMDB/OMDb
+│   │   ├── Imdb/                    # Búsqueda de películas en Plex/OMDb, para nombres y enriquecer subidas
 │   │   └── Telegram/                # Bot API + Telethon
 │   ├── settings/
 │   │   ├── settings.py              # Singleton de configuración
@@ -203,8 +204,7 @@ find_video_duplicates/
 │   └── utils/
 │       ├── movie_detector.py        # Similitud de nombres para películas
 │       ├── series_detector.py       # Parseo SxxExx / NxNN, agrupado por serie
-│       ├── file_operations.py
-│       └── ui_components.py
+│       └── video.py                 # Extracción de fotogramas (ffmpeg)
 │
 └── setup/                           # Instaladores por plataforma
 ```
@@ -228,19 +228,20 @@ pestaña ⚙️ Configuración de la propia app. Ambos ficheros están en
 
 ## 🎮 Uso rápido
 
-1. **Escanear**: elige carpeta en el sidebar, ajusta umbral de similitud y
-   filtro de duración, pulsa "🔍 Escanear".
+1. **Duplicados**: elige carpeta en el menú lateral, ajusta umbral de
+   similitud y filtro de duración, pulsa "🔍 Escanear".
 2. **Revisar pares**: navega con Anterior/Siguiente, compara por fotograma
    o vídeo completo, decide si eliminar (va a la papelera) o mover.
-3. **Huérfanos**: pestaña 🧩, deja que la IA sugiera nombre y contrástalo
-   antes de renombrar.
-4. **Series**: pestaña 📺, mismo flujo pero por episodios y series enteras.
-5. **Basura**: pestaña 🗑️, revisa qué se ha ido acumulando en la papelera
-   antes de vaciarla tú a mano en el NAS.
-6. **Propuestas**: pestaña 🤖, revisa lo que la app te sugiere (nombres de
-   huérfanos, duplicados a borrar), marca casillas y aplica/descarta en
-   lote. Configura carpetas/hora/email en ⚙️ Configuración → 📅 Programación.
-7. **Telegram/IMDB**: subida opcional a un canal con carátula y sinopsis.
+3. **Huérfanos**: deja que la IA sugiera nombre y contrástalo antes de
+   renombrar.
+4. **Series**: mismo flujo pero por episodios y series enteras.
+5. **Basura**: revisa qué se ha ido acumulando en la papelera antes de
+   vaciarla tú a mano en el NAS.
+6. **Propuestas**: revisa lo que la app te sugiere (nombres de huérfanos,
+   duplicados a borrar), marca casillas y aplica/descarta en lote.
+   Configura carpetas/hora/email en ⚙️ Configuración → 📅 Programación.
+7. **Telegram**: subida opcional a un canal, con carátula y sinopsis si
+   activas "Enriquecer".
 
 ## 🔒 Seguridad
 
@@ -285,9 +286,9 @@ para lo relacionado con rutas, Plex y acceso remoto.
 
 Otros problemas frecuentes:
 
-- **"Streamlit ya está ejecutándose"**: hay un proceso previo ocupando el
-  puerto 8501 (`taskkill /f /im python.exe` en Windows, `pkill -f
-  streamlit` en Linux/Mac).
+- **"La API ya está ejecutándose"**: hay un proceso previo ocupando el
+  puerto 8000 (`taskkill /f /im python.exe` en Windows, `pkill -f
+  main.py` en Linux/Mac).
 - **"Mutagen no disponible"**: `pip install mutagen>=1.47.0`.
 - **Error 401 en OMDb/TMDB**: revisa que la API key en `.env` sea correcta.
 - **Plex no arranca, log con "database disk image is malformed"**: la

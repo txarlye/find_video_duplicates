@@ -539,7 +539,7 @@ class Settings:
     def get_automation_app_url(self) -> str:
         """
         URL base de la app (para el enlace del email — normalmente tu IP
-        de Tailscale, ej. http://100.x.x.x:8501), ya que el email no
+        de Tailscale, ej. http://100.x.x.x:8000), ya que el email no
         puede adivinar por dónde vas a entrar a verla.
         """
         return self.get("automation.app_url", "")

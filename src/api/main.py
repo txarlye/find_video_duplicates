@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-App FastAPI — sustituye gradualmente a la UI de Streamlit
-(src/app/streamlit_manager.py), pantalla a pantalla. Mientras dura la
-migración, este proceso corre EN PARALELO a Streamlit (puerto distinto,
-ver docker/Dockerfile) — no hay ningún cambio en src/services que
-rompa la app vieja.
-
-Sirve la API bajo /api/*, WebSockets bajo /ws/* (cuando existan), y el
-build estático de frontend/ en la raíz "/" (si existe — en desarrollo
-sin build todavía, simplemente no se monta y solo responde la API).
+App FastAPI — sirve la API bajo /api/*, WebSockets bajo /ws/*, y el
+build estático de frontend/ (React + React Router) en el resto de rutas
+(si existe — en desarrollo sin build todavía, simplemente no se monta y
+solo responde la API).
 """
 
 import asyncio
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.api.jobs import job_manager
@@ -91,7 +87,25 @@ async def _conectar_job_manager_al_loop():
 
 _frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
 if _frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=str(_frontend_dist / "assets")), name="frontend-assets")
+
+    @app.get("/{full_path:path}")
+    def servir_frontend(full_path: str):
+        """
+        Fallback a index.html para cualquier ruta que no sea /api, /ws o
+        /assets — necesario porque React Router navega del lado del
+        cliente: sin esto, entrar directo (o refrescar) en algo como
+        /duplicados devolvería 404 en vez de dejar que la app cargue y
+        resuelva la ruta ella misma.
+        """
+        if full_path.startswith("api/") or full_path.startswith("ws/"):
+            raise HTTPException(status_code=404, detail="No encontrado")
+
+        candidato = _frontend_dist / full_path
+        if full_path and candidato.is_file():
+            return FileResponse(candidato)
+        return FileResponse(_frontend_dist / "index.html")
+
     logger.info(f"Sirviendo frontend estático desde {_frontend_dist}")
 else:
     logger.info("frontend/dist no existe todavía — solo la API está activa (npm run build para servir la UI)")

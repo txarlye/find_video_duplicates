@@ -7,9 +7,9 @@ Planificador de tareas del Synology) y el hilo en segundo plano que la
 propia app arranca para disparar el escaneo a la hora configurada en
 Configuración → 📅 Programación, sin depender de nada externo al NAS.
 
-El hilo en segundo plano solo tiene sentido mientras el proceso de
-Streamlit siga vivo — por eso sigue siendo válido usar el Planificador
-de tareas del Synology si prefieres no depender de que el contenedor no
+El hilo en segundo plano solo tiene sentido mientras el proceso de la
+app siga vivo — por eso sigue siendo válido usar el Planificador de
+tareas del Synology si prefieres no depender de que el contenedor no
 se reinicie justo a la hora programada.
 """
 
@@ -67,10 +67,9 @@ def ejecutar_ciclo_propuestas(proposals_service, email_service) -> dict:
 def ensure_scheduler_running(proposals_service, email_service):
     """
     Arranca el hilo en segundo plano que dispara ejecutar_ciclo_propuestas
-    a la hora configurada — pero solo una vez por proceso. Streamlit
-    reejecuta el script entero en cada interacción, así que sin este
-    guardado global (no vale session_state, que es por sesión/pestaña) se
-    lanzaría un hilo nuevo en cada clic.
+    a la hora configurada — pero solo una vez por proceso, con este
+    guardado global (el startup de FastAPI podría llamarlo más de una vez
+    según el entorno de arranque).
     """
     global _scheduler_started
     with _scheduler_lock:

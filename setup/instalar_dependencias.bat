@@ -58,7 +58,7 @@ echo.
 
 REM Verificar instalación
 echo 🔍 Verificando instalación...
-python -c "import streamlit, pandas, requests; print('✅ Dependencias verificadas')"
+python -c "import fastapi, pandas, requests; print('✅ Dependencias verificadas')"
 if errorlevel 1 (
     echo ❌ Error verificando dependencias
     pause

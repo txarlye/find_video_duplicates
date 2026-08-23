@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Script simple para ejecutar la aplicación
+Lanzador de la app (FastAPI + frontend React, servido por el mismo
+proceso). Sondea el health endpoint antes de abrir el navegador, no
+abre nada en Docker, dirección/puerto configurables vía
+API_SERVER_ADDRESS/API_PORT.
 """
 
 import subprocess
@@ -11,56 +14,44 @@ import time
 import os
 import threading
 
-# En Windows, si la salida no está atada a una consola real (redirigida a
-# fichero, tarea programada, etc.) Python usa el codepage ANSI por defecto,
-# que no sabe codificar los emojis de los print() de abajo y revienta.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
+
 def main():
-    """Ejecuta la aplicación Streamlit"""
-    print("🎬 Iniciando Detector de Películas Duplicadas...")
-    
-    # Solo mostrar mensaje de navegador si no estamos en Docker
-    is_docker = os.environ.get('DOCKER_CONTAINER', False)
+    print("🎬 Iniciando API (FastAPI + frontend)...")
+
+    is_docker = os.environ.get("DOCKER_CONTAINER", False)
     if not is_docker:
         print("🌐 Abriendo navegador automáticamente...")
     else:
         print("🐳 Ejecutando en modo contenedor...")
-    
+
     print("=" * 50)
 
-    # Por defecto solo escucha en localhost. Para acceder desde otro
-    # equipo de tu tailnet, exporta STREAMLIT_SERVER_ADDRESS con tu IP
-    # de Tailscale (p.ej. 100.x.x.x) antes de ejecutar este script.
-    server_address = os.environ.get("STREAMLIT_SERVER_ADDRESS", "127.0.0.1")
-    base_url = f"http://{server_address}:8501"
+    server_address = os.environ.get("API_SERVER_ADDRESS", "127.0.0.1")
+    port = os.environ.get("API_PORT", "8000")
+    base_url = f"http://{server_address}:{port}"
 
-    # Verificar si ya hay una instancia ejecutándose (aunque hayas cerrado
-    # el navegador y la ventana de PowerShell, el proceso puede seguir vivo
-    # de fondo ocupando el puerto).
     try:
         import requests
-        response = requests.get(f"{base_url}/_stcore/health", timeout=2)
+        response = requests.get(f"{base_url}/api/health", timeout=2)
         if response.status_code == 200:
-            print("⚠️ Streamlit ya está ejecutándose en el puerto 8501")
+            print(f"⚠️ La API ya está ejecutándose en el puerto {port}")
             print("🌐 Abriendo navegador...")
             webbrowser.open(base_url)
             return
     except Exception:
-        pass  # No hay instancia ejecutándose, continuar normalmente
+        pass
 
-    # Solo abrir navegador si no estamos en Docker. Sondeamos el health
-    # endpoint en vez de un time.sleep fijo — abre en cuanto está listo de
-    # verdad, ni antes (fallaría) ni de más tarde de lo necesario.
     if not is_docker:
         def open_browser():
             import requests as _requests
             limite = time.time() + 30
             while time.time() < limite:
                 try:
-                    if _requests.get(f"{base_url}/_stcore/health", timeout=1).status_code == 200:
+                    if _requests.get(f"{base_url}/api/health", timeout=1).status_code == 200:
                         break
                 except Exception:
                     pass
@@ -75,24 +66,18 @@ def main():
         browser_thread.start()
 
     try:
-        # Siempre headless a nivel de Streamlit: si no, Streamlit abre su
-        # propio navegador además del que gestiona el hilo de arriba, y
-        # acabas con dos pestañas. El hilo de arriba es quien decide
-        # cuándo abrir (y no abre nada en Docker).
         subprocess.run([
-            sys.executable, "-m", "streamlit", "run",
-            "app_simple.py",
-            "--server.port", "8501",
-            "--server.headless", "true",
-            "--browser.gatherUsageStats", "false",
-            "--server.address", server_address
+            sys.executable, "-m", "uvicorn",
+            "src.api.main:app",
+            "--host", server_address,
+            "--port", port,
         ])
     except KeyboardInterrupt:
         print("\n👋 Aplicación cerrada por el usuario")
     except Exception as e:
-        print(f"❌ Error ejecutando Streamlit: {e}")
-        print("💡 Verifica que todas las dependencias estén instaladas correctamente")
+        print(f"❌ Error ejecutando la API: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -2,13 +2,8 @@
 
 Instalación en un Synology (u otro NAS/servidor con Docker) sin necesitar Python instalado.
 
-> 🚧 **En migración**: la app se está pasando de Streamlit a una API
-> (FastAPI) + interfaz nueva (React), pantalla a pantalla. Mientras
-> dura, el contenedor corre **los dos procesos a la vez** — Streamlit en
-> `:8501` (como siempre) y la interfaz nueva en `:8000`. Las pantallas
-> que ya se migraron viven en la nueva (`:8000`); el resto sigue en
-> Streamlit (`:8501`), con un enlace directo desde el menú de la nueva
-> interfaz. Al terminar la migración esto se simplifica a un solo puerto.
+Un único contenedor sirve el backend (FastAPI) y la interfaz (React) en
+el mismo puerto — sin nginx aparte.
 
 La imagen **nunca lleva datos personales horneados dentro**: `config.json`
 y `.env` se excluyen del build (`.dockerignore`) y se montan como volumen
@@ -55,12 +50,11 @@ docker save find-video-duplicates:latest -o docker/find-video-duplicates.tar
    si no lo tienes.
 5. `docker-compose -f docker-compose-synology.yml up -d`
 6. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
-   puesto en `TAILSCALE_IP`) para la interfaz nueva — o `:8501` para la
-   app de Streamlit de siempre, con las pantallas aún no migradas.
-7. Ve a **Utilidades → ⚙️ Configuración** dentro de la app para terminar
-   de ajustar Plex, carpeta de debug, etc. — esos cambios quedan
-   guardados en `data/config.json` (el volumen persistente), no en la
-   imagen, así que sobreviven a actualizar o recrear el contenedor.
+   puesto en `TAILSCALE_IP`).
+7. Ve a **⚙️ Configuración** dentro de la app para terminar de ajustar
+   Plex, carpeta de debug, etc. — esos cambios quedan guardados en
+   `data/config.json` (el volumen persistente), no en la imagen, así que
+   sobreviven a actualizar o recrear el contenedor.
 
 ### Alternativa: construir directamente en el Synology
 
@@ -78,16 +72,16 @@ docker stop find-video-duplicates
 
 ## 🤖 Escaneo programado de Propuestas (opcional)
 
-Configúralo en **Utilidades → ⚙️ Configuración → 📅 Programación**:
-carpetas a analizar, hora, email de aviso. La propia app trae un
-programador interno — no hace falta nada más, dispara el escaneo solo a
-la hora configurada mientras el contenedor esté encendido.
+Configúralo en **⚙️ Configuración → 📅 Programación**: carpetas a
+analizar, hora, email de aviso. La propia app trae un programador
+interno — no hace falta nada más, dispara el escaneo solo a la hora
+configurada mientras el contenedor esté encendido.
 
 Si prefieres controlar el "cuándo" desde fuera del contenedor (para no
-depender de que siga vivo justo a esa hora), la pestaña Programación
-también trae las instrucciones exactas para tu caso; con Docker en
-Synology sería una tarea en **Panel de control → Planificador de
-tareas → Tarea programada → Script definido por el usuario**:
+depender de que siga vivo justo a esa hora), esa misma sección también
+trae las instrucciones exactas para tu caso; con Docker en Synology
+sería una tarea en **Panel de control → Planificador de tareas → Tarea
+programada → Script definido por el usuario**:
 
 ```bash
 docker exec find-video-duplicates python scheduled_scan.py
@@ -100,7 +94,7 @@ propuestas nuevas y, si las hay, manda el email (necesita
 ## ⚠️ Notas
 
 - La app nunca borra archivos: los mueve a la carpeta de debug
-  configurada (pestaña 🗑️ Basura dentro de la app).
+  configurada (🗑️ Basura dentro de la app).
 - `ffmpeg` va incluido en la imagen (necesario para el fotograma de
   comparación de vídeos).
 - Recursos: ~2GB RAM.

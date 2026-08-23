@@ -4,12 +4,9 @@
 Utilidades para manejo de videos y reproductores
 """
 
-import streamlit as st
-import os
 import subprocess
 from pathlib import Path
-from typing import Optional, Tuple
-from src.settings.settings import settings
+from typing import Optional
 
 
 class VideoFrameExtractor:
@@ -69,134 +66,6 @@ class VideoFrameExtractor:
             return result.stdout
         except Exception:
             return None
-
-
-class VideoPlayer:
-    """Clase para manejar reproductores de video"""
-    
-    def __init__(self):
-        self.max_file_size_mb = 2000  # Límite por defecto
-    
-    def get_file_size_mb(self, file_path: str) -> float:
-        """Obtiene el tamaño del archivo en MB"""
-        try:
-            return Path(file_path).stat().st_size / (1024 * 1024)
-        except Exception:
-            return 0.0
-    
-    def can_play_embedded(self, file_path: str) -> Tuple[bool, str]:
-        """
-        Verifica si un archivo puede ser reproducido embebido
-        
-        Returns:
-            Tuple[bool, str]: (puede_reproducir, mensaje)
-        """
-        if not Path(file_path).exists():
-            return False, "Archivo no encontrado"
-        
-        file_size_mb = self.get_file_size_mb(file_path)
-        
-        if file_size_mb > self.max_file_size_mb:
-            return False, f"Video muy grande ({file_size_mb:.1f}MB) - Solo reproductor externo"
-        
-        return True, "OK"
-    
-    def render_embedded_player(self, file_path: str, key: str) -> bool:
-        """
-        Renderiza un reproductor embebido de Streamlit
-        
-        Args:
-            file_path: Ruta del archivo de video
-            key: Clave única para el componente
-            
-        Returns:
-            bool: True si se pudo renderizar, False en caso contrario
-        """
-        try:
-            can_play, message = self.can_play_embedded(file_path)
-            
-            if not can_play:
-                st.warning(f"⚠️ {message}")
-                return False
-            
-            # Renderizar reproductor embebido
-            st.video(file_path, start_time=0)
-            return True
-            
-        except Exception as e:
-            st.warning(f"⚠️ Error cargando video: {e}")
-            return False
-    
-    def render_external_player_button(self, file_path: str, key: str, label: str = "🔗 Abrir en Reproductor") -> bool:
-        """
-        Renderiza un botón para abrir el video en reproductor externo
-        
-        Args:
-            file_path: Ruta del archivo de video
-            key: Clave única para el botón
-            label: Texto del botón
-            
-        Returns:
-            bool: True si se presionó el botón
-        """
-        if st.button(label, key=key):
-            st.info(f"🔗 Abriendo: {file_path}")
-            try:
-                os.startfile(file_path)
-                return True
-            except Exception as e:
-                st.warning(f"⚠️ No se pudo abrir automáticamente: {e}")
-                return False
-        return False
-    
-    def render_video_info(self, file_path: str, title: str, size_gb: float, duration: str) -> None:
-        """
-        Renderiza la información de un video
-        
-        Args:
-            file_path: Ruta del archivo
-            title: Título de la película
-            size_gb: Tamaño en GB
-            duration: Duración formateada
-        """
-        # Título con estilo
-        st.markdown(f"<h3 style='color: #1f77b4; margin-bottom: 10px;'>🎬 {title}</h3>", unsafe_allow_html=True)
-        
-        # Información del video
-        st.write(f"📊 Tamaño: {size_gb:.2f} GB")
-        st.write(f"⏱️ Duración: {duration}")
-        
-        if Path(file_path).exists():
-            # Información del archivo
-            archivo_info = Path(file_path)
-            st.write(f"📁 Ruta: {archivo_info.parent}")
-            st.write(f"📄 Archivo: {archivo_info.name}")
-        else:
-            st.warning("⚠️ Archivo no encontrado")
-            st.write(f"📁 Ruta: {file_path}")
-    
-    def render_video_section(self, file_path: str, title: str, size_gb: float, duration: str, 
-                           video_key: str, button_key: str) -> None:
-        """
-        Renderiza una sección completa de video con reproductor y controles
-        
-        Args:
-            file_path: Ruta del archivo de video
-            title: Título de la película
-            size_gb: Tamaño en GB
-            duration: Duración formateada
-            video_key: Clave para el reproductor
-            button_key: Clave para el botón
-        """
-        # Información del video
-        self.render_video_info(file_path, title, size_gb, duration)
-        
-        # Reproductor embebido si está habilitado
-        if settings.get_show_embedded_players():
-            self.render_embedded_player(file_path, video_key)
-        
-        # Botón de reproductor externo
-        self.render_external_player_button(file_path, button_key)
 
 
 class VideoFormatter:
