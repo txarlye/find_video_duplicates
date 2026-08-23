@@ -274,6 +274,11 @@ docker/scan_data/
 docker/config/
 docker/test/
 
+# Salida local de build_docker_image.sh: la imagen exportada (.tar) y
+# copias de docker-compose.yml/env.template listas para Portainer —
+# artefactos generados, no código fuente.
+.imagen_docker/
+
 # Frontend (React + Vite) — el código fuente sí se versiona, node_modules
 # y el build (dist/) no: se regeneran con npm install / npm run build,
 # y dentro de la imagen Docker el stage de Node los genera siempre frescos.
