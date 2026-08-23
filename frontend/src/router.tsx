@@ -6,13 +6,15 @@ import { ProposalsPage } from './features/proposals/ProposalsPage'
 import { OrphansPage } from './features/orphans/OrphansPage'
 import { SeriesPage } from './features/series/SeriesPage'
 import { TelegramPage } from './features/telegram/TelegramPage'
+import { DuplicatesPage } from './features/duplicates/DuplicatesPage'
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <Navigate to="/basura" replace /> },
+      { index: true, element: <Navigate to="/duplicados" replace /> },
+      { path: 'duplicados', element: <DuplicatesPage /> },
       { path: 'basura', element: <TrashPage /> },
       { path: 'configuracion', element: <SettingsPage /> },
       { path: 'propuestas', element: <ProposalsPage /> },

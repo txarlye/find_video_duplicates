@@ -23,7 +23,7 @@ interface NavItem {
 const STREAMLIT_PORT = 8501
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Duplicados', icon: <IconMovie size={18} />, legacyStreamlitView: 'scan' },
+  { label: 'Duplicados', path: '/duplicados', icon: <IconMovie size={18} /> },
   { label: 'Huérfanos', path: '/huerfanos', icon: <IconFileSearch size={18} /> },
   { label: 'Series', path: '/series', icon: <IconVideo size={18} /> },
   { label: 'Propuestas', path: '/propuestas', icon: <IconRobot size={18} /> },
