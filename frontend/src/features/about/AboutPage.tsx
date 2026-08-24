@@ -172,7 +172,10 @@ export function AboutPage() {
       <Text size="xs" c="dimmed">
         <IconInfoCircle size={14} style={{ verticalAlign: 'text-bottom' }} /> Encontrarás más
         detalle técnico (arquitectura, variables de entorno, Docker) en el <Code>README.md</Code> y{' '}
-        <Code>SETUP.md</Code> del propio repositorio.
+        <Code>SETUP.md</Code> del propio repositorio. en  {' '}
+            <Anchor href="https://github.com/txarlye/find_video_duplicates" target="_blank" rel="noreferrer">
+              Este repositorio de GitHub
+            </Anchor>{' '}
       </Text>
     </Stack>
   )
