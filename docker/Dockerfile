@@ -44,9 +44,6 @@ ENV API_PORT=8000
 # Sobrescribible con TZ=... en docker-compose si compartes la imagen.
 ENV TZ=Europe/Madrid
 
-# Crear usuario no-root para seguridad
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
 # Instalar dependencias del sistema (incluye ffmpeg, que usa la app para
 # extraer fotogramas de comparación, y tzdata para que TZ tenga efecto)
 RUN apt-get update && apt-get install -y \
@@ -78,11 +75,13 @@ COPY src/ ./src/
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 # Directorios de datos persistentes (normalmente montados como volumen,
-# pero deben existir igualmente por si alguien corre la imagen sin ellos)
-RUN mkdir -p /app/data /app/logs /app/scan_data && \
-    chown -R appuser:appuser /app
-
-USER appuser
+# pero deben existir igualmente por si alguien corre la imagen sin ellos).
+# Sin usuario no-root: los volúmenes montados (DATA_PATH, LOGS_PATH,
+# MOVIES_PATH...) son carpetas reales del NAS con el dueño que tengan
+# en Synology, y la app ya necesita escritura ahí — para software
+# personal de un solo usuario, exigir un UID concreto solo añade
+# fricción (chown manual en DSM) sin aportar aislamiento real.
+RUN mkdir -p /app/data /app/logs /app/scan_data
 
 EXPOSE 8000
 
