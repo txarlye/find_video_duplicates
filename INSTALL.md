@@ -5,6 +5,10 @@ vídeo, encuentra archivos sin indexar en Plex, sube vídeos a Telegram y
 más. La interfaz está en español. Todo corre en un único contenedor
 Docker — no hace falta clonar el repo ni instalar Python/Node.
 
+> 📱 **¿Solo tienes tu Synology y un móvil/tablet, sin PC ni
+> terminal?** Sigue [INSTALL_SYNOLOGY_MOVIL.md](INSTALL_SYNOLOGY_MOVIL.md)
+> en su lugar — mismo resultado, todo desde Container Manager (DSM).
+
 ## 1. Requisitos
 
 - **Docker** instalado y arrancado. En Windows/Mac,
