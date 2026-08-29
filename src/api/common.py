@@ -18,7 +18,19 @@ def mover_a_debug(ruta: str, settings, scan_data_manager) -> None:
         raise FileNotFoundError(f"El archivo ya no existe: {ruta}")
 
     if settings.get_debug_enabled():
-        debug_path = Path(settings.get_debug_folder())
+        carpeta_debug = settings.get_debug_folder()
+        if not carpeta_debug or not carpeta_debug.strip():
+            # Sin esto, Path("") se resuelve al directorio de trabajo
+            # actual (/app dentro de Docker) — el archivo "se mueve" en
+            # silencio a un sitio sin ningún volumen montado detrás, y
+            # se pierde para siempre en cuanto se recrea el contenedor.
+            # Mejor un error claro que una pérdida de datos silenciosa.
+            raise ValueError(
+                "No hay carpeta de debug configurada — ve a ⚙️ Configuración y "
+                "rellena la carpeta de debug/papelera antes de borrar/mover nada"
+            )
+
+        debug_path = Path(carpeta_debug)
         debug_path.mkdir(parents=True, exist_ok=True)
         destino = debug_path / origen.name
         contador = 1
