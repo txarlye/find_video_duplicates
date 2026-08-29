@@ -7,9 +7,13 @@ indexar en Plex** (con ayuda de IA para renombrarlos), sube vídeos a
 TMDB/OMDb/IMDB**. Interfaz adaptativa a móvil, pensada para un único
 contenedor accesible solo por LAN o Tailscale.
 
-> 📖 **¿Primera vez?** Antes de nada, sigue [SETUP.md](SETUP.md) para
-> apuntar la app a tu propio NAS (rutas, base de datos de Plex, API keys y
-> acceso remoto por Tailscale).
+> 📖 **¿Solo quieres instalarla, sin tocar código?** Sigue
+> [INSTALL.md](INSTALL.md) — dos ficheros sueltos (`docker-compose.yml` +
+> `.env`) y `docker compose up`, con la imagen ya construida.
+>
+> **¿Vas a tocar el código o a desplegar desde el propio repo?** Sigue
+> [SETUP.md](SETUP.md) para apuntar la app a tu propio NAS (rutas, base de
+> datos de Plex, API keys y acceso remoto por Tailscale).
 
 ## ✨ Funcionalidades
 

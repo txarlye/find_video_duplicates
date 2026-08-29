@@ -1,0 +1,61 @@
+name: Publicar imagen Docker en GHCR
+
+# Construye la imagen (backend + frontend React) y la publica en
+# ghcr.io/<owner>/find-video-duplicates — así cualquiera puede instalarla
+# con "docker compose pull && docker compose up -d" sin clonar el repo
+# ni compilar nada. Se dispara solo con push a main; también se puede
+# lanzar a mano desde la pestaña Actions (workflow_dispatch).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "frontend/**"
+      - "main.py"
+      - "scheduled_scan.py"
+      - "requirements.txt"
+      - "docker/Dockerfile"
+      - ".github/workflows/docker-publish.yml"
+  workflow_dispatch: {}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadatos (tags/labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build + push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

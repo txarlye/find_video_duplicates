@@ -1,0 +1,80 @@
+# Instalación sin compilar nada: la imagen ya está construida y publicada
+# en GHCR (se actualiza sola con cada cambio en el repo). Copia también
+# env.template a .env (misma carpeta que este fichero) y rellena tus
+# rutas/claves — instrucciones completas en INSTALL.md.
+#
+#   docker compose pull && docker compose up -d
+
+services:
+  find-video-duplicates:
+    image: ghcr.io/txarlye/find_video_duplicates:latest
+    container_name: find-video-duplicates
+    restart: unless-stopped
+
+    ports:
+      # 0.0.0.0: en la mayoría de NAS/servidores con Tailscale (modo
+      # userspace, sin interfaz de red real) es la única forma de que el
+      # reenvío del tailnet llegue hasta aquí — no se puede publicar
+      # directo en la IP 100.x.x.x. Queda alcanzable por tu LAN y,
+      # si tienes Tailscale, también por tu tailnet. No expuesto a
+      # internet salvo que abras el puerto en tu router.
+      - "${API_PORT:-8000}:8000"
+
+    volumes:
+      # Películas/series — lectura Y escritura: mover un duplicado a la
+      # papelera, renombrar huérfanos/episodios y crear ediciones de
+      # Plex escriben (y borran) dentro de esta misma carpeta. Nunca se
+      # borra nada directamente (queda en la carpeta de debug que
+      # configures dentro de la app), pero sí hace falta permiso de
+      # escritura para poder moverlo ahí.
+      - "${MOVIES_PATH:-./test}:/movies"
+
+      # Base de datos de Plex (solo lectura, opcional pero recomendado
+      # — sin ella, Huérfanos/Series no pueden cruzar contra tu
+      # biblioteca). Es la CARPETA que contiene
+      # com.plexapp.plugins.library.db, no el archivo suelto. Luego
+      # configura "/plex-db/com.plexapp.plugins.library.db" como ruta
+      # de Plex desde la propia app (pestaña Configuración).
+      - "${PLEX_DB_PATH:-./test}:/plex-db:ro"
+
+      # Datos persistentes. config.json (rutas, IA, series ignoradas...)
+      # vive dentro de esta carpeta gracias a CONFIG_PATH más abajo, así
+      # que sobrevive a recrear el contenedor y nunca viaja horneado en
+      # la imagen.
+      - "${DATA_PATH:-./data}:/app/data"
+      - "${LOGS_PATH:-./logs}:/app/logs"
+      - "${SCAN_DATA_PATH:-./scan_data}:/app/scan_data"
+
+    environment:
+      - DOCKER_CONTAINER=true
+      - API_SERVER_ADDRESS=0.0.0.0
+      - API_PORT=8000
+      - CONFIG_PATH=/app/data/config.json
+      - TZ=${TZ:-Europe/Madrid}
+
+      # Secretos — cada uno pasa por sustitución de Compose desde el
+      # .env de al lado (CLI/Docker Desktop) o desde la sección
+      # "Environment variables" de Portainer. Vacíos = esa integración
+      # simplemente no se activa, no hace falta rellenarlos todos (nada
+      # de esto es obligatorio para arrancar).
+      - IMDB_API_KEY=${IMDB_API_KEY:-}
+      - OMDB_API_KEY=${OMDB_API_KEY:-}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID:-}
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID:-}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-}
+      - TELEGRAM_PHONE=${TELEGRAM_PHONE:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
