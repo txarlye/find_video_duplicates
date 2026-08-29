@@ -54,5 +54,6 @@ echo
 echo "   El .env de secretos (Telegram, TMDB, OMDb, IA...) es aparte — copia"
 echo "   .env.example a .env en la carpeta donde quede el compose, con tus claves reales."
 echo
-echo "   Acceso: TAILSCALE_IP vacío en .env → solo localhost del host de Portainer."
-echo "   TAILSCALE_IP=100.x.x.x (la del host) → accesible desde toda tu tailnet."
+echo "   Acceso: puerto publicado en 0.0.0.0 → LAN y, si tienes el paquete"
+echo "   Tailscale de Synology instalado, también tu tailnet (100.x.x.x) sin"
+echo "   configurar nada extra."

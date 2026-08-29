@@ -62,8 +62,9 @@ docker save find-video-duplicates:latest -o find-video-duplicates.tar
    file"** para subir el mismo `.env` (o pégalo a mano) — con Web
    editor, Portainer no lee un `.env` del disco por sí solo, genera el
    suyo propio a partir de esa sección.
-5. Abre `http://<IP-del-NAS>:8000` (o la IP de Tailscale que hayas
-   puesto en `TAILSCALE_IP`).
+5. Abre `http://<IP-del-NAS>:8000` — o, si tienes el paquete Tailscale
+   de Synology instalado, `http://100.x.x.x:8000` con la IP Tailscale
+   del NAS, sin configurar nada extra.
 6. Ve a **⚙️ Configuración** dentro de la app para terminar de ajustar
    Plex, carpeta de debug, etc. — esos cambios quedan guardados en
    `data/config.json` (el volumen persistente), no en la imagen, así que

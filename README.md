@@ -238,10 +238,12 @@ host con Docker):**
    subir el mismo `.env` (o pégalo a mano ahí) — Portainer con Web
    editor no lee un `.env` del disco del NAS por sí solo, genera el
    suyo propio a partir de esa sección.
-5. Acceso: con `TAILSCALE_IP` vacío en el `.env`, solo entras desde el
-   propio NAS (`localhost:8000`). Poniendo ahí la IP Tailscale del NAS
-   (`100.x.x.x`), entras desde cualquier dispositivo de tu tailnet —
-   nunca se publica en `0.0.0.0`/toda la LAN.
+5. Acceso: el contenedor publica el puerto en `0.0.0.0` (igual que el
+   resto de contenedores del NAS), así que entras tanto desde tu LAN
+   como, si tienes el paquete Tailscale de Synology instalado, desde
+   cualquier dispositivo de tu tailnet con la IP `100.x.x.x` del NAS —
+   sin configurar nada más. No expuesto a internet salvo que abras ese
+   puerto en el router.
 6. La primera vez, entra a **⚙️ Configuración** dentro de la propia app
    para terminar de ajustar Plex, carpeta de debug, etc. — queda
    guardado en el volumen de datos (`DATA_PATH/config.json`), no en la

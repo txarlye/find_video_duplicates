@@ -110,9 +110,11 @@ export function AboutPage() {
             <Anchor href="https://tailscale.com/" target="_blank" rel="noreferrer">
               Tailscale
             </Anchor>{' '}
-            en el equipo/NAS que corre la app y en tus dispositivos, y usa la IP{' '}
-            <Code>100.x.x.x</Code> que te da en vez de <Code>localhost</Code>. Con Docker, esa IP va
-            en <Code>TAILSCALE_IP</Code> dentro de <Code>docker/.env</Code>.
+            en el NAS (paquete oficial en Package Center) y en tus dispositivos, y usa la IP{' '}
+            <Code>100.x.x.x</Code> que te da en vez de <Code>localhost</Code>. No hace falta
+            configurar nada en <Code>docker/.env</Code> para esto: el contenedor publica el puerto
+            en todas las interfaces y el propio Tailscale de Synology (corre en modo sin interfaz
+            de red real) reenvía el tráfico del tailnet hacia ahí solo.
           </List.Item>
           <List.Item>
             Tarea programada en el Planificador de Synology (opcional): en{' '}

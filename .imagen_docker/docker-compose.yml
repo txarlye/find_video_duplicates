@@ -22,13 +22,23 @@ services:
     #   dockerfile: docker/Dockerfile
 
     ports:
-      # Solo escucha en la IP indicada (por defecto localhost).
-      # Pon TAILSCALE_IP=100.x.x.x en .env para exponerlo por tu tailnet.
-      - "${TAILSCALE_IP:-127.0.0.1}:${API_PORT:-8000}:8000"
+      # 0.0.0.0, igual que el resto de contenedores de este NAS: el
+      # Tailscale de Synology corre en modo userspace-networking (sin
+      # interfaz de red real, "tailscale0" no existe a nivel de kernel),
+      # así que no se puede publicar directo en la IP 100.x.x.x — hay
+      # que publicar en todas las interfaces y es tailscaled quien
+      # reenvía el tráfico del tailnet hacia aquí. Queda alcanzable por
+      # LAN y tailnet; no expuesto a internet salvo que abras el puerto
+      # en el router.
+      - "${API_PORT:-8000}:8000"
 
     volumes:
-      # Películas (solo lectura)
-      - "${MOVIES_PATH:-./test}:/movies:ro"
+      # Películas/series — lectura Y escritura: mover un duplicado a la
+      # papelera, renombrar huérfanos/episodios y crear ediciones de
+      # Plex escriben (y borran) dentro de esta misma carpeta. Nunca se
+      # borra nada directamente (ver "carpeta de debug" más abajo), pero
+      # sí hace falta permiso de escritura para poder moverlo ahí.
+      - "${MOVIES_PATH:-./test}:/movies"
 
       # Base de datos Plex (solo lectura) — luego configura
       # "/plex-db/com.plexapp.plugins.library.db" como ruta de Plex
