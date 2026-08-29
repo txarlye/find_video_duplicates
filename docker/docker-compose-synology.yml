@@ -27,8 +27,12 @@ services:
       - "${TAILSCALE_IP:-127.0.0.1}:${API_PORT:-8000}:8000"
 
     volumes:
-      # Películas (solo lectura)
-      - "${MOVIES_PATH:-./test}:/movies:ro"
+      # Películas/series — lectura Y escritura: mover un duplicado a la
+      # papelera, renombrar huérfanos/episodios y crear ediciones de
+      # Plex escriben (y borran) dentro de esta misma carpeta. Nunca se
+      # borra nada directamente (ver "carpeta de debug" más abajo), pero
+      # sí hace falta permiso de escritura para poder moverlo ahí.
+      - "${MOVIES_PATH:-./test}:/movies"
 
       # Base de datos Plex (solo lectura) — luego configura
       # "/plex-db/com.plexapp.plugins.library.db" como ruta de Plex
