@@ -73,3 +73,9 @@ export interface CreateEditionResult {
   nueva_ruta: string | null
   detail: string | null
 }
+
+export interface CheckHashResult {
+  ok: boolean
+  identical: boolean | null
+  detail: string | null
+}

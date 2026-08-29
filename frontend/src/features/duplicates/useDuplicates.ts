@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
 import type {
   BulkMoveResult,
+  CheckHashResult,
   CreateEditionResult,
   DeleteResult,
   DuplicatePair,
@@ -62,6 +63,15 @@ export function useCreateEdition() {
   return useMutation({
     mutationFn: (body: { archivo: string; movie_title: string; edition_name: string }) =>
       api.post<CreateEditionResult>('/duplicates/create-edition', body),
+  })
+}
+
+// Bajo demanda solo (nunca automático en el escaneo) — hash MD5 en
+// streaming de los dos archivos, puede tardar varios minutos en
+// archivos grandes: el cuello de botella es leerlos enteros, no la CPU.
+export function useCheckHash() {
+  return useMutation({
+    mutationFn: (body: { ruta1: string; ruta2: string }) => api.post<CheckHashResult>('/duplicates/check-hash', body),
   })
 }
 

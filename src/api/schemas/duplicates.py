@@ -104,3 +104,14 @@ class CreateEditionResult(BaseModel):
     ok: bool
     nueva_ruta: Optional[str] = None
     detail: Optional[str] = None
+
+
+class CheckHashRequest(BaseModel):
+    ruta1: str
+    ruta2: str
+
+
+class CheckHashResult(BaseModel):
+    ok: bool
+    identical: Optional[bool] = None
+    detail: Optional[str] = None

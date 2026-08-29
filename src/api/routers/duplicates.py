@@ -32,6 +32,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.common import mover_a_debug, refrescar_plex
 from src.api.deps import (
+    get_plex_duplicate_analyzer,
     get_plex_edition_creator,
     get_plex_refresh_service,
     get_plex_service,
@@ -42,6 +43,8 @@ from src.api.jobs import job_manager
 from src.api.schemas.duplicates import (
     BulkMoveRequest,
     BulkMoveResult,
+    CheckHashRequest,
+    CheckHashResult,
     CreateEditionRequest,
     CreateEditionResult,
     DeleteRequest,
@@ -196,6 +199,25 @@ def crear_edicion(
 
     refrescar_plex(settings, plex_refresh_service)
     return CreateEditionResult(ok=True, nueva_ruta=nueva_ruta)
+
+
+@router.post("/check-hash", response_model=CheckHashResult)
+def comprobar_hash(body: CheckHashRequest, plex_duplicate_analyzer=Depends(get_plex_duplicate_analyzer)):
+    """
+    Compara los dos archivos byte a byte (hash MD5 en streaming) para
+    saber si son el mismo archivo de verdad, no solo "se parecen" por
+    nombre/tamaño/duración. Bajo demanda solo, nunca durante un escaneo
+    masivo: para archivos grandes puede tardar varios minutos (lee el
+    archivo entero, el cuello de botella es la lectura, no la CPU).
+    """
+    if not os.path.exists(body.ruta1) or not os.path.exists(body.ruta2):
+        return CheckHashResult(ok=False, detail="Uno de los dos archivos ya no existe")
+
+    resultado = plex_duplicate_analyzer.calculate_hash_manually(body.ruta1, body.ruta2)
+    if not resultado.get("success"):
+        return CheckHashResult(ok=False, detail=resultado.get("message", "No se pudo calcular el hash"))
+
+    return CheckHashResult(ok=True, identical=resultado["identical"], detail=resultado.get("message"))
 
 
 @router.post("/bulk-move", response_model=BulkMoveResult)

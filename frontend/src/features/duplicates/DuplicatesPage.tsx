@@ -25,6 +25,7 @@ import { useJobProgress } from '../../api/ws'
 import { usePlayersQuery, usePlexQuery } from '../settings/useSettings'
 import {
   useBulkMoveDuplicates,
+  useCheckHash,
   useCreateEdition,
   useDeleteDuplicates,
   useEditionSuggestions,
@@ -35,7 +36,7 @@ import {
   useScanDuplicates,
   useVideoInfo,
 } from './useDuplicates'
-import type { DuplicatePair, FileInfo, PlexMetadataResponse, ScanResult, VideoInfo } from './types'
+import type { CheckHashResult, DuplicatePair, FileInfo, PlexMetadataResponse, ScanResult, VideoInfo } from './types'
 
 function gb(bytes: number) {
   return (bytes / 1024 ** 3).toFixed(2)
@@ -52,6 +53,13 @@ function duracionEscaneoFmt(segundos: number) {
 function stem(nombre: string) {
   const i = nombre.lastIndexOf('.')
   return i > 0 ? nombre.slice(0, i) : nombre
+}
+
+function carpeta(ruta: string) {
+  // Admite tanto rutas POSIX (contenedor) como con "\" (UNC/Windows,
+  // si algún día se vuelve a correr fuera de Docker)
+  const i = Math.max(ruta.lastIndexOf('/'), ruta.lastIndexOf('\\'))
+  return i > 0 ? ruta.slice(0, i) : ruta
 }
 
 function FileCard({
@@ -190,6 +198,7 @@ export function DuplicatesPage() {
   const [quitarSeleccion, setQuitarSeleccion] = useState<Set<string>>(new Set())
   const [showPlayers, setShowPlayers] = useState(false)
   const [plexMeta, setPlexMeta] = useState<PlexMetadataResponse | null>(null)
+  const [hashResult, setHashResult] = useState<CheckHashResult | null>(null)
 
   const [scanJobId, setScanJobId] = useState<string | null>(null)
   const [showSaved, setShowSaved] = useState(false)
@@ -201,6 +210,7 @@ export function DuplicatesPage() {
   const saveScan = useSaveDuplicatesScan()
   const loadScan = useLoadDuplicatesScan()
   const createEdition = useCreateEdition()
+  const checkHash = useCheckHash()
   const { data: savedScans, isLoading: loadingSaved } = useSavedDuplicatesScans(showSaved)
 
   const scanState = useJobProgress<ScanResult>(scanJobId)
@@ -230,6 +240,7 @@ export function DuplicatesPage() {
   useEffect(() => {
     setShowPlayers(false)
     setPlexMeta(null)
+    setHashResult(null)
     if (par && plexSettings?.fetch_metadata && plexSettings.is_configured) {
       plexMetadata.mutate(
         { ruta1: par.peli1.ruta, ruta2: par.peli2.ruta },
@@ -545,16 +556,55 @@ export function DuplicatesPage() {
               />
             </SimpleGrid>
 
-            {plexMeta?.es_duplicado_plex && (
-              <Badge color="red" variant="light" style={{ alignSelf: 'flex-start' }}>
-                🔴 Plex las reconoce como la misma película
-              </Badge>
-            )}
+            <Group gap="xs">
+              {plexMeta?.es_duplicado_plex && (
+                <Badge color="red" variant="light">
+                  🔴 Plex las reconoce como la misma película
+                </Badge>
+              )}
+              {carpeta(par.peli1.ruta) !== carpeta(par.peli2.ruta) && (
+                <Badge color="blue" variant="light">
+                  📁 Están en carpetas distintas
+                </Badge>
+              )}
+            </Group>
             {plexMeta?.duracion_mensaje && (
               <Text size="sm" c={plexMeta.duracion_compatible ? 'green' : 'orange'}>
                 {plexMeta.duracion_compatible ? '✅' : '⚠️'} {plexMeta.duracion_mensaje}
               </Text>
             )}
+
+            <Group gap="xs" align="center">
+              <Button
+                size="xs"
+                variant="default"
+                loading={checkHash.isPending}
+                disabled={!par.peli1.existe || !par.peli2.existe}
+                onClick={() => {
+                  setHashResult(null)
+                  checkHash.mutate(
+                    { ruta1: par.peli1.ruta, ruta2: par.peli2.ruta },
+                    { onSuccess: setHashResult, onError: (e) => notifications.show({ color: 'red', message: `⚠️ ${(e as Error).message}` }) },
+                  )
+                }}
+              >
+                🔍 Comprobar si son bit a bit idénticos
+              </Button>
+              {checkHash.isPending && (
+                <Text size="xs" c="dimmed">
+                  Leyendo los dos archivos enteros — con archivos grandes puede tardar varios minutos...
+                </Text>
+              )}
+              {hashResult && !checkHash.isPending && (
+                <Text size="sm" c={!hashResult.ok ? 'red' : hashResult.identical ? 'green' : 'dimmed'}>
+                  {!hashResult.ok
+                    ? `⚠️ ${hashResult.detail}`
+                    : hashResult.identical
+                      ? '✅ Idénticos byte a byte — mismo archivo con otro nombre'
+                      : '↔️ Diferentes — no es el mismo archivo'}
+                </Text>
+              )}
+            </Group>
 
             <SimpleGrid cols={{ base: 1, sm: 2 }}>
               {par.peli1.existe && <FramePreview archivo={par.peli1.ruta} />}
