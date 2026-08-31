@@ -86,7 +86,7 @@ RUN mkdir -p /app/data /app/logs /app/scan_data
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+    CMD curl -f http://localhost:${API_PORT:-8000}/api/health || exit 1
 
 # main.py ya detecta DOCKER_CONTAINER=true y arranca sin intentar abrir
 # un navegador — mismo script que se usa en local.
